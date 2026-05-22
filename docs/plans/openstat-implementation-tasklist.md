@@ -11,6 +11,31 @@
 - Treat each checkbox as a small commit or pull request.
 - Use commit messages like `feat(ingestion): add native batch acceptance`.
 
+## Current Implementation Status
+
+Completed and pushed through the first useful MVP path:
+
+- Repo package recovery, Drizzle schema/migration, Better Auth wrapper, API key
+  auth, native ingestion schemas, native ingestion/outbox, worker projection,
+  redaction defaults, read APIs, TypeScript SDK, Python SDK, initial dashboard,
+  Hetzner compose deployment, backup scripts, and operations runbooks.
+- The dashboard now has first-pass overview, agent, API key, run, trade,
+  notification, empty, and backend-error states.
+- The backend has tests for API keys, route scope, schemas, redaction, read
+  routes, and ingestion routes. Integration tests are present but still require
+  `OPENSTAT_INTEGRATION_DATABASE_URL`.
+
+Still intentionally future work:
+
+- Full OTLP protobuf decoding, generated OpenTelemetry proto types, and fixture
+  protobuf tests.
+- Raw-capture retention jobs and long-term derived aggregate retention jobs.
+- Full Better Auth dashboard session UX and interactive API key create/revoke
+  forms.
+- Production-grade SDK OpenTelemetry instrumentation packages beyond endpoint
+  config helpers.
+- End-to-end acceptance on a real clean VPS plus a real restore drill.
+
 ## Phase 0: Baseline And Repo Recovery
 
 - [ ] Confirm the current backend fails only because the `@openstat/*` workspace

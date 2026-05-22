@@ -74,6 +74,7 @@ describe("ingestion routes", () => {
         type: "decision",
         data: {
           action: "watch",
+          symbol: "BTC-USD",
         },
       },
     });
@@ -99,6 +100,7 @@ describe("ingestion routes", () => {
               type: "decision",
               data: {
                 action: "watch",
+                symbol: "BTC-USD",
               },
             }),
           ],
