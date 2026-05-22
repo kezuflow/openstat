@@ -4,6 +4,7 @@ import {
   ingestEventInputSchema,
   type IngestEventBatchInput,
   type IngestEventInput,
+  type RedactionPolicy,
 } from "@openstat/schemas";
 import {
   and,
@@ -17,6 +18,10 @@ import {
   or,
   sql,
 } from "drizzle-orm";
+
+import { redactTelemetryPayload } from "./redaction.js";
+
+export { redactTelemetryPayload } from "./redaction.js";
 
 export type ReadScope = {
   membershipId?: string;
@@ -66,6 +71,7 @@ export async function acceptIngestionBatch(options: {
   source: EventSource;
   requestId?: string;
   publisher?: IngestionSignalPublisher;
+  redactionPolicy?: Partial<RedactionPolicy>;
 }) {
   if (options.input.events.length === 0) {
     throw new IngestionError("EMPTY_INGESTION_BATCH", "Ingestion batch is empty.");
@@ -104,10 +110,13 @@ export async function acceptIngestionBatch(options: {
     throw new Error("Failed to create ingestion batch.");
   }
 
+  const redactedEvents = options.input.events.map((event) =>
+    redactTelemetryPayload(event, options.redactionPolicy),
+  );
   const outboxRows = await options.db
     .insert(schema.ingestionOutbox)
     .values(
-      options.input.events.map((event) => ({
+      redactedEvents.map((event) => ({
         organizationId: options.auth.organizationId,
         projectId: options.auth.projectId,
         batchId: batch.id,
