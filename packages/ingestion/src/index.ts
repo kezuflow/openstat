@@ -1,6 +1,10 @@
 import type { ApiKeyAuthContext } from "@openstat/auth";
 import { schema, type Database } from "@openstat/db";
-import type { IngestEventBatchInput, IngestEventInput } from "@openstat/schemas";
+import {
+  ingestEventInputSchema,
+  type IngestEventBatchInput,
+  type IngestEventInput,
+} from "@openstat/schemas";
 import {
   and,
   asc,
@@ -750,6 +754,8 @@ async function projectEvent(
     }
   }
 
+  await projectTradingEvent(db, row, createdEvent, agent?.id, event, timestamp);
+  await maybeCreateFailureNotification(db, row, agent?.id, event);
   await maybeProjectLlmUsage(db, createdEvent.id, event);
   await catalogEventProperties(db, row, event);
 }
@@ -822,6 +828,265 @@ async function maybeProjectLlmUsage(
   });
 }
 
+async function projectTradingEvent(
+  db: Database["db"],
+  row: typeof schema.ingestionOutbox.$inferSelect,
+  createdEvent: typeof schema.events.$inferSelect,
+  agentId: string | undefined,
+  event: IngestEventInput,
+  timestamp: Date,
+) {
+  const data = event.data ?? {};
+
+  switch (event.type) {
+    case "decision": {
+      const run = await upsertAgentRun(db, row, agentId, event, timestamp);
+
+      await db.insert(schema.tradingDecisions).values({
+        eventId: createdEvent.id,
+        runId: run?.id,
+        organizationId: row.organizationId,
+        projectId: row.projectId,
+        agentId,
+        strategy: getString(data.strategy),
+        symbol: getString(data.symbol),
+        action: getRequiredString(data.action, "decision.action"),
+        confidence: getNumber(data.confidence),
+        rationaleSummary: getString(data.rationale_summary),
+        metadata: event.metadata ?? {},
+        decidedAt: timestamp,
+      });
+      break;
+    }
+    case "risk_check": {
+      await db.insert(schema.riskChecks).values({
+        eventId: createdEvent.id,
+        decisionId: await resolveTradingDecisionId(db, row.projectId, data.decision_id),
+        projectId: row.projectId,
+        result: getRequiredString(data.result, "risk_check.result"),
+        reason: getString(data.reason),
+        metadata: event.metadata ?? {},
+        checkedAt: timestamp,
+      });
+      break;
+    }
+    case "order": {
+      await db.insert(schema.orders).values({
+        eventId: createdEvent.id,
+        decisionId: await resolveTradingDecisionId(db, row.projectId, data.decision_id),
+        projectId: row.projectId,
+        externalOrderId: getString(data.order_id),
+        strategy: getString(data.strategy),
+        symbol: getRequiredString(data.symbol, "order.symbol"),
+        venue: getString(data.venue),
+        side: getTradingSide(data.side),
+        orderType: getRequiredString(data.order_type, "order.order_type"),
+        quantity: getDecimalString(data.quantity, "order.quantity"),
+        price: getOptionalDecimalString(data.price),
+        status: getOrderStatus(data.status),
+        submittedAt: timestamp,
+        metadata: event.metadata ?? {},
+      });
+      break;
+    }
+    case "fill": {
+      await db.insert(schema.fills).values({
+        eventId: createdEvent.id,
+        orderId: await resolveOrderId(db, row.projectId, data.order_id),
+        projectId: row.projectId,
+        externalFillId: getString(data.fill_id),
+        symbol: getRequiredString(data.symbol, "fill.symbol"),
+        venue: getString(data.venue),
+        side: getTradingSide(data.side),
+        quantity: getDecimalString(data.quantity, "fill.quantity"),
+        price: getDecimalString(data.price, "fill.price"),
+        fee: getOptionalDecimalString(data.fee),
+        filledAt: timestamp,
+        metadata: event.metadata ?? {},
+      });
+      break;
+    }
+    case "position": {
+      await db
+        .insert(schema.positions)
+        .values({
+          projectId: row.projectId,
+          strategy: getString(data.strategy),
+          symbol: getRequiredString(data.symbol, "position.symbol"),
+          quantity: getDecimalString(data.quantity, "position.quantity"),
+          averagePrice: getOptionalDecimalString(data.average_price),
+          metadata: event.metadata ?? {},
+        })
+        .onConflictDoUpdate({
+          target: [
+            schema.positions.projectId,
+            schema.positions.strategy,
+            schema.positions.symbol,
+          ],
+          set: {
+            quantity: getDecimalString(data.quantity, "position.quantity"),
+            averagePrice: getOptionalDecimalString(data.average_price),
+            metadata: event.metadata ?? {},
+            updatedAt: new Date(),
+          },
+        });
+      break;
+    }
+    case "pnl_snapshot": {
+      await db.insert(schema.pnlSnapshots).values({
+        projectId: row.projectId,
+        strategy: getString(data.strategy),
+        symbol: getString(data.symbol),
+        realizedPnl: getOptionalDecimalString(data.realized_pnl),
+        unrealizedPnl: getOptionalDecimalString(data.unrealized_pnl),
+        equity: getOptionalDecimalString(data.equity),
+        snapshotAt: timestamp,
+        metadata: event.metadata ?? {},
+      });
+      break;
+    }
+    default:
+      break;
+  }
+}
+
+async function upsertAgentRun(
+  db: Database["db"],
+  row: typeof schema.ingestionOutbox.$inferSelect,
+  agentId: string | undefined,
+  event: IngestEventInput,
+  timestamp: Date,
+) {
+  if (!event.run_id) {
+    return undefined;
+  }
+
+  const [run] = await db
+    .insert(schema.agentRuns)
+    .values({
+      organizationId: row.organizationId,
+      projectId: row.projectId,
+      agentId,
+      externalRunId: event.run_id,
+      strategy: getString(event.data?.strategy),
+      status: "running",
+      startedAt: timestamp,
+      metadata: event.metadata ?? {},
+    })
+    .onConflictDoUpdate({
+      target: [schema.agentRuns.projectId, schema.agentRuns.externalRunId],
+      set: {
+        agentId,
+        strategy: getString(event.data?.strategy),
+        updatedAt: new Date(),
+      },
+    })
+    .returning({ id: schema.agentRuns.id });
+
+  return run;
+}
+
+async function maybeCreateFailureNotification(
+  db: Database["db"],
+  row: typeof schema.ingestionOutbox.$inferSelect,
+  agentId: string | undefined,
+  event: IngestEventInput,
+) {
+  if (event.type !== "error" || !agentId) {
+    return;
+  }
+
+  await db
+    .update(schema.agents)
+    .set({ status: "failing", updatedAt: new Date() })
+    .where(eq(schema.agents.id, agentId));
+
+  const [agent] = await db
+    .select({ name: schema.agents.name })
+    .from(schema.agents)
+    .where(eq(schema.agents.id, agentId))
+    .limit(1);
+  const [existing] = await db
+    .select({ id: schema.notifications.id })
+    .from(schema.notifications)
+    .where(
+      and(
+        eq(schema.notifications.agentId, agentId),
+        eq(schema.notifications.type, "agent.failing"),
+        eq(schema.notifications.status, "unread"),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    return;
+  }
+
+  await db.insert(schema.notifications).values({
+    organizationId: row.organizationId,
+    projectId: row.projectId,
+    agentId,
+    type: "agent.failing",
+    status: "unread",
+    title: `${agent?.name ?? "Agent"} is failing`,
+    message: getString(event.data?.message) ?? "Agent emitted an error event.",
+    data: {
+      code: getString(event.data?.code),
+      eventId: event.id,
+    },
+  });
+}
+
+async function resolveTradingDecisionId(
+  db: Database["db"],
+  projectId: string,
+  value: unknown,
+) {
+  const id = getString(value);
+
+  if (!id || !isUuid(id)) {
+    return undefined;
+  }
+
+  const [decision] = await db
+    .select({ id: schema.tradingDecisions.id })
+    .from(schema.tradingDecisions)
+    .where(
+      and(
+        eq(schema.tradingDecisions.id, id),
+        eq(schema.tradingDecisions.projectId, projectId),
+      ),
+    )
+    .limit(1);
+
+  return decision?.id;
+}
+
+async function resolveOrderId(
+  db: Database["db"],
+  projectId: string,
+  value: unknown,
+) {
+  const externalOrderId = getString(value);
+
+  if (!externalOrderId) {
+    return undefined;
+  }
+
+  const [order] = await db
+    .select({ id: schema.orders.id })
+    .from(schema.orders)
+    .where(
+      and(
+        eq(schema.orders.projectId, projectId),
+        eq(schema.orders.externalOrderId, externalOrderId),
+      ),
+    )
+    .limit(1);
+
+  return order?.id;
+}
+
 async function catalogEventProperties(
   db: Database["db"],
   row: typeof schema.ingestionOutbox.$inferSelect,
@@ -869,14 +1134,31 @@ async function updateBatchStatuses(db: Database["db"], batchIds: string[]) {
       .select({ status: schema.ingestionOutbox.status })
       .from(schema.ingestionOutbox)
       .where(eq(schema.ingestionOutbox.batchId, batchId));
-    const complete = rows.every((row) => row.status === "processed");
+    const processed = rows.filter((row) => row.status === "processed").length;
+    const deadLettered = rows.filter(
+      (row) => row.status === "dead_lettered",
+    ).length;
+    const finished = processed + deadLettered;
 
-    if (complete) {
-      await db
-        .update(schema.ingestionBatches)
-        .set({ status: "processed", processedAt: new Date(), updatedAt: new Date() })
-        .where(eq(schema.ingestionBatches.id, batchId));
+    if (rows.length === 0 || finished !== rows.length) {
+      continue;
     }
+
+    const status =
+      processed === rows.length
+        ? "processed"
+        : processed > 0
+          ? "partially_processed"
+          : "failed";
+    await db
+      .update(schema.ingestionBatches)
+      .set({
+        status,
+        processedAt: processed > 0 ? new Date() : null,
+        failedAt: deadLettered > 0 ? new Date() : null,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.ingestionBatches.id, batchId));
   }
 }
 
@@ -914,11 +1196,20 @@ async function markAgentRecoveryNotificationsRead(db: Database["db"], agentId: s
 }
 
 function parseOutboxEvent(payload: unknown): IngestEventInput {
-  if (!isRecord(payload) || typeof payload.type !== "string" || !isRecord(payload.data)) {
+  if (!isRecord(payload) || typeof payload.type !== "string") {
     throw new IngestionError("INVALID_OUTBOX_PAYLOAD", "Outbox payload is invalid.");
   }
 
-  return payload as IngestEventInput;
+  const parsed = ingestEventInputSchema.safeParse(payload);
+
+  if (!parsed.success) {
+    throw new IngestionError(
+      "INVALID_OUTBOX_PAYLOAD",
+      "Outbox payload is invalid.",
+    );
+  }
+
+  return parsed.data;
 }
 
 function normalizeAgentStatus(status: string | undefined) {
@@ -964,6 +1255,82 @@ function getString(value: unknown) {
 
 function getNumber(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function getRequiredString(value: unknown, field: string) {
+  const text = getString(value);
+
+  if (!text) {
+    throw new IngestionError(
+      "INVALID_OUTBOX_PAYLOAD",
+      `Missing required ${field}.`,
+    );
+  }
+
+  return text;
+}
+
+function getDecimalString(value: unknown, field: string) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value.toString();
+  }
+
+  const text = getString(value);
+
+  if (!text) {
+    throw new IngestionError(
+      "INVALID_OUTBOX_PAYLOAD",
+      `Missing required ${field}.`,
+    );
+  }
+
+  return text;
+}
+
+function getOptionalDecimalString(value: unknown) {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  return typeof value === "number" && Number.isFinite(value)
+    ? value.toString()
+    : getString(value);
+}
+
+function getTradingSide(value: unknown) {
+  const side = getRequiredString(value, "side");
+
+  if (side !== "buy" && side !== "sell") {
+    throw new IngestionError("INVALID_OUTBOX_PAYLOAD", "Invalid trading side.");
+  }
+
+  return side;
+}
+
+function getOrderStatus(value: unknown) {
+  const status = getString(value) ?? "pending";
+
+  switch (status) {
+    case "pending":
+    case "submitted":
+    case "partially_filled":
+    case "filled":
+    case "cancelled":
+    case "rejected":
+    case "failed":
+      return status;
+    default:
+      throw new IngestionError(
+        "INVALID_OUTBOX_PAYLOAD",
+        "Invalid order status.",
+      );
+  }
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
+    value,
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -339,6 +339,220 @@ describeIntegration("ingestion outbox integration", () => {
     );
   });
 
+  it("projects native trading events into decision, order, fill, position, and PnL tables", async () => {
+    const fixture = await createFixture(database);
+    insertedOrganizationIds.push(fixture.organizationId);
+    const timestamp = Date.parse("2026-05-13T12:30:00.000Z");
+
+    await acceptIngestionBatch({
+      db: database.db,
+      auth: {
+        apiKeyId: fixture.apiKeyId,
+        organizationId: fixture.organizationId,
+        projectId: fixture.projectId,
+      },
+      input: {
+        events: [
+          {
+            id: `event_decision_${crypto.randomUUID()}`,
+            schema_version: 1,
+            agent: {
+              id: "agent-trader-integration",
+              name: "Trader Integration Agent",
+            },
+            type: "decision",
+            run_id: "run_trading_integration",
+            timestamp,
+            data: {
+              strategy: "breakout",
+              symbol: "BTC-USD",
+              venue: "paper",
+              action: "enter_long",
+              confidence: 84,
+              rationale_summary: "Momentum and risk budget aligned.",
+            },
+            metadata: {
+              market: "crypto",
+            },
+          },
+          {
+            id: `event_order_${crypto.randomUUID()}`,
+            schema_version: 1,
+            agent: {
+              id: "agent-trader-integration",
+              name: "Trader Integration Agent",
+            },
+            type: "order",
+            run_id: "run_trading_integration",
+            timestamp: timestamp + 1_000,
+            data: {
+              order_id: "order_integration_1",
+              strategy: "breakout",
+              symbol: "BTC-USD",
+              venue: "paper",
+              side: "buy",
+              order_type: "limit",
+              quantity: "0.10",
+              price: "62500.00",
+              status: "submitted",
+            },
+          },
+          {
+            id: `event_fill_${crypto.randomUUID()}`,
+            schema_version: 1,
+            agent: {
+              id: "agent-trader-integration",
+              name: "Trader Integration Agent",
+            },
+            type: "fill",
+            run_id: "run_trading_integration",
+            timestamp: timestamp + 2_000,
+            data: {
+              fill_id: "fill_integration_1",
+              order_id: "order_integration_1",
+              strategy: "breakout",
+              symbol: "BTC-USD",
+              venue: "paper",
+              side: "buy",
+              quantity: "0.10",
+              price: "62495.50",
+              fee: "1.25",
+            },
+          },
+          {
+            id: `event_position_${crypto.randomUUID()}`,
+            schema_version: 1,
+            agent: {
+              id: "agent-trader-integration",
+              name: "Trader Integration Agent",
+            },
+            type: "position",
+            timestamp: timestamp + 3_000,
+            data: {
+              strategy: "breakout",
+              symbol: "BTC-USD",
+              venue: "paper",
+              quantity: "0.10",
+              average_price: "62495.50",
+            },
+          },
+          {
+            id: `event_pnl_${crypto.randomUUID()}`,
+            schema_version: 1,
+            agent: {
+              id: "agent-trader-integration",
+              name: "Trader Integration Agent",
+            },
+            type: "pnl_snapshot",
+            timestamp: timestamp + 4_000,
+            data: {
+              strategy: "breakout",
+              symbol: "BTC-USD",
+              realized_pnl: "0",
+              unrealized_pnl: "41.20",
+              equity: "10041.20",
+            },
+          },
+        ],
+      },
+      source: "http",
+      requestId: "request_trading_projection",
+    });
+
+    const claimed = await claimIngestionOutbox({
+      db: database.db,
+      workerId: "worker_trading",
+      limit: 10,
+      lockTtlMs: 60_000,
+    });
+
+    const processed = await processClaim({
+      db: database.db,
+      rows: claimed,
+      workerId: "worker_trading",
+      maxAttempts: 3,
+    });
+
+    expect(processed).toEqual({
+      processed: 5,
+      retryable: 0,
+      deadLettered: 0,
+    });
+
+    const [run] = await database.db
+      .select()
+      .from(schema.agentRuns)
+      .where(eq(schema.agentRuns.projectId, fixture.projectId))
+      .limit(1);
+    const [decision] = await database.db
+      .select()
+      .from(schema.tradingDecisions)
+      .where(eq(schema.tradingDecisions.projectId, fixture.projectId))
+      .limit(1);
+    const [order] = await database.db
+      .select()
+      .from(schema.orders)
+      .where(eq(schema.orders.projectId, fixture.projectId))
+      .limit(1);
+    const [fill] = await database.db
+      .select()
+      .from(schema.fills)
+      .where(eq(schema.fills.projectId, fixture.projectId))
+      .limit(1);
+    const [position] = await database.db
+      .select()
+      .from(schema.positions)
+      .where(eq(schema.positions.projectId, fixture.projectId))
+      .limit(1);
+    const [pnlSnapshot] = await database.db
+      .select()
+      .from(schema.pnlSnapshots)
+      .where(eq(schema.pnlSnapshots.projectId, fixture.projectId))
+      .limit(1);
+
+    expect(run).toEqual(
+      expect.objectContaining({
+        externalRunId: "run_trading_integration",
+        strategy: "breakout",
+      }),
+    );
+    expect(decision).toEqual(
+      expect.objectContaining({
+        action: "enter_long",
+        confidence: 84,
+        symbol: "BTC-USD",
+      }),
+    );
+    expect(order).toEqual(
+      expect.objectContaining({
+        externalOrderId: "order_integration_1",
+        side: "buy",
+        status: "submitted",
+      }),
+    );
+    expect(fill).toEqual(
+      expect.objectContaining({
+        externalFillId: "fill_integration_1",
+        quantity: "0.10",
+        price: "62495.50",
+      }),
+    );
+    expect(position).toEqual(
+      expect.objectContaining({
+        symbol: "BTC-USD",
+        quantity: "0.10",
+        averagePrice: "62495.50",
+      }),
+    );
+    expect(pnlSnapshot).toEqual(
+      expect.objectContaining({
+        realizedPnl: "0",
+        unrealizedPnl: "41.20",
+        equity: "10041.20",
+      }),
+    );
+  });
+
   it("transitions stale and offline agents with deduped notifications", async () => {
     const fixture = await createFixture(database);
     insertedOrganizationIds.push(fixture.organizationId);
