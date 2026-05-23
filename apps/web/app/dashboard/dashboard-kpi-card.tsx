@@ -18,6 +18,12 @@ type DashboardSparklineSeries = {
   tone?: KpiTone;
 };
 
+export type DashboardKpiMonitorTone = "good" | "watch" | "bad";
+
+type DashboardKpiMonitorBar = {
+  tone: DashboardKpiMonitorTone;
+};
+
 type DashboardKpiBadge = {
   label: string;
   tone?: KpiTone;
@@ -30,6 +36,8 @@ export function DashboardKpiCard(props: {
   seriesKey?: DashboardSparklineKey;
   sparklinePoints?: number[];
   sparklineSeries?: DashboardSparklineSeries[];
+  monitorBars?: DashboardKpiMonitorBar[];
+  monitorLabel?: string;
   value: string;
   href: string;
   tone?: KpiTone;
@@ -56,10 +64,35 @@ export function DashboardKpiCard(props: {
         </span>
       ) : null}
       <strong>{props.value}</strong>
-      {sparklineSeries ? (
+      {props.monitorBars ? (
+        <DashboardKpiMonitorBars
+          bars={props.monitorBars}
+          label={props.monitorLabel ?? `${props.label} monitor`}
+        />
+      ) : sparklineSeries ? (
         <DashboardKpiSparkline series={sparklineSeries} />
       ) : null}
     </a>
+  );
+}
+
+function DashboardKpiMonitorBars(props: {
+  bars: DashboardKpiMonitorBar[];
+  label: string;
+}) {
+  return (
+    <span
+      aria-label={props.label}
+      className="dashboard-kpi-monitor-bars"
+      role="img"
+    >
+      {props.bars.map((bar, index) => (
+        <span
+          className={`dashboard-kpi-monitor-bar dashboard-kpi-monitor-${bar.tone}`}
+          key={index}
+        />
+      ))}
+    </span>
   );
 }
 
@@ -85,8 +118,8 @@ function getSingleSparklineSeries(options: {
 
 function DashboardKpiSparkline(props: { series: DashboardSparklineSeries[] }) {
   const width = 180;
-  const height = 32;
-  const padding = 4;
+  const height = 36;
+  const padding = 7;
   const paths = getSparklinePaths(props.series, width, height, padding);
 
   if (paths.length === 0) {
@@ -127,7 +160,7 @@ function getSparklinePaths(
   const values = drawableSeries.flatMap((item) => item.points);
   const min = Math.min(...values);
   const max = Math.max(...values);
-  const span = Math.max(max - min, 1);
+  const span = max - min;
   const innerWidth = width - padding * 2;
   const innerHeight = height - padding * 2;
 
@@ -135,7 +168,10 @@ function getSparklinePaths(
     d: item.points
       .map((point, index) => {
         const x = padding + (index / (item.points.length - 1)) * innerWidth;
-        const y = padding + (1 - (point - min) / span) * innerHeight;
+        const y =
+          span === 0
+            ? height / 2
+            : padding + (1 - (point - min) / span) * innerHeight;
 
         return `${index === 0 ? "M" : "L"} ${roundPathNumber(x)} ${roundPathNumber(y)}`;
       })

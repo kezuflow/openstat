@@ -28,6 +28,27 @@
   letter-spacing: 0;
 }
 
+.dashboard-layout[data-dashboard-theme="light"] {
+  --background: #f6f4ea;
+  --foreground: #11140f;
+  --muted: #5f6658;
+  --line: #d9dccf;
+  --panel: #fffdf4;
+  --accent: #a3e635;
+  --accent-foreground: #183f16;
+  --accent-soft: color-mix(in oklab, var(--accent) 22%, transparent);
+  --accent-strong: #183f16;
+  --surface: #fffdf4;
+  --surface-foreground: var(--foreground);
+  --surface-secondary: #f0f2e8;
+  --surface-secondary-foreground: var(--foreground);
+  --overlay: #fffdf4;
+  --overlay-foreground: var(--foreground);
+  --focus: var(--accent-strong);
+  background: var(--background);
+  color: var(--foreground);
+}
+
 .dashboard-layout:has(.dashboard-sidebar-collapsed) {
   --dashboard-sidebar-width: 80px;
 }
@@ -41,6 +62,28 @@
   border-right: 1px solid var(--line);
   background: #050605;
   transition: width 180ms ease;
+}
+
+.dashboard-layout[data-dashboard-theme="light"] .dashboard-sidebar,
+.dashboard-layout[data-dashboard-theme="light"] .dashboard-drawer-panel {
+  background: var(--background);
+}
+
+.dashboard-layout[data-dashboard-theme="light"] .dashboard-drawer-panel {
+  --foreground: #11140f;
+  --muted: #5f6658;
+  --line: #d9dccf;
+  --panel: #fffdf4;
+  --accent: #a3e635;
+  --accent-foreground: #183f16;
+  --accent-soft: color-mix(in oklab, var(--accent) 22%, transparent);
+  --surface: #fffdf4;
+  --surface-foreground: var(--foreground);
+  --surface-secondary: #f0f2e8;
+  --surface-secondary-foreground: var(--foreground);
+  --overlay: #fffdf4;
+  --overlay-foreground: var(--foreground);
+  color: var(--foreground);
 }
 
 .dashboard-sidebar-inner {
@@ -84,6 +127,23 @@
 .dashboard-profile-avatar {
   width: 36px;
   height: 36px;
+}
+
+.dashboard-profile-avatar .avatar__fallback {
+  border: 1px solid color-mix(in oklab, var(--accent) 34%, #050605);
+  background: linear-gradient(135deg, #050605 0%, #11140f 48%, var(--accent) 100%);
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.dashboard-layout[data-dashboard-theme="light"]
+  .dashboard-profile-avatar
+  .avatar__fallback {
+  border-color: color-mix(in oklab, var(--accent) 42%, var(--line));
+  background: linear-gradient(135deg, #ffffff 0%, #eef8d3 48%, var(--accent) 100%);
+  color: var(--accent-foreground);
 }
 
 .dashboard-profile-copy strong,
@@ -148,10 +208,34 @@
   background: #1b1d1b;
 }
 
+.dashboard-layout[data-dashboard-theme="light"]
+  .dashboard-sidebar
+  .dashboard-nav-item:hover,
+.dashboard-layout[data-dashboard-theme="light"]
+  .dashboard-sidebar
+  .dashboard-nav-item[data-hovered="true"],
+.dashboard-layout[data-dashboard-theme="light"]
+  .dashboard-drawer-panel
+  .dashboard-nav-item:hover,
+.dashboard-layout[data-dashboard-theme="light"]
+  .dashboard-drawer-panel
+  .dashboard-nav-item[data-hovered="true"] {
+  background: #eef1e5;
+}
+
 .dashboard-sidebar .dashboard-nav-item-active,
 .dashboard-drawer-panel .dashboard-nav-item-active {
   background: #242624;
   color: var(--foreground);
+}
+
+.dashboard-layout[data-dashboard-theme="light"]
+  .dashboard-sidebar
+  .dashboard-nav-item-active,
+.dashboard-layout[data-dashboard-theme="light"]
+  .dashboard-drawer-panel
+  .dashboard-nav-item-active {
+  background: #e4ebcf;
 }
 
 .dashboard-sidebar-collapsed .dashboard-nav-item-active {

@@ -1,4 +1,8 @@
-import { DashboardKpiCard, formatNumber } from "./dashboard-components";
+import {
+  DashboardKpiCard,
+  formatNumber,
+  type DashboardKpiMonitorTone,
+} from "./dashboard-components";
 import type { DashboardData } from "./dashboard-overview-types";
 
 export function DashboardSummaryKpis(props: { data: DashboardData }) {
@@ -16,6 +20,20 @@ export function DashboardSummaryKpis(props: { data: DashboardData }) {
   const fills = totals.fills ?? 0;
   const orders = totals.orders ?? 0;
   const riskAndFailures = (totals.riskRejects ?? 0) + (totals.failures ?? 0);
+  const heartbeatTotals = props.data.agents.reduce(
+    (current, agent) => {
+      current.healthy += agent.heartbeatHealth?.healthyHeartbeats ?? 0;
+      current.received += agent.heartbeatHealth?.receivedHeartbeats ?? 0;
+
+      return current;
+    },
+    { healthy: 0, received: 0 },
+  );
+  const fleetUptime =
+    heartbeatTotals.received > 0
+      ? Math.round((heartbeatTotals.healthy / heartbeatTotals.received) * 100)
+      : 0;
+  const fleetUptimeTone = getUptimeTone(fleetUptime);
 
   return (
     <section className="dashboard-kpi-grid" aria-label="Dashboard summary">
@@ -26,6 +44,8 @@ export function DashboardSummaryKpis(props: { data: DashboardData }) {
         }}
         href="/dashboard/agents"
         label="Agents"
+        monitorBars={buildUptimeBars(fleetUptime, 24, fleetUptimeTone)}
+        monitorLabel={`Agent heartbeat uptime ${fleetUptime}%`}
         tone={onlineAgents > 0 ? "success" : "warning"}
         value={`${formatNumber(onlineAgents)} / ${formatNumber(totalAgents)}`}
       />
@@ -98,4 +118,23 @@ function formatPercentage(value: number, total: number) {
   }
 
   return `${Math.round(percentage)}%`;
+}
+
+function getUptimeTone(uptimePercent: number): DashboardKpiMonitorTone {
+  return uptimePercent >= 95 ? "good" : uptimePercent >= 80 ? "watch" : "bad";
+}
+
+function buildUptimeBars(
+  uptimePercent: number,
+  count: number,
+  degradedTone: DashboardKpiMonitorTone,
+) {
+  const degradedCount = Math.max(
+    0,
+    Math.min(count, Math.round(count * ((100 - uptimePercent) / 100))),
+  );
+
+  return Array.from({ length: count }, (_, index) => ({
+    tone: index >= count - degradedCount ? degradedTone : "good",
+  }));
 }

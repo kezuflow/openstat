@@ -5,10 +5,15 @@ import { AlertTriangle, Bell, Clock3, RefreshCw, Search } from "lucide-react";
 
 import type { DashboardRange } from "../../lib/openstat-api";
 import { SignInModal } from "../sign-in-modal";
+import { DashboardThemeModeControl } from "./dashboard-theme-mode-control";
 export { DashboardDataTable } from "./dashboard-data-table";
 export { DashboardEmptyState } from "./dashboard-empty-state";
 export { DashboardKpiCard } from "./dashboard-kpi-card";
-export type { DashboardSparklineKey, KpiTone } from "./dashboard-kpi-card";
+export type {
+  DashboardKpiMonitorTone,
+  DashboardSparklineKey,
+  KpiTone,
+} from "./dashboard-kpi-card";
 
 export function DashboardTopToolbar(props: {
   eyebrow?: string;
@@ -38,23 +43,16 @@ export function DashboardTopToolbar(props: {
           </SearchField.Group>
         </SearchField>
 
-        <a
-          className="dashboard-icon-link"
-          href={`/dashboard?range=${props.range}`}
-        >
-          <RefreshCw aria-hidden="true" size={16} />
-          <span>Refresh</span>
-        </a>
-
         <a className="dashboard-icon-link" href="#alerts">
           <Bell aria-hidden="true" size={16} />
           <span>{props.unreadNotifications || props.errorCount}</span>
         </a>
+
+        <DashboardThemeModeControl />
       </div>
 
       <div className="dashboard-toolbar-main">
         <div className="dashboard-title-block">
-          <p className="dashboard-eyebrow">{props.eyebrow ?? "OpenStat"}</p>
           <h1>{props.title ?? "AI trading agent telemetry"}</h1>
         </div>
 
@@ -72,6 +70,14 @@ export function DashboardTopToolbar(props: {
               </a>
             ))}
           </nav>
+
+          <a
+            aria-label="Refresh dashboard"
+            className="dashboard-icon-link"
+            href={`/dashboard?range=${props.range}`}
+          >
+            <RefreshCw aria-hidden="true" size={16} />
+          </a>
 
           {props.showSignIn ? (
             <SignInModal className="dashboard-signin-button">

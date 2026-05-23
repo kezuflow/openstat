@@ -12,7 +12,8 @@
 }
 
 .agent-uptime-summary div,
-.agent-uptime-agent {
+.agent-uptime-agent,
+.agent-uptime-agent-header {
   min-width: 0;
 }
 
@@ -112,17 +113,25 @@
 
 .agent-uptime-agent {
   display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+  min-height: 58px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: min(18px, var(--radius-3xl));
+  background: var(--surface-secondary);
+}
+
+.agent-uptime-agent-header {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: 34px;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-3xl);
-  background: #111311;
+  width: 100%;
 }
 
-.agent-uptime-agent span {
+.agent-uptime-agent-header span {
   overflow: hidden;
   color: var(--muted);
   font-size: 12px;
@@ -131,10 +140,26 @@
   white-space: nowrap;
 }
 
-.agent-uptime-agent strong {
+.agent-uptime-agent-header strong {
   flex: 0 0 auto;
   color: var(--foreground);
   font-size: 12px;
   font-weight: 600;
   line-height: 16px;
+}
+
+.agent-uptime-agent-bars {
+  display: grid;
+  grid-template-columns: repeat(18, minmax(2px, 1fr));
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+  min-height: 18px;
+}
+
+.agent-uptime-agent-bar {
+  display: block;
+  height: 16px;
+  min-width: 2px;
+  border-radius: 999px;
 }

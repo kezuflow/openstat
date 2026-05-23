@@ -161,8 +161,7 @@ function AgentsUptimeMonitor(props: {
       : uptimePercent >= 80
         ? "Degraded"
         : "Needs attention";
-  const tone =
-    uptimePercent >= 95 ? "good" : uptimePercent >= 80 ? "watch" : "bad";
+  const tone = getUptimeTone(uptimePercent);
   const bars = buildUptimeBars(uptimePercent, 72, tone);
 
   return (
@@ -194,19 +193,43 @@ function AgentsUptimeMonitor(props: {
       </div>
 
       <div className="agent-uptime-agent-grid">
-        {props.agents.map((agent) => (
-          <a
-            className="agent-uptime-agent"
-            href={`/dashboard/agents?range=${props.range}&inspect=agent&id=${agent.id}`}
-            key={agent.id}
-          >
-            <span>{agent.name}</span>
-            <strong>{agent.heartbeatHealth?.uptimePercent ?? 0}%</strong>
-          </a>
-        ))}
+        {props.agents.map((agent) => {
+          const agentUptime = agent.heartbeatHealth?.uptimePercent ?? 0;
+          const agentTone = getUptimeTone(agentUptime);
+          const agentBars = buildUptimeBars(agentUptime, 18, agentTone);
+
+          return (
+            <a
+              className="agent-uptime-agent"
+              href={`/dashboard/agents?range=${props.range}&inspect=agent&id=${agent.id}`}
+              key={agent.id}
+            >
+              <span className="agent-uptime-agent-header">
+                <span>{agent.name}</span>
+                <strong>{agentUptime}%</strong>
+              </span>
+              <span
+                aria-label={`${agent.name} uptime ${agentUptime}% over ${props.range}`}
+                className="agent-uptime-agent-bars"
+                role="img"
+              >
+                {agentBars.map((bar, index) => (
+                  <span
+                    className={`agent-uptime-agent-bar agent-uptime-${bar}`}
+                    key={index}
+                  />
+                ))}
+              </span>
+            </a>
+          );
+        })}
       </div>
     </div>
   );
+}
+
+function getUptimeTone(uptimePercent: number) {
+  return uptimePercent >= 95 ? "good" : uptimePercent >= 80 ? "watch" : "bad";
 }
 
 function buildUptimeBars(
