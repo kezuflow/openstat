@@ -87,6 +87,7 @@ export default async function Dashboard(props: DashboardProps) {
         <DashboardTopToolbar
           errorCount={data.errors.length}
           range={range}
+          showSignIn={data.errors.some((error) => error.includes("returned 401"))}
           unreadNotifications={unreadNotifications}
         />
 

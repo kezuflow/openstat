@@ -28,6 +28,7 @@ export function DashboardTopToolbar(props: {
   eyebrow?: string;
   range: DashboardRange;
   errorCount: number;
+  showSignIn?: boolean;
   title?: string;
   unreadNotifications: number;
 }) {
@@ -77,7 +78,9 @@ export function DashboardTopToolbar(props: {
           <span>{props.unreadNotifications || props.errorCount}</span>
         </a>
 
-        <SignInModal className="dashboard-signin-button">Sign in</SignInModal>
+        {props.showSignIn ? (
+          <SignInModal className="dashboard-signin-button">Sign in</SignInModal>
+        ) : null}
       </div>
     </header>
   );

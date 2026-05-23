@@ -1,4 +1,7 @@
-const apiUrl = process.env.NEXT_PUBLIC_OPENSTAT_API_URL ?? "http://localhost:4000";
+import { cookies } from "next/headers";
+
+const apiUrl =
+  process.env.NEXT_PUBLIC_OPENSTAT_API_URL ?? "http://localhost:4000";
 const dashboardApiKey = process.env.OPENSTAT_DASHBOARD_API_KEY;
 
 export type DashboardData = {
@@ -350,10 +353,14 @@ async function getJson<T>(path: string): Promise<
     }
 > {
   try {
+    const cookieHeader = (await cookies()).toString();
     const response = await fetch(`${apiUrl}${path}`, {
       cache: "no-store",
       headers: {
-        ...(dashboardApiKey ? { authorization: `Bearer ${dashboardApiKey}` } : {}),
+        ...(dashboardApiKey
+          ? { authorization: `Bearer ${dashboardApiKey}` }
+          : {}),
+        ...(!dashboardApiKey && cookieHeader ? { cookie: cookieHeader } : {}),
       },
     });
 
