@@ -7,7 +7,6 @@ import {
   DashboardDataTable,
   DashboardEmptyState,
   DashboardKpiCard,
-  DashboardMiniTrend,
   DashboardPanel,
   DashboardStatusChip,
   DashboardTopToolbar,
@@ -15,6 +14,7 @@ import {
   formatNumber,
 } from "./dashboard-components";
 import { DashboardInspector } from "./dashboard-inspector";
+import { DashboardMiniTrend } from "./dashboard-mini-trend";
 import {
   getFirstParam,
   parseDashboardRange,
@@ -38,6 +38,7 @@ export default async function Dashboard(props: DashboardProps) {
       ? await getDashboardInspectorData(inspect, inspectId)
       : undefined;
   const totals = data.analytics?.totals ?? {};
+  const series = data.analytics?.series ?? [];
   const overview = data.overview;
   const onlineAgents =
     overview?.agents.byStatus.online ??
@@ -46,8 +47,9 @@ export default async function Dashboard(props: DashboardProps) {
     0;
   const unreadNotifications =
     totals.unreadNotifications ??
-    data.notifications.filter((notification) => notification.status === "unread")
-      .length;
+    data.notifications.filter(
+      (notification) => notification.status === "unread",
+    ).length;
   const attentionItems = [
     ...data.errors.map((error) => ({
       href: "#backend-notice",
@@ -62,7 +64,10 @@ export default async function Dashboard(props: DashboardProps) {
         href: `/dashboard?range=${range}&inspect=notification&id=${notification.id}`,
         meta: `${notification.type} | ${formatDateTime(notification.createdAt)}`,
         title: notification.title,
-        tone: notification.status === "read" ? ("neutral" as const) : ("warning" as const),
+        tone:
+          notification.status === "read"
+            ? ("neutral" as const)
+            : ("warning" as const),
       })),
     ...data.agents
       .filter((agent) =>
@@ -87,7 +92,9 @@ export default async function Dashboard(props: DashboardProps) {
         <DashboardTopToolbar
           errorCount={data.errors.length}
           range={range}
-          showSignIn={data.errors.some((error) => error.includes("returned 401"))}
+          showSignIn={data.errors.some((error) =>
+            error.includes("returned 401"),
+          )}
           unreadNotifications={unreadNotifications}
         />
 
@@ -102,58 +109,68 @@ export default async function Dashboard(props: DashboardProps) {
           <DashboardKpiCard
             href="/dashboard/agents"
             label="Agents online"
-            meta={`${formatNumber(overview?.agents.total)} total agents`}
             tone={onlineAgents > 0 ? "success" : "warning"}
             value={formatNumber(onlineAgents)}
           />
           <DashboardKpiCard
             href="/dashboard?inspect=events"
             label="Events"
-            meta={`Across ${range}`}
+            series={series}
+            seriesKey="events"
             value={formatNumber(overview?.events.total)}
           />
           <DashboardKpiCard
             href="/dashboard/runs"
             label="Decisions"
-            meta="Decision events"
+            series={series}
+            seriesKey="decisions"
             value={formatNumber(totals.decisions)}
           />
           <DashboardKpiCard
             href="/dashboard/trades"
             label="Orders / fills"
-            meta={`${formatNumber(totals.fills)} fills`}
+            series={series}
+            seriesKey="orders"
             value={`${formatNumber(totals.orders)} / ${formatNumber(totals.fills)}`}
           />
           <DashboardKpiCard
             href="/dashboard/trades"
             label="Risk rejects"
-            meta="Blocked before execution"
+            series={series}
+            seriesKey="riskRejects"
             tone={(totals.riskRejects ?? 0) > 0 ? "warning" : "success"}
             value={formatNumber(totals.riskRejects)}
           />
           <DashboardKpiCard
             href="/dashboard/alerts"
             label="Failures"
-            meta="Errors and failed batches"
+            series={series}
+            seriesKey="failures"
             tone={(totals.failures ?? 0) > 0 ? "danger" : "success"}
             value={formatNumber(totals.failures)}
           />
           <DashboardKpiCard
             href="/dashboard/trades"
             label="PnL snapshots"
-            meta="Projected outcomes"
+            series={series}
+            seriesKey="pnlSnapshots"
             value={formatNumber(totals.pnlSnapshots)}
           />
         </section>
 
         <section className="dashboard-command-grid">
           <DashboardPanel
-            actions={<span className="dashboard-panel-note">Events / errors</span>}
+            actions={
+              <span className="dashboard-panel-note">Events / errors</span>
+            }
             className="dashboard-command-main"
             eyebrow="Command center"
             title="Decision-to-trade activity"
           >
-            <DashboardMiniTrend points={data.analytics?.series ?? []} />
+            <DashboardMiniTrend
+              points={data.analytics?.series ?? []}
+              range={range}
+            />
             <div className="dashboard-chart-legend">
               <span>
                 <i className="dashboard-legend-events" /> Events
@@ -182,7 +199,9 @@ export default async function Dashboard(props: DashboardProps) {
                 ))}
               </div>
             ) : (
-              <DashboardEmptyState>No urgent agent issues in this range.</DashboardEmptyState>
+              <DashboardEmptyState>
+                No urgent agent issues in this range.
+              </DashboardEmptyState>
             )}
           </DashboardPanel>
         </section>
@@ -253,7 +272,9 @@ export default async function Dashboard(props: DashboardProps) {
                 {
                   key: "status",
                   label: "Status",
-                  render: (trade) => <DashboardStatusChip status={trade.status} />,
+                  render: (trade) => (
+                    <DashboardStatusChip status={trade.status} />
+                  ),
                 },
               ]}
             />

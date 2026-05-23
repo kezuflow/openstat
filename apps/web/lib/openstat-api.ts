@@ -61,9 +61,16 @@ export type DashboardAnalytics = {
 };
 
 export type DashboardAnalyticsSeriesPoint = {
+  activeAgents: number;
   bucket: string;
+  decisions: number;
   events: number;
   errors: number;
+  failures: number;
+  fills: number;
+  orders: number;
+  pnlSnapshots: number;
+  riskRejects: number;
 };
 
 export type DashboardBreakdownItem = {

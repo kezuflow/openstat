@@ -68,7 +68,10 @@ export function DashboardTopToolbar(props: {
           ))}
         </nav>
 
-        <a className="dashboard-icon-link" href={`/dashboard?range=${props.range}`}>
+        <a
+          className="dashboard-icon-link"
+          href={`/dashboard?range=${props.range}`}
+        >
           <RefreshCw aria-hidden="true" size={16} />
           <span>Refresh</span>
         </a>
@@ -88,21 +91,94 @@ export function DashboardTopToolbar(props: {
 
 export function DashboardKpiCard(props: {
   label: string;
+  series?: Array<DashboardAnalyticsSeriesPoint>;
+  seriesKey?: DashboardSparklineKey;
   value: string;
-  meta: string;
   href: string;
   tone?: KpiTone;
 }) {
+  const tone = props.tone ?? "neutral";
+  const seriesKey = props.seriesKey;
+
   return (
-    <a
-      className={`dashboard-kpi dashboard-kpi-${props.tone ?? "neutral"}`}
-      href={props.href}
-    >
-      <span>{props.label}</span>
+    <a className={`dashboard-kpi dashboard-kpi-${tone}`} href={props.href}>
+      <span className="dashboard-kpi-label">{props.label}</span>
       <strong>{props.value}</strong>
-      <small>{props.meta}</small>
+      {props.series && seriesKey ? (
+        <DashboardKpiSparkline
+          points={props.series.map((point) => point[seriesKey] ?? 0)}
+          tone={tone}
+        />
+      ) : null}
     </a>
   );
+}
+
+type DashboardSparklineKey =
+  | "activeAgents"
+  | "decisions"
+  | "errors"
+  | "events"
+  | "failures"
+  | "fills"
+  | "orders"
+  | "pnlSnapshots"
+  | "riskRejects";
+
+function DashboardKpiSparkline(props: { points: number[]; tone: KpiTone }) {
+  const width = 180;
+  const height = 28;
+  const padding = 2;
+  const path = getSparklinePath(props.points, width, height, padding);
+
+  if (!path) {
+    return null;
+  }
+
+  return (
+    <svg
+      aria-hidden="true"
+      className="dashboard-kpi-sparkline"
+      focusable="false"
+      preserveAspectRatio="none"
+      viewBox={`0 0 ${width} ${height}`}
+    >
+      <path
+        className={`dashboard-kpi-sparkline-line dashboard-kpi-sparkline-${props.tone}`}
+        d={path}
+      />
+    </svg>
+  );
+}
+
+function getSparklinePath(
+  points: number[],
+  width: number,
+  height: number,
+  padding: number,
+) {
+  if (points.length < 2) {
+    return undefined;
+  }
+
+  const min = Math.min(...points);
+  const max = Math.max(...points);
+  const span = Math.max(max - min, 1);
+  const innerWidth = width - padding * 2;
+  const innerHeight = height - padding * 2;
+
+  return points
+    .map((point, index) => {
+      const x = padding + (index / (points.length - 1)) * innerWidth;
+      const y = padding + (1 - (point - min) / span) * innerHeight;
+
+      return `${index === 0 ? "M" : "L"} ${roundPathNumber(x)} ${roundPathNumber(y)}`;
+    })
+    .join(" ");
+}
+
+function roundPathNumber(value: number) {
+  return Number(value.toFixed(2));
 }
 
 export function DashboardPanel(props: {
@@ -220,43 +296,6 @@ export function DashboardDataTable<T extends { id: string }>(props: {
           ))}
         </tbody>
       </table>
-    </div>
-  );
-}
-
-export function DashboardMiniTrend(props: {
-  points: Array<DashboardAnalyticsSeriesPoint>;
-}) {
-  const max = Math.max(
-    ...props.points.map((point) => Math.max(point.events, point.errors)),
-    1,
-  );
-
-  if (props.points.length === 0) {
-    return (
-      <div className="dashboard-chart-empty">
-        <p>No event series for this range yet.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="dashboard-chart" aria-label="Events and errors over time">
-      <div className="dashboard-chart-grid" aria-hidden="true" />
-      <div className="dashboard-chart-bars">
-        {props.points.map((point) => (
-          <div className="dashboard-chart-bucket" key={point.bucket}>
-            <span
-              className="dashboard-chart-bar dashboard-chart-events"
-              style={{ height: `${Math.max((point.events / max) * 100, 4)}%` }}
-            />
-            <span
-              className="dashboard-chart-bar dashboard-chart-errors"
-              style={{ height: `${Math.max((point.errors / max) * 100, 2)}%` }}
-            />
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

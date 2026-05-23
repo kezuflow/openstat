@@ -28,6 +28,7 @@ export default async function TradesPage(props: TradesPageProps) {
   const inspectId = getFirstParam(searchParams?.id);
   const data = await getDashboardData(range);
   const totals = data.analytics?.totals ?? {};
+  const series = data.analytics?.series ?? [];
   const inspector =
     inspect && inspectId
       ? await getDashboardInspectorData(inspect, inspectId)
@@ -45,26 +46,30 @@ export default async function TradesPage(props: TradesPageProps) {
         <DashboardKpiCard
           href="/dashboard/trades"
           label="Orders"
-          meta={`Across ${range}`}
+          series={series}
+          seriesKey="orders"
           value={formatNumber(totals.orders)}
         />
         <DashboardKpiCard
           href="/dashboard/trades"
           label="Fills"
-          meta="Execution events"
+          series={series}
+          seriesKey="fills"
           value={formatNumber(totals.fills)}
         />
         <DashboardKpiCard
           href="/dashboard/trades"
           label="Risk rejects"
-          meta="Blocked by policy"
+          series={series}
+          seriesKey="riskRejects"
           tone={(totals.riskRejects ?? 0) > 0 ? "warning" : "success"}
           value={formatNumber(totals.riskRejects)}
         />
         <DashboardKpiCard
           href="/dashboard/trades"
           label="PnL snapshots"
-          meta="Projected outcomes"
+          series={series}
+          seriesKey="pnlSnapshots"
           value={formatNumber(totals.pnlSnapshots)}
         />
       </section>

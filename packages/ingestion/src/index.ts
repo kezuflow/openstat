@@ -14,6 +14,7 @@ import {
   eq,
   gte,
   inArray,
+  isNotNull,
   isNull,
   lt,
   ne,
@@ -844,13 +845,22 @@ async function getDecisionToTradeSeries(options: {
     const bucket = new Date(bucketStart.valueOf() + index * bucketMs);
 
     return {
+      activeAgentIds: new Set<string>(),
+      activeAgents: 0,
       bucket: bucket.toISOString(),
+      decisions: 0,
       errors: 0,
       events: 0,
+      failures: 0,
+      fills: 0,
+      orders: 0,
+      pnlSnapshots: 0,
+      riskRejects: 0,
     };
   });
   const events = await options.db
     .select({
+      agentId: schema.events.agentId,
       eventType: schema.events.eventType,
       timestamp: schema.events.timestamp,
     })
@@ -884,12 +894,171 @@ async function getDecisionToTradeSeries(options: {
 
     if (event.eventType === "error") {
       bucket.errors += 1;
+      bucket.failures += 1;
     } else {
       bucket.events += 1;
     }
+
+    if (event.agentId) {
+      bucket.activeAgentIds.add(event.agentId);
+    }
   }
 
-  return buckets;
+  const activeAgentEvents = await options.db
+    .select({
+      agentId: schema.events.agentId,
+      timestamp: schema.events.timestamp,
+    })
+    .from(schema.events)
+    .where(
+      and(
+        eq(schema.events.organizationId, options.scope.organizationId),
+        eq(schema.events.projectId, options.scope.projectId),
+        gte(schema.events.timestamp, options.rangeStart),
+        isNotNull(schema.events.agentId),
+      ),
+    );
+
+  for (const event of activeAgentEvents) {
+    if (!event.agentId) {
+      continue;
+    }
+
+    const bucket = buckets[getBucketIndex(event.timestamp)];
+
+    if (!bucket) {
+      continue;
+    }
+
+    bucket.activeAgentIds.add(event.agentId);
+  }
+
+  addSeriesCounts({
+    buckets,
+    bucketStart,
+    bucketMs,
+    range: options.range,
+    rows: await options.db
+      .select({ timestamp: schema.tradingDecisions.decidedAt })
+      .from(schema.tradingDecisions)
+      .where(
+        and(
+          eq(
+            schema.tradingDecisions.organizationId,
+            options.scope.organizationId,
+          ),
+          eq(schema.tradingDecisions.projectId, options.scope.projectId),
+          gte(schema.tradingDecisions.decidedAt, options.rangeStart),
+        ),
+      ),
+    key: "decisions",
+  });
+  addSeriesCounts({
+    buckets,
+    bucketStart,
+    bucketMs,
+    range: options.range,
+    rows: await options.db
+      .select({ timestamp: schema.orders.createdAt })
+      .from(schema.orders)
+      .where(
+        and(
+          eq(schema.orders.projectId, options.scope.projectId),
+          gte(schema.orders.createdAt, options.rangeStart),
+        ),
+      ),
+    key: "orders",
+  });
+  addSeriesCounts({
+    buckets,
+    bucketStart,
+    bucketMs,
+    range: options.range,
+    rows: await options.db
+      .select({ timestamp: schema.fills.filledAt })
+      .from(schema.fills)
+      .where(
+        and(
+          eq(schema.fills.projectId, options.scope.projectId),
+          gte(schema.fills.filledAt, options.rangeStart),
+        ),
+      ),
+    key: "fills",
+  });
+  addSeriesCounts({
+    buckets,
+    bucketStart,
+    bucketMs,
+    range: options.range,
+    rows: await options.db
+      .select({ timestamp: schema.riskChecks.checkedAt })
+      .from(schema.riskChecks)
+      .where(
+        and(
+          eq(schema.riskChecks.projectId, options.scope.projectId),
+          eq(schema.riskChecks.result, "rejected"),
+          gte(schema.riskChecks.checkedAt, options.rangeStart),
+        ),
+      ),
+    key: "riskRejects",
+  });
+  addSeriesCounts({
+    buckets,
+    bucketStart,
+    bucketMs,
+    range: options.range,
+    rows: await options.db
+      .select({ timestamp: schema.pnlSnapshots.snapshotAt })
+      .from(schema.pnlSnapshots)
+      .where(
+        and(
+          eq(schema.pnlSnapshots.projectId, options.scope.projectId),
+          gte(schema.pnlSnapshots.snapshotAt, options.rangeStart),
+        ),
+      ),
+    key: "pnlSnapshots",
+  });
+
+  return buckets.map(({ activeAgentIds, ...bucket }) => ({
+    ...bucket,
+    activeAgents: activeAgentIds.size,
+  }));
+
+  function getBucketIndex(timestamp: Date) {
+    return Math.floor(
+      (floorBucket(timestamp, options.range).valueOf() -
+        bucketStart.valueOf()) /
+        bucketMs,
+    );
+  }
+}
+
+function addSeriesCounts(options: {
+  buckets: Array<Record<string, number | string | Set<string>>>;
+  bucketMs: number;
+  bucketStart: Date;
+  key: "decisions" | "fills" | "orders" | "pnlSnapshots" | "riskRejects";
+  range: "24h" | "7d" | "30d";
+  rows: Array<{ timestamp: Date }>;
+}) {
+  for (const row of options.rows) {
+    const bucketIndex = Math.floor(
+      (floorBucket(row.timestamp, options.range).valueOf() -
+        options.bucketStart.valueOf()) /
+        options.bucketMs,
+    );
+    const bucket = options.buckets[bucketIndex];
+
+    if (!bucket) {
+      continue;
+    }
+
+    const current = bucket[options.key];
+
+    if (typeof current === "number") {
+      bucket[options.key] = current + 1;
+    }
+  }
 }
 
 export async function listIngestionBatches(options: {

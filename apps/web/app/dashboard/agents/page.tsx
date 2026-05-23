@@ -63,20 +63,17 @@ export default async function AgentsPage(props: AgentsPageProps) {
         <DashboardKpiCard
           href="/dashboard/agents"
           label="Online"
-          meta="Healthy heartbeats"
           tone={online > 0 ? "success" : "warning"}
           value={formatNumber(online)}
         />
         <DashboardKpiCard
           href="/dashboard/agents"
           label="Total agents"
-          meta="In this project"
           value={formatNumber(data.overview?.agents.total)}
         />
         <DashboardKpiCard
           href="/dashboard/agents"
           label="Heartbeat uptime"
-          meta={`${formatNumber(heartbeatTotals.received)} logged in ${range}`}
           tone={
             fleetUptime >= 95
               ? "success"
@@ -89,7 +86,6 @@ export default async function AgentsPage(props: AgentsPageProps) {
         <DashboardKpiCard
           href="/dashboard/alerts"
           label="Attention"
-          meta="Notifications"
           tone={
             (data.analytics?.totals.unreadNotifications ?? 0) > 0
               ? "warning"
