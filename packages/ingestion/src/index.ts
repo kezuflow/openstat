@@ -730,6 +730,12 @@ export async function getAnalyticsSummary(options: {
 }) {
   const overview = await getOverview(options);
   const rangeStart = getRangeStart(options.range);
+  const series = await getDecisionToTradeSeries({
+    db: options.db,
+    range: options.range,
+    rangeStart,
+    scope: options.scope,
+  });
   const [decisions] = await options.db
     .select({ value: count() })
     .from(schema.tradingDecisions)
@@ -807,7 +813,7 @@ export async function getAnalyticsSummary(options: {
       failures: failures?.value ?? 0,
       riskRejects: riskRejects?.value ?? 0,
     },
-    series: [],
+    series,
     breakdowns: {
       agents: [],
       eventTypes: [],
@@ -817,6 +823,73 @@ export async function getAnalyticsSummary(options: {
     },
     topTraces: [],
   };
+}
+
+async function getDecisionToTradeSeries(options: {
+  db: Database["db"];
+  scope: ReadScope;
+  range: "24h" | "7d" | "30d";
+  rangeStart: Date;
+}) {
+  const bucketCount =
+    options.range === "24h" ? 24 : options.range === "7d" ? 7 : 30;
+  const bucketMs =
+    options.range === "24h" ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
+  const bucketStart = getSeriesBucketStart(
+    options.range,
+    bucketCount,
+    bucketMs,
+  );
+  const buckets = Array.from({ length: bucketCount }, (_, index) => {
+    const bucket = new Date(bucketStart.valueOf() + index * bucketMs);
+
+    return {
+      bucket: bucket.toISOString(),
+      errors: 0,
+      events: 0,
+    };
+  });
+  const events = await options.db
+    .select({
+      eventType: schema.events.eventType,
+      timestamp: schema.events.timestamp,
+    })
+    .from(schema.events)
+    .where(
+      and(
+        eq(schema.events.organizationId, options.scope.organizationId),
+        eq(schema.events.projectId, options.scope.projectId),
+        gte(schema.events.timestamp, options.rangeStart),
+        inArray(schema.events.eventType, [
+          "decision",
+          "risk_check",
+          "order",
+          "fill",
+          "error",
+        ]),
+      ),
+    );
+
+  for (const event of events) {
+    const bucketIndex = Math.floor(
+      (floorBucket(event.timestamp, options.range).valueOf() -
+        bucketStart.valueOf()) /
+        bucketMs,
+    );
+    const bucket = buckets[bucketIndex];
+
+    if (!bucket) {
+      continue;
+    }
+
+    if (event.eventType === "error") {
+      bucket.errors += 1;
+    } else {
+      bucket.events += 1;
+    }
+  }
+
+  return buckets;
 }
 
 export async function listIngestionBatches(options: {
@@ -1742,6 +1815,28 @@ function getRangeStart(range: "24h" | "7d" | "30d") {
   const days = range === "24h" ? 1 : range === "7d" ? 7 : 30;
 
   return new Date(now.valueOf() - days * 24 * 60 * 60 * 1000);
+}
+
+function floorBucket(date: Date, range: "24h" | "7d" | "30d") {
+  const bucket = new Date(date);
+
+  if (range === "24h") {
+    bucket.setMinutes(0, 0, 0);
+  } else {
+    bucket.setHours(0, 0, 0, 0);
+  }
+
+  return bucket;
+}
+
+function getSeriesBucketStart(
+  range: "24h" | "7d" | "30d",
+  bucketCount: number,
+  bucketMs: number,
+) {
+  return new Date(
+    floorBucket(new Date(), range).valueOf() - (bucketCount - 1) * bucketMs,
+  );
 }
 
 function isUuid(value: string) {
