@@ -19,6 +19,9 @@ import {
 import { Avatar, Button, Chip, Drawer, Separator } from "@heroui/react";
 import { useEffect, useState } from "react";
 
+const apiUrl =
+  process.env.NEXT_PUBLIC_OPENSTAT_API_URL ?? "http://localhost:4000";
+
 type NavItem = {
   label: string;
   href: string;
@@ -182,14 +185,30 @@ function SidebarNavButton(props: {
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [isPending, setIsPending] = useState(false);
   const Icon = props.item.icon;
   const isActive =
     props.item.href === "/dashboard"
       ? pathname === "/dashboard"
       : pathname.startsWith(props.item.href);
 
-  function navigate() {
+  async function navigate() {
     props.onNavigate?.();
+
+    if (props.item.href === "/api/auth/sign-out") {
+      setIsPending(true);
+
+      try {
+        await fetch(`${apiUrl}${props.item.href}`, {
+          method: "POST",
+          credentials: "include",
+        });
+      } finally {
+        window.location.href = "/";
+      }
+
+      return;
+    }
 
     if (props.item.href.startsWith("/api/")) {
       window.location.href = props.item.href;
@@ -211,8 +230,11 @@ function SidebarNavButton(props: {
         .join(" ")}
       fullWidth={!props.isCollapsed}
       isIconOnly={props.isCollapsed}
+      isPending={isPending}
       variant={isActive ? "secondary" : "tertiary"}
-      onPress={navigate}
+      onPress={() => {
+        void navigate();
+      }}
     >
       <span className="dashboard-nav-icon-slot" aria-hidden="true">
         <Icon className="dashboard-nav-icon" size={16} />
