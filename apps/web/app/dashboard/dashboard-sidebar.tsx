@@ -120,7 +120,7 @@ function SidebarContent(props: {
           </Avatar>
           <div className="dashboard-profile-copy">
             <strong>OpenStat Demo</strong>
-            <span>demo@openstat.local</span>
+            <span>test@test.com</span>
           </div>
         </div>
 
