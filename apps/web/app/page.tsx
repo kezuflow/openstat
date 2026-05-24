@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Link as HeroLink } from "@heroui/react";
-import { ArrowRight, LayoutDashboard, LogIn } from "lucide-react";
+import { ArrowRight, LogIn } from "lucide-react";
 
 import { SignInModal } from "./sign-in-modal";
 
@@ -44,10 +44,6 @@ export default function Home() {
               Start tracking
               <ArrowRight aria-hidden="true" size={16} />
             </SignInModal>
-            <HeroLink className="landing-button landing-button-secondary" href="/dashboard">
-              <LayoutDashboard aria-hidden="true" size={16} />
-              View dashboard
-            </HeroLink>
           </div>
         </div>
       </section>
