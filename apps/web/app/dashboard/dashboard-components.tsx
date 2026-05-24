@@ -97,6 +97,7 @@ export function DashboardPanel(props: {
   eyebrow?: string;
   id?: string;
   title: string;
+  titleCount?: number;
 }) {
   return (
     <section
@@ -108,7 +109,18 @@ export function DashboardPanel(props: {
           {props.eyebrow ? (
             <p className="dashboard-panel-eyebrow">{props.eyebrow}</p>
           ) : null}
-          <h2>{props.title}</h2>
+          <div className="dashboard-panel-title-row">
+            <h2>{props.title}</h2>
+            {typeof props.titleCount === "number" ? (
+              <Chip
+                className="dashboard-panel-title-count"
+                size="sm"
+                variant="soft"
+              >
+                <Chip.Label>{props.titleCount}</Chip.Label>
+              </Chip>
+            ) : null}
+          </div>
         </div>
         {props.actions ? (
           <div className="dashboard-panel-actions">{props.actions}</div>

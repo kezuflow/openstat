@@ -14,8 +14,10 @@ export function DashboardLatestTables(props: {
     <section className="dashboard-table-grid">
       <DashboardPanel
         actions={<a href="/dashboard/runs">View all</a>}
+        className="dashboard-latest-panel"
         id="runs"
         title="Latest runs"
+        titleCount={props.data.runs.length}
       >
         <DashboardDataTable
           empty="No runs yet."
@@ -49,8 +51,10 @@ export function DashboardLatestTables(props: {
 
       <DashboardPanel
         actions={<a href="/dashboard/trades">View all</a>}
+        className="dashboard-latest-panel"
         id="trades"
         title="Latest trades"
+        titleCount={props.data.trades.length}
       >
         <DashboardDataTable
           empty="No trades yet."
@@ -85,8 +89,9 @@ export function DashboardLatestTables(props: {
 
       <DashboardPanel
         actions={<a href="/dashboard?inspect=events">Explore</a>}
-        className="dashboard-events-panel"
+        className="dashboard-events-panel dashboard-latest-panel"
         title="Latest events"
+        titleCount={props.data.overview?.events.latest.length ?? 0}
       >
         <DashboardDataTable
           empty="No events ingested yet."
