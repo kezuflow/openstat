@@ -20,6 +20,8 @@ export const REDIS_KEYS = {
     `${OPENSTAT_REDIS_PREFIX}:project:${projectId}:notifications:${cacheKey}`,
   projectOverview: (projectId: string) =>
     `${OPENSTAT_REDIS_PREFIX}:project:${projectId}:overview`,
+  rateLimit: (key: string, windowMs: number) =>
+    `${OPENSTAT_REDIS_PREFIX}:rate:${key}:${windowMs}`,
   projectUnreadNotifications: (projectId: string) =>
     `${OPENSTAT_REDIS_PREFIX}:project:${projectId}:notifications:unread`,
 } as const;
@@ -64,6 +66,10 @@ export interface IngestionSignalClient extends IngestionSignalPublisher {
   delete(key: string): Promise<number>;
   deleteByPattern(pattern: string): Promise<number>;
   getJson<T>(key: string): Promise<T | undefined>;
+  incrementRateLimitCounter(
+    key: string,
+    windowMs: number,
+  ): Promise<{ current: number; ttl: number }>;
   ping(): Promise<boolean>;
   setJson(key: string, value: unknown, ttlSeconds: number): Promise<void>;
   subscribe(
@@ -75,6 +81,26 @@ export interface IngestionSignalClient extends IngestionSignalPublisher {
 export type IngestionSignalLogger = Pick<Console, "error" | "info" | "warn">;
 
 type RedisClient = ReturnType<typeof createClient>;
+
+const rateLimitLua = `
+  local key = KEYS[1]
+  local timeWindow = tonumber(ARGV[1])
+  local current = redis.call('INCR', key)
+
+  if current == 1 then
+    redis.call('PEXPIRE', key, timeWindow)
+    return {current, timeWindow}
+  end
+
+  local ttl = redis.call('PTTL', key)
+
+  if ttl < 0 then
+    redis.call('PEXPIRE', key, timeWindow)
+    ttl = timeWindow
+  end
+
+  return {current, ttl}
+`;
 
 export function createProjectUpdatedMessage(options: {
   projectId: string;
@@ -256,6 +282,18 @@ export function createIngestionRedisClient(
       }
 
       return JSON.parse(value) as T;
+    },
+    async incrementRateLimitCounter(key, windowMs) {
+      const client = await getPublisherClient();
+      const result = (await client.eval(rateLimitLua, {
+        arguments: [String(windowMs)],
+        keys: [key],
+      })) as [number, number];
+
+      return {
+        current: result[0],
+        ttl: result[1],
+      };
     },
     async publish(channel, message) {
       const client = await getPublisherClient();

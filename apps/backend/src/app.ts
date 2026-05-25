@@ -6,7 +6,12 @@ import swaggerUi from "@fastify/swagger-ui";
 import Fastify from "fastify";
 
 import { env } from "./config/env.js";
+import { ingestionSignalClient } from "./context.js";
 import { registerErrorHandler } from "./plugins/errors.js";
+import {
+  createRedisRateLimitStore,
+  getIngestionRateLimitKey,
+} from "./redis-rate-limit-store.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerApiKeyRoutes } from "./routes/api-keys.js";
 import { registerHealthRoutes } from "./routes/health.js";
@@ -56,7 +61,13 @@ export async function buildApp() {
   });
 
   await app.register(rateLimit, {
+    keyGenerator: (request) =>
+      getIngestionRateLimitKey(request.headers.authorization, request.ip),
     max: env.ingestionRateLimitMax,
+    skipOnError: Boolean(ingestionSignalClient),
+    store: ingestionSignalClient
+      ? createRedisRateLimitStore(ingestionSignalClient)
+      : undefined,
     timeWindow: env.ingestionRateLimitWindow,
   });
 
