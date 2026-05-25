@@ -5,9 +5,9 @@ export const metadata: Metadata = {
   title: "OpenStat",
   description: "Decision-to-trade observability for AI trading agents",
   icons: {
-    icon: [{ url: "/assets/logo.svg", type: "image/svg+xml" }],
-    shortcut: [{ url: "/assets/logo.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/assets/logo.svg", type: "image/svg+xml" }],
+    icon: [{ url: "/icon.png", type: "image/png" }],
+    shortcut: [{ url: "/favicon.ico", type: "image/x-icon" }],
+    apple: [{ url: "/icon.png", type: "image/png" }],
   },
 };
 
