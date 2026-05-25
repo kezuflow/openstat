@@ -73,65 +73,70 @@ export default async function AgentsPage(props: AgentsPageProps) {
       title="Agents"
     >
       <section className="agent-overview-row">
-        <div className="dashboard-kpi-grid dashboard-route-kpis agent-overview-kpis">
-          <DashboardKpiCard
-            badge={{
-              label: `${formatPercentage(freshHeartbeatAgents, totalAgents)} current`,
-              tone: freshHeartbeatAgents > 0 ? "success" : "warning",
-            }}
-            href="/dashboard/agents"
-            label="Current heartbeat"
-            series={series}
-            seriesKey="activeAgents"
-            tone={freshHeartbeatAgents > 0 ? "success" : "warning"}
-            value={formatNumber(freshHeartbeatAgents)}
-          />
-          <DashboardKpiCard
-            badge={{
-              label: `${formatNumber(totalAgents)} tracked`,
-              tone: "neutral",
-            }}
-            href="/dashboard/agents"
-            label="Total agents"
-            value={formatNumber(totalAgents)}
-          />
-          <DashboardKpiCard
-            badge={{
-              label: recentRunsBadge,
-              tone: recentRuns > 0 ? "neutral" : "warning",
-            }}
-            href="/dashboard/runs"
-            label="Recent runs"
-            series={series}
-            seriesKey="decisions"
-            tone={recentRuns > 0 ? "success" : "warning"}
-            value={formatNumber(recentRuns)}
-          />
-          <DashboardKpiCard
-            badge={{
-              label: attentionBadge,
-              tone: attentionTone,
-            }}
-            href="/dashboard/alerts"
-            label="Attention"
-            sparklineSeries={
-              attentionSparkline
-                ? [
-                    {
-                      points: series.map((point) => point.failures),
-                      tone: "warning",
-                    },
-                    {
-                      points: series.map((point) => point.errors),
-                      tone: "danger",
-                    },
-                  ]
-                : undefined
-            }
-            tone={attentionTone}
-            value={formatNumber(attentionCount)}
-          />
-        </div>
+        <DashboardPanel
+          className="dashboard-latest-panel agent-overview-panel"
+          title="Overview"
+        >
+          <div className="dashboard-kpi-grid dashboard-route-kpis agent-overview-kpis">
+            <DashboardKpiCard
+              badge={{
+                label: `${formatPercentage(freshHeartbeatAgents, totalAgents)} current`,
+                tone: freshHeartbeatAgents > 0 ? "success" : "warning",
+              }}
+              href="/dashboard/agents"
+              label="Current heartbeat"
+              series={series}
+              seriesKey="activeAgents"
+              tone={freshHeartbeatAgents > 0 ? "success" : "warning"}
+              value={formatNumber(freshHeartbeatAgents)}
+            />
+            <DashboardKpiCard
+              badge={{
+                label: `${formatNumber(totalAgents)} tracked`,
+                tone: "neutral",
+              }}
+              href="/dashboard/agents"
+              label="Total agents"
+              value={formatNumber(totalAgents)}
+            />
+            <DashboardKpiCard
+              badge={{
+                label: recentRunsBadge,
+                tone: recentRuns > 0 ? "neutral" : "warning",
+              }}
+              href="/dashboard/runs"
+              label="Recent runs"
+              series={series}
+              seriesKey="decisions"
+              tone={recentRuns > 0 ? "success" : "warning"}
+              value={formatNumber(recentRuns)}
+            />
+            <DashboardKpiCard
+              badge={{
+                label: attentionBadge,
+                tone: attentionTone,
+              }}
+              href="/dashboard/alerts"
+              label="Attention"
+              sparklineSeries={
+                attentionSparkline
+                  ? [
+                      {
+                        points: series.map((point) => point.failures),
+                        tone: "warning",
+                      },
+                      {
+                        points: series.map((point) => point.errors),
+                        tone: "danger",
+                      },
+                    ]
+                  : undefined
+              }
+              tone={attentionTone}
+              value={formatNumber(attentionCount)}
+            />
+          </div>
+        </DashboardPanel>
 
         <DashboardPanel
           className="dashboard-latest-panel agent-uptime-panel"
