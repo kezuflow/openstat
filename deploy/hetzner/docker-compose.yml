@@ -64,7 +64,16 @@ services:
 
   redis:
     image: redis:7-alpine
-    command: redis-server --appendonly yes
+    command:
+      [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--maxmemory",
+        "768mb",
+        "--maxmemory-policy",
+        "volatile-lru",
+      ]
     volumes:
       - redis-data:/data
     healthcheck:

@@ -23,8 +23,26 @@ import {
 
 import { getDecisionToTradeSeries } from "./analytics-series.js";
 import { redactTelemetryPayload } from "./redaction.js";
+import {
+  REDIS_CHANNELS,
+  type IngestionSignalPublisher,
+  type IngestionWakeupMessage,
+} from "./redis-signals.js";
 
 export { redactTelemetryPayload } from "./redaction.js";
+export {
+  createIngestionRedisClient,
+  OPENSTAT_REDIS_PREFIX,
+  REDIS_CHANNELS,
+  REDIS_KEYS,
+} from "./redis-signals.js";
+export type {
+  IngestionSignalClient,
+  IngestionSignalLogger,
+  IngestionSignalPublisher,
+  IngestionSignalSubscription,
+  IngestionWakeupMessage,
+} from "./redis-signals.js";
 
 export type ReadScope = {
   membershipId?: string;
@@ -36,10 +54,6 @@ export type EventSource = "sdk" | "http" | "webhook" | "otel" | "system";
 
 const defaultAgentStaleSeconds = 180;
 const defaultAgentOfflineSeconds = 600;
-
-export interface IngestionSignalPublisher {
-  publish(channel: string, message: string): Promise<void>;
-}
 
 export class IngestionError extends Error {
   constructor(
@@ -57,21 +71,6 @@ export type IngestionErrorCode =
   | "PROJECT_SCOPE_MISMATCH"
   | "PROJECT_NOT_FOUND"
   | "AGENT_NOT_FOUND";
-
-export function createIngestionRedisClient(
-  redisUrl: string | undefined,
-): IngestionSignalPublisher | undefined {
-  if (!redisUrl) {
-    return undefined;
-  }
-
-  return {
-    async publish() {
-      // Redis-backed wakeups will land with the worker. For now, polling still
-      // makes ingestion deterministic in local/dev deployments.
-    },
-  };
-}
 
 export async function acceptIngestionBatch(options: {
   db: Database["db"];
@@ -143,10 +142,27 @@ export async function acceptIngestionBatch(options: {
     .onConflictDoNothing()
     .returning({ id: schema.ingestionOutbox.id });
 
-  await options.publisher?.publish(
-    "openstat:ingestion",
-    JSON.stringify({ batchId: batch.id, projectId: options.auth.projectId }),
-  );
+  if (outboxRows.length > 0) {
+    const message: IngestionWakeupMessage = {
+      type: "ingestion.outbox.created",
+      projectId: options.auth.projectId,
+      batchId: batch.id,
+      outboxIds: outboxRows.map((row) => row.id),
+      count: outboxRows.length,
+      source: options.source,
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      await options.publisher?.publish(
+        REDIS_CHANNELS.ingestion,
+        JSON.stringify(message),
+      );
+    } catch {
+      // Redis only accelerates worker wakeups; Postgres outbox polling remains
+      // the durable path for ingestion acceptance.
+    }
+  }
 
   return {
     accepted: true as const,

@@ -25,6 +25,7 @@ import {
   listNotifications,
   listTrades,
   markNotificationsRead,
+  REDIS_KEYS,
   updateNotificationStatus,
 } from "@openstat/ingestion";
 import type { FastifyInstance } from "fastify";
@@ -32,7 +33,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { requireSessionScope, resolveReadScope } from "../auth-scope.js";
-import { database } from "../context.js";
+import { database, ingestionSignalClient } from "../context.js";
 import {
   agentTimelineResponseSchema,
   analyticsSummaryQueryStringSchema,
@@ -185,9 +186,14 @@ export async function registerReadRoutes(app: FastifyInstance) {
     async (request) => {
       const scope = await resolveReadScope(request);
 
-      return getOverview({
-        db: database.db,
-        scope,
+      return readThroughProjectCache({
+        key: REDIS_KEYS.projectOverview(scope.projectId),
+        load: () =>
+          getOverview({
+            db: database.db,
+            scope,
+          }),
+        ttlSeconds: 10,
       });
     },
   );
@@ -212,11 +218,20 @@ export async function registerReadRoutes(app: FastifyInstance) {
     async (request) => {
       const scope = await resolveReadScope(request);
       const query = analyticsSummaryQuerySchema.parse(request.query);
+      const range = query.range ?? "24h";
 
-      return getAnalyticsSummary({
-        db: database.db,
-        scope,
-        range: query.range ?? "24h",
+      return readThroughProjectCache({
+        key: REDIS_KEYS.projectAnalyticsSummary(
+          scope.projectId,
+          cacheKeyFromParts({ range }),
+        ),
+        load: () =>
+          getAnalyticsSummary({
+            db: database.db,
+            scope,
+            range,
+          }),
+        ttlSeconds: 30,
       });
     },
   );
@@ -774,20 +789,31 @@ export async function registerReadRoutes(app: FastifyInstance) {
     async (request) => {
       const scope = await resolveReadScope(request);
       const list = listQuerySchema.parse(request.query);
-      const runs = await listAgentRuns({
-        db: database.db,
-        scope,
-        list: toWindowedList(list),
-      });
-      const page = paginate(runs, list.limit, (run) => ({
-        createdAt: run.startedAt,
-        id: run.id,
-      }));
+      const windowedList = toWindowedList(list);
 
-      return {
-        runs: page.items,
-        pagination: page.pagination,
-      };
+      return readThroughProjectCache({
+        key: REDIS_KEYS.projectLatestRuns(
+          scope.projectId,
+          cacheKeyFromParts(list),
+        ),
+        load: async () => {
+          const runs = await listAgentRuns({
+            db: database.db,
+            scope,
+            list: windowedList,
+          });
+          const page = paginate(runs, list.limit, (run) => ({
+            createdAt: run.startedAt,
+            id: run.id,
+          }));
+
+          return {
+            runs: page.items,
+            pagination: page.pagination,
+          };
+        },
+        ttlSeconds: 10,
+      });
     },
   );
 
@@ -860,26 +886,38 @@ export async function registerReadRoutes(app: FastifyInstance) {
     async (request) => {
       const scope = await resolveReadScope(request);
       const query = tradeListQuerySchema.parse(request.query);
-      const trades = await listTrades({
-        db: database.db,
-        scope,
-        list: toWindowedList(query),
-        filters: {
-          strategy: query.strategy,
-          symbol: query.symbol,
-          status: query.status,
-          range: query.range,
-        },
-      });
-      const page = paginate(trades, query.limit, (trade) => ({
-        createdAt: trade.createdAt,
-        id: trade.id,
-      }));
-
-      return {
-        trades: page.items,
-        pagination: page.pagination,
+      const windowedList = toWindowedList(query);
+      const filters = {
+        strategy: query.strategy,
+        symbol: query.symbol,
+        status: query.status,
+        range: query.range,
       };
+
+      return readThroughProjectCache({
+        key: REDIS_KEYS.projectLatestTrades(
+          scope.projectId,
+          cacheKeyFromParts(query),
+        ),
+        load: async () => {
+          const trades = await listTrades({
+            db: database.db,
+            scope,
+            list: windowedList,
+            filters,
+          });
+          const page = paginate(trades, query.limit, (trade) => ({
+            createdAt: trade.createdAt,
+            id: trade.id,
+          }));
+
+          return {
+            trades: page.items,
+            pagination: page.pagination,
+          };
+        },
+        ttlSeconds: 10,
+      });
     },
   );
 
@@ -1183,20 +1221,31 @@ export async function registerReadRoutes(app: FastifyInstance) {
     async (request) => {
       const scope = await resolveReadScope(request);
       const list = listQuerySchema.parse(request.query);
-      const notifications = await listNotifications({
-        db: database.db,
-        scope,
-        list: toWindowedList(list),
-      });
-      const page = paginate(notifications, list.limit, (notification) => ({
-        createdAt: notification.createdAt,
-        id: notification.id,
-      }));
+      const windowedList = toWindowedList(list);
 
-      return {
-        notifications: page.items,
-        pagination: page.pagination,
-      };
+      return readThroughProjectCache({
+        key: REDIS_KEYS.projectNotifications(
+          scope.projectId,
+          cacheKeyFromParts(list),
+        ),
+        load: async () => {
+          const notifications = await listNotifications({
+            db: database.db,
+            scope,
+            list: windowedList,
+          });
+          const page = paginate(notifications, list.limit, (notification) => ({
+            createdAt: notification.createdAt,
+            id: notification.id,
+          }));
+
+          return {
+            notifications: page.items,
+            pagination: page.pagination,
+          };
+        },
+        ttlSeconds: 10,
+      });
     },
   );
 
@@ -1322,6 +1371,42 @@ export async function registerReadRoutes(app: FastifyInstance) {
   );
 }
 
+async function readThroughProjectCache<T>(options: {
+  key: string;
+  load: () => Promise<T>;
+  ttlSeconds: number;
+}): Promise<T> {
+  if (!ingestionSignalClient) {
+    return options.load();
+  }
+
+  try {
+    const cached = await ingestionSignalClient.getJson<T>(options.key);
+
+    if (cached !== undefined) {
+      return cached;
+    }
+  } catch (error) {
+    console.warn(
+      { cacheKey: options.key, error },
+      "Redis project cache read failed; falling back to Postgres",
+    );
+  }
+
+  const value = await options.load();
+
+  try {
+    await ingestionSignalClient.setJson(options.key, value, options.ttlSeconds);
+  } catch (error) {
+    console.warn(
+      { cacheKey: options.key, error },
+      "Redis project cache write failed; serving Postgres result",
+    );
+  }
+
+  return value;
+}
+
 function toWindowedList(list: ListQuery) {
   const limit = list.limit ?? 50;
 
@@ -1355,6 +1440,20 @@ function encodeCursor(cursor: { createdAt: Date | string; id: string }) {
       id: cursor.id,
     }),
   ).toString("base64url");
+}
+
+function cacheKeyFromParts(parts: Record<string, unknown>) {
+  const entries = Object.entries(parts)
+    .filter(([, value]) => value !== undefined)
+    .sort(([left], [right]) => left.localeCompare(right));
+
+  if (entries.length === 0) {
+    return "default";
+  }
+
+  return Buffer.from(JSON.stringify(Object.fromEntries(entries))).toString(
+    "base64url",
+  );
 }
 
 type ListQuery = z.infer<typeof listQuerySchema>;

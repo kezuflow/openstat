@@ -24,6 +24,12 @@ const state = vi.hoisted(() => ({
   getTradeDetail: vi.fn(),
   getTradingBreakdowns: vi.fn(),
   getTraceDetail: vi.fn(),
+  ingestionSignalClient: undefined as
+    | {
+        getJson: ReturnType<typeof vi.fn>;
+        setJson: ReturnType<typeof vi.fn>;
+      }
+    | undefined,
   listAgentRuns: vi.fn(),
   listAgents: vi.fn(),
   listEvents: vi.fn(),
@@ -45,6 +51,9 @@ vi.mock("../context.js", () => ({
   },
   database: {
     db: state.db,
+  },
+  get ingestionSignalClient() {
+    return state.ingestionSignalClient;
   },
 }));
 
@@ -258,6 +267,7 @@ describe("read routes", () => {
       symbols: [],
     });
     state.getTraceDetail.mockResolvedValue(null);
+    state.ingestionSignalClient = undefined;
     state.getAnalyticsSummary.mockResolvedValue({
       range: "24h",
       generatedAt: new Date("2026-05-11T00:00:00.000Z"),
@@ -304,6 +314,172 @@ describe("read routes", () => {
         latest: [],
       },
     });
+  });
+
+  it("returns overview from Redis cache without loading Postgres reads", async () => {
+    state.ingestionSignalClient = createCacheClient({
+      getJson: vi.fn().mockResolvedValue({
+        agents: {
+          total: 9,
+          byStatus: {
+            online: 4,
+            stale: 2,
+            offline: 1,
+            failing: 1,
+            unknown: 1,
+          },
+        },
+        events: {
+          total: 30,
+          latest: [],
+        },
+      }),
+    });
+
+    const app = await createApp();
+    const response = await app.inject({
+      method: "GET",
+      url: "/v1/overview",
+    });
+
+    const body = response.json<{ agents: { total: number } }>();
+
+    expect(response.statusCode).toBe(200);
+    expect(body.agents.total).toBe(9);
+    expect(state.getOverview).not.toHaveBeenCalled();
+    expect(state.ingestionSignalClient.getJson).toHaveBeenCalledWith(
+      "openstat:project:project_test:overview",
+    );
+    expect(state.ingestionSignalClient.setJson).not.toHaveBeenCalled();
+
+    await app.close();
+  });
+
+  it("caches overview misses under the resolved project scope", async () => {
+    state.ingestionSignalClient = createCacheClient({
+      getJson: vi.fn().mockResolvedValue(undefined),
+    });
+
+    const app = await createApp();
+    const response = await app.inject({
+      method: "GET",
+      url: "/v1/overview",
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(state.getOverview).toHaveBeenCalledOnce();
+    expect(state.ingestionSignalClient.setJson).toHaveBeenCalledWith(
+      "openstat:project:project_test:overview",
+      expect.objectContaining({
+        agents: expect.objectContaining({ total: 1 }),
+      }),
+      10,
+    );
+
+    await app.close();
+  });
+
+  it("keeps project-scoped Redis cache entries isolated", async () => {
+    const projectA = {
+      organizationId: "org_a",
+      projectId: "project_a",
+    };
+    const projectB = {
+      organizationId: "org_b",
+      projectId: "project_b",
+    };
+    state.resolveReadScope
+      .mockResolvedValueOnce(projectA)
+      .mockResolvedValueOnce(projectB);
+    state.ingestionSignalClient = createCacheClient({
+      getJson: vi.fn().mockImplementation((key: string) => {
+        if (key === "openstat:project:project_a:overview") {
+          return Promise.resolve({
+            agents: {
+              total: 100,
+              byStatus: {
+                online: 100,
+                stale: 0,
+                offline: 0,
+                failing: 0,
+                unknown: 0,
+              },
+            },
+            events: {
+              total: 500,
+              latest: [],
+            },
+          });
+        }
+
+        return Promise.resolve(undefined);
+      }),
+    });
+    state.getOverview.mockResolvedValueOnce({
+      agents: {
+        total: 2,
+        byStatus: {
+          online: 2,
+          stale: 0,
+          offline: 0,
+          failing: 0,
+          unknown: 0,
+        },
+      },
+      events: {
+        total: 4,
+        latest: [],
+      },
+    });
+
+    const app = await createApp();
+    const responseA = await app.inject({
+      method: "GET",
+      url: "/v1/overview",
+    });
+    const responseB = await app.inject({
+      method: "GET",
+      url: "/v1/overview",
+    });
+
+    expect(responseA.json<{ agents: { total: number } }>().agents.total).toBe(
+      100,
+    );
+    expect(responseB.json<{ agents: { total: number } }>().agents.total).toBe(
+      2,
+    );
+    expect(state.getOverview).toHaveBeenCalledWith({
+      db: state.db,
+      scope: projectB,
+    });
+    expect(state.ingestionSignalClient.getJson).toHaveBeenNthCalledWith(
+      1,
+      "openstat:project:project_a:overview",
+    );
+    expect(state.ingestionSignalClient.getJson).toHaveBeenNthCalledWith(
+      2,
+      "openstat:project:project_b:overview",
+    );
+
+    await app.close();
+  });
+
+  it("falls back to Postgres reads when Redis cache is unavailable", async () => {
+    state.ingestionSignalClient = createCacheClient({
+      getJson: vi.fn().mockRejectedValue(new Error("redis unavailable")),
+      setJson: vi.fn().mockRejectedValue(new Error("redis unavailable")),
+    });
+
+    const app = await createApp();
+    const response = await app.inject({
+      method: "GET",
+      url: "/v1/overview",
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(state.getOverview).toHaveBeenCalledOnce();
+
+    await app.close();
   });
 
   it("returns analytics summary for the resolved project scope", async () => {
@@ -1144,4 +1320,16 @@ async function createApp() {
   await registerReadRoutes(app);
 
   return app;
+}
+
+function createCacheClient(
+  overrides: {
+    getJson?: ReturnType<typeof vi.fn>;
+    setJson?: ReturnType<typeof vi.fn>;
+  } = {},
+) {
+  return {
+    getJson: overrides.getJson ?? vi.fn().mockResolvedValue(undefined),
+    setJson: overrides.setJson ?? vi.fn().mockResolvedValue(undefined),
+  };
 }

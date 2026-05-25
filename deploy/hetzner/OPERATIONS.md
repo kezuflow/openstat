@@ -53,6 +53,34 @@ deploy/hetzner/scripts/restore-postgres.sh /backups/openstat/openstat-latest.dum
 - Disk: alert before 80% usage and page before 90%.
 - Backups: alert if no dump file was written in the last 26 hours.
 
+## Redis Operations
+
+Redis accelerates short-lived wake-up signals and caches only. Postgres remains
+the source of truth for ingestion, projections, auth state, idempotency, and
+dashboard reads.
+
+The Hetzner Compose deployment keeps Redis private to the Docker network and
+starts it with a conservative `768mb` memory cap plus `volatile-lru` eviction so
+only TTL-bearing keys are eviction candidates. Prefer TTLs for every cache or
+counter key, and avoid permanent Redis keys unless there is a clear operational
+reason.
+
+Health check Redis with:
+
+```sh
+docker compose exec redis redis-cli ping
+```
+
+During incidents, it is safe to clear project cache keys because they are
+rebuildable from Postgres:
+
+```sh
+docker compose exec redis redis-cli --scan --pattern 'openstat:project:<project-id>:*'
+```
+
+Review keys first, then delete the matched cache keys only for the affected
+project.
+
 ## Alerts
 
 Start with simple VPS monitors:

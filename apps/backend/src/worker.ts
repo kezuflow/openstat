@@ -1,25 +1,46 @@
 import {
   claimIngestionOutbox,
   processClaim,
+  REDIS_CHANNELS,
   sweepAgentHealth,
+  type IngestionSignalSubscription,
 } from "@openstat/ingestion";
 
 import { env } from "./config/env.js";
-import { database } from "./context.js";
+import { database, ingestionSignalClient } from "./context.js";
 
 const workerId = `worker_${crypto.randomUUID()}`;
 let shuttingDown = false;
+let pendingWakeup = false;
+let wakeupResolver: (() => void) | undefined;
 
 process.on("SIGINT", () => {
   shuttingDown = true;
+  wakeWorker();
 });
 process.on("SIGTERM", () => {
   shuttingDown = true;
+  wakeWorker();
 });
 
 console.info({ workerId }, "OpenStat ingestion worker started");
 
+const signalSubscription = await subscribeToRedisWakeups();
+
 while (!shuttingDown) {
+  await runWorkerPass();
+
+  if (!shuttingDown) {
+    await waitForNextPoll(env.ingestionWorkerPollMs);
+  }
+}
+
+await signalSubscription?.close();
+await ingestionSignalClient?.close();
+await database.client.end();
+console.info({ workerId }, "OpenStat ingestion worker stopped");
+
+async function runWorkerPass() {
   const rows = await claimIngestionOutbox({
     db: database.db,
     workerId,
@@ -43,13 +64,90 @@ while (!shuttingDown) {
     defaultStaleSeconds: env.defaultAgentStaleSeconds,
     defaultOfflineSeconds: env.defaultAgentOfflineSeconds,
   });
-
-  await sleep(env.ingestionWorkerPollMs);
 }
 
-await database.client.end();
-console.info({ workerId }, "OpenStat ingestion worker stopped");
+async function subscribeToRedisWakeups(): Promise<
+  IngestionSignalSubscription | undefined
+> {
+  if (!ingestionSignalClient) {
+    return undefined;
+  }
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  try {
+    return await ingestionSignalClient.subscribe(
+      REDIS_CHANNELS.ingestion,
+      (message) => {
+        const signal = parseWakeupMessage(message);
+        console.info(
+          {
+            workerId,
+            batchId: signal?.batchId,
+            count: signal?.count,
+            projectId: signal?.projectId,
+          },
+          "Received Redis ingestion wake-up signal",
+        );
+        wakeWorker();
+      },
+    );
+  } catch (error) {
+    console.warn(
+      {
+        error,
+        workerId,
+      },
+      "Redis ingestion wake-up subscription failed; polling remains active",
+    );
+    return undefined;
+  }
+}
+
+function parseWakeupMessage(message: string) {
+  try {
+    const parsed = JSON.parse(message) as {
+      batchId?: unknown;
+      count?: unknown;
+      projectId?: unknown;
+      type?: unknown;
+    };
+
+    if (parsed.type !== "ingestion.outbox.created") {
+      return undefined;
+    }
+
+    return {
+      batchId: typeof parsed.batchId === "string" ? parsed.batchId : undefined,
+      count: typeof parsed.count === "number" ? parsed.count : undefined,
+      projectId:
+        typeof parsed.projectId === "string" ? parsed.projectId : undefined,
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+function wakeWorker() {
+  pendingWakeup = true;
+  wakeupResolver?.();
+  wakeupResolver = undefined;
+}
+
+function waitForNextPoll(ms: number) {
+  if (pendingWakeup) {
+    pendingWakeup = false;
+    return Promise.resolve();
+  }
+
+  return new Promise<void>((resolve) => {
+    const timeout = setTimeout(() => {
+      wakeupResolver = undefined;
+      resolve();
+    }, ms);
+
+    wakeupResolver = () => {
+      clearTimeout(timeout);
+      pendingWakeup = false;
+      resolve();
+    };
+  });
 }
