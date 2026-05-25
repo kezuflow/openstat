@@ -177,7 +177,9 @@ export async function getDashboardData(
       getJson<{ notifications: DashboardNotification[] }>(
         "/v1/notifications?limit=8",
       ),
-      getJson<{ apiKeys: DashboardApiKey[] }>("/v1/api-keys"),
+      dashboardApiKey
+        ? Promise.resolve({ ok: true as const, data: { apiKeys: [] } })
+        : getJson<{ apiKeys: DashboardApiKey[] }>("/v1/api-keys"),
     ]);
 
   return {
