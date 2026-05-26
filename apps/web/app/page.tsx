@@ -3,8 +3,6 @@ import Link from "next/link";
 import { Link as HeroLink } from "@heroui/react";
 import { ArrowRight, LogIn } from "lucide-react";
 
-import { SignInModal } from "./sign-in-modal";
-
 export default function Home() {
   return (
     <main className="landing-page">
@@ -26,10 +24,10 @@ export default function Home() {
           <a href="#ingestion">Ingestion</a>
           <Link href="/dashboard">Dashboard</Link>
         </div>
-        <SignInModal className="landing-nav-cta">
+        <Link className="landing-nav-cta" href="/sign-up">
           <LogIn aria-hidden="true" size={15} />
           Try for free
-        </SignInModal>
+        </Link>
       </nav>
 
       <section className="landing-hero" aria-labelledby="landing-title">
@@ -40,10 +38,13 @@ export default function Home() {
             model reasoning, risk checks, orders, fills, PnL, and alerts in one product view.
           </p>
           <div className="landing-actions">
-            <SignInModal className="landing-button landing-button-primary">
+            <Link
+              className="landing-button landing-button-primary"
+              href="/sign-up"
+            >
               Start tracking
               <ArrowRight aria-hidden="true" size={16} />
-            </SignInModal>
+            </Link>
           </div>
         </div>
       </section>

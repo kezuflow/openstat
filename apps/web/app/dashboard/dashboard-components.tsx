@@ -4,7 +4,6 @@ import { Chip, SearchField } from "@heroui/react";
 import { AlertTriangle, Bell, Clock3, RefreshCw, Search } from "lucide-react";
 
 import type { DashboardRange } from "../../lib/openstat-api";
-import { SignInModal } from "../sign-in-modal";
 import { DashboardSidebarToggle } from "./dashboard-sidebar";
 import { DashboardThemeModeControl } from "./dashboard-theme-mode-control";
 export { DashboardDataTable } from "./dashboard-data-table";
@@ -88,9 +87,9 @@ export function DashboardTopToolbar(props: {
           </a>
 
           {props.showSignIn ? (
-            <SignInModal className="dashboard-signin-button">
+            <a className="dashboard-signin-button" href="/sign-in">
               Sign in
-            </SignInModal>
+            </a>
           ) : null}
         </div>
       </div>
