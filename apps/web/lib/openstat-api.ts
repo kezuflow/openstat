@@ -163,7 +163,9 @@ export type DashboardApiKey = {
   id: string;
   name: string;
   prefix: string;
+  lastUsedAt?: string | null;
   revokedAt?: string | null;
+  expiresAt?: string | null;
   createdAt: string;
 };
 
