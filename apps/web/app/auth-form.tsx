@@ -195,7 +195,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                 className="signin-mode-link"
                 href={mode === "create-account" ? "/sign-in" : "/sign-up"}
               >
-                {mode === "create-account" ? "Log in" : "Sign up for free"}
+                {mode === "create-account" ? "Sign in" : "Sign up for free"}
               </Link>
             </p>
           </header>
@@ -271,7 +271,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               type="submit"
               variant="primary"
             >
-              {mode === "create-account" ? "Create account" : "Log in"}
+              {mode === "create-account" ? "Create account" : "Sign in"}
             </Button>
             <div className="signin-divider" aria-hidden="true">
               <Separator className="signin-divider-line" variant="tertiary" />
@@ -285,11 +285,11 @@ export function AuthForm({ mode }: AuthFormProps) {
               variant="tertiary"
             >
               <GoogleMark />
-              Log in with Google
+              Sign in with Google
             </Button>
             <Button fullWidth isDisabled type="button" variant="tertiary">
               <GitHubMark />
-              Log in with GitHub
+              Sign in with GitHub
             </Button>
             <Button
               fullWidth
