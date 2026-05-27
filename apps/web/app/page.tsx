@@ -20,9 +20,7 @@ export default function Home() {
           OpenStat
         </HeroLink>
         <div className="landing-nav-links">
-          <a href="#product">Product</a>
-          <a href="#ingestion">Ingestion</a>
-          <Link href="/dashboard">Dashboard</Link>
+          <Link href="/docs">Docs</Link>
         </div>
         <Link className="landing-nav-cta" href="/sign-up">
           <LogIn aria-hidden="true" size={15} />
@@ -34,8 +32,9 @@ export default function Home() {
         <div className="landing-hero-copy">
           <h1 id="landing-title">Know what your trading agents did and why.</h1>
           <p className="landing-hero-text">
-            OpenStat turns decision-to-trade telemetry into timelines your team can inspect:
-            model reasoning, risk checks, orders, fills, PnL, and alerts in one product view.
+            OpenStat turns decision-to-trade telemetry into timelines your team
+            can inspect: model reasoning, risk checks, orders, fills, PnL, and
+            alerts in one product view.
           </p>
           <div className="landing-actions">
             <Link
