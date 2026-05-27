@@ -803,6 +803,7 @@ describe("read routes", () => {
         model: undefined,
         q: undefined,
         range: undefined,
+        run: undefined,
         source: undefined,
         status: undefined,
         trace: undefined,
@@ -823,7 +824,7 @@ describe("read routes", () => {
       url:
         `/v1/events?limit=10&agent=${agent.id}` +
         "&eventType=completion&model=gpt-4o-mini&q=latency" +
-        "&range=7d&source=sdk&status=errors&trace=trace_123",
+        "&range=7d&run=run_123&source=sdk&status=errors&trace=trace_123",
     });
 
     expect(response.statusCode).toBe(200);
@@ -839,6 +840,7 @@ describe("read routes", () => {
         model: "gpt-4o-mini",
         q: "latency",
         range: "7d",
+        run: "run_123",
         source: "sdk",
         status: "errors",
         trace: "trace_123",

@@ -299,6 +299,11 @@ export const eventListQueryStringSchema = {
       type: "string",
       enum: ["24h", "7d", "30d"],
     },
+    run: {
+      type: "string",
+      minLength: 1,
+      maxLength: 160,
+    },
     source: {
       type: "string",
       enum: ["sdk", "http", "webhook", "otel", "system"],

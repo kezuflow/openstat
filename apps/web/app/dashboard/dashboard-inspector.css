@@ -146,20 +146,99 @@
   background: #111311;
 }
 
+.dashboard-inspector-timeline li[data-selected="true"] {
+  border-color: color-mix(in oklab, var(--accent) 44%, var(--line));
+  background: color-mix(in oklab, #111311 82%, var(--accent));
+}
+
 .dashboard-inspector-timeline strong,
 .dashboard-inspector-timeline span {
   display: block;
 }
 
-.dashboard-inspector-timeline strong {
+.dashboard-inspector-timeline-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content max-content;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-inspector-timeline-row strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 14px;
   font-weight: 500;
   line-height: 20px;
 }
 
-.dashboard-inspector-timeline span {
-  margin-top: 3px;
+.dashboard-inspector-timeline-row span,
+.dashboard-inspector-timeline-meta {
   color: var(--muted);
   font-size: 12px;
   line-height: 16px;
+}
+
+.dashboard-inspector-timeline-row span {
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-inspector-waterfall {
+  position: relative;
+  height: 18px;
+  margin-top: 3px;
+  border-radius: 999px;
+  background: #090a09;
+  overflow: hidden;
+}
+
+.dashboard-inspector-waterfall-meter,
+.dashboard-inspector-waterfall i {
+  position: absolute;
+  left: var(--timeline-offset);
+}
+
+.dashboard-inspector-waterfall-meter {
+  top: 4px;
+  width: var(--timeline-duration);
+  min-width: 6px;
+}
+
+.dashboard-inspector-waterfall-meter .meter__track {
+  height: 10px;
+  background: transparent;
+}
+
+.dashboard-inspector-waterfall-meter .meter__fill {
+  background: #59e67a;
+}
+
+.dashboard-inspector-waterfall i {
+  inset-block: 4px;
+  border-radius: 999px;
+  background: #59e67a;
+}
+
+.dashboard-inspector-waterfall i[data-marker="true"] {
+  width: 7px;
+  min-width: 7px;
+  background: var(--muted);
+}
+
+.dashboard-inspector-timeline
+  li[data-selected="true"]
+  .dashboard-inspector-waterfall
+  i,
+.dashboard-inspector-timeline
+  li[data-selected="true"]
+  .dashboard-inspector-waterfall-meter
+  .meter__fill {
+  background: var(--accent);
+}
+
+.dashboard-inspector-timeline-meta {
+  margin-top: 6px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
 }

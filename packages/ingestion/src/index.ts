@@ -298,6 +298,7 @@ export async function listEvents(options: {
     model?: string;
     q?: string;
     range?: "24h" | "7d" | "30d";
+    run?: string;
     source?: EventSource;
     status?: "all" | "errors" | "ok";
     trace?: string;
@@ -319,6 +320,9 @@ export async function listEvents(options: {
   }
   if (options.filters?.trace) {
     predicates.push(eq(schema.events.traceId, options.filters.trace));
+  }
+  if (options.filters?.run) {
+    predicates.push(eq(schema.events.runId, options.filters.run));
   }
   if (options.filters?.status === "errors") {
     predicates.push(eq(schema.events.eventType, "error"));

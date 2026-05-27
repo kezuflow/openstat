@@ -1,8 +1,9 @@
 "use client";
 
-import { Button, Drawer, Tabs } from "@heroui/react";
+import { Button, Drawer, Meter, Tabs } from "@heroui/react";
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import type { CSSProperties } from "react";
 
 import type { DashboardInspectorData } from "../../lib/openstat-api";
 
@@ -127,41 +128,141 @@ function InspectorTimeline(props: { data: unknown }) {
   const events = getArrayFromUnknown(props.data, "events");
   const decisions = getArrayFromUnknown(props.data, "decisions");
   const fills = getArrayFromUnknown(props.data, "fills");
-  const items = [...events, ...decisions, ...fills].slice(0, 20);
+  const selectedEventId = getStringFromUnknown(props.data, "selectedEventId");
+  const timelineError = getStringFromUnknown(props.data, "timelineError");
+  const items = [...events, ...decisions, ...fills]
+    .map((item, index) => getTimelineItem(item, index, selectedEventId))
+    .sort((left, right) => left.sortTime - right.sortTime)
+    .slice(0, 20);
+  const finiteTimes = items
+    .map((item) => item.sortTime)
+    .filter(
+      (time) => Number.isFinite(time) && time !== Number.MAX_SAFE_INTEGER,
+    );
+  const timelineStart = finiteTimes.length > 0 ? Math.min(...finiteTimes) : 0;
+  const timelineEnd = Math.max(
+    timelineStart + 1,
+    ...items.map((item) => {
+      const offset = getTimelineOffset(item.sortTime, timelineStart);
+
+      return timelineStart + offset + (item.durationMs ?? 0);
+    }),
+  );
+  const timelineSpan = Math.max(1, timelineEnd - timelineStart);
 
   if (items.length === 0) {
     return (
-      <p className="dashboard-inspector-muted">
-        No timeline rows are available for this detail yet.
-      </p>
+      <>
+        {timelineError ? (
+          <p className="dashboard-inspector-error">{timelineError}</p>
+        ) : null}
+        <p className="dashboard-inspector-muted">
+          No timeline rows are available for this detail yet.
+        </p>
+      </>
     );
   }
 
   return (
-    <ol className="dashboard-inspector-timeline">
-      {items.map((item, index) => {
-        const record = asRecord(item);
-        const label =
-          record?.eventType ??
-          record?.status ??
-          record?.result ??
-          record?.symbol ??
-          `Step ${index + 1}`;
-        const timestamp =
-          record?.timestamp ??
-          record?.createdAt ??
-          record?.decidedAt ??
-          record?.filledAt;
+    <>
+      {timelineError ? (
+        <p className="dashboard-inspector-error">{timelineError}</p>
+      ) : null}
+      <ol className="dashboard-inspector-timeline">
+        {items.map((item) => {
+          const offsetMs = getTimelineOffset(item.sortTime, timelineStart);
+          const durationMs = item.durationMs ?? 0;
+          const offsetPercent = Math.min((offsetMs / timelineSpan) * 100, 96);
+          const durationPercent =
+            durationMs > 0 ? Math.max((durationMs / timelineSpan) * 100, 2) : 0;
+          const waterfallStyle = {
+            "--timeline-duration": `${durationPercent}%`,
+            "--timeline-offset": `${offsetPercent}%`,
+          } as CSSProperties;
 
-        return (
-          <li key={`${String(label)}-${index}`}>
-            <strong>{String(label)}</strong>
-            {timestamp ? <span>{String(timestamp)}</span> : null}
-          </li>
-        );
-      })}
-    </ol>
+          return (
+            <li
+              data-selected={item.isSelected ? "true" : undefined}
+              key={`${item.id ?? item.label}-${item.index}`}
+            >
+              <div className="dashboard-inspector-timeline-row">
+                <strong>{item.label}</strong>
+                <span>{formatOffset(offsetMs)}</span>
+                <span>{formatDuration(item.durationMs)}</span>
+              </div>
+              <div
+                className="dashboard-inspector-waterfall"
+                style={waterfallStyle}
+              >
+                {durationMs > 0 ? (
+                  <Meter
+                    aria-label={`${item.label} starts ${formatOffset(
+                      offsetMs,
+                    )} and takes ${formatDuration(durationMs)}`}
+                    className="dashboard-inspector-waterfall-meter"
+                    maxValue={durationMs}
+                    minValue={0}
+                    size="sm"
+                    value={durationMs}
+                    valueLabel={formatDuration(durationMs)}
+                  >
+                    <Meter.Track>
+                      <Meter.Fill />
+                    </Meter.Track>
+                  </Meter>
+                ) : (
+                  <i
+                    aria-label={`${item.label} starts ${formatOffset(offsetMs)}`}
+                    data-marker="true"
+                    role="img"
+                  />
+                )}
+              </div>
+              {item.meta ? (
+                <span className="dashboard-inspector-timeline-meta">
+                  {item.meta}
+                </span>
+              ) : null}
+            </li>
+          );
+        })}
+      </ol>
+    </>
   );
+}
+
+function getTimelineItem(
+  item: unknown,
+  index: number,
+  selectedEventId: string | undefined,
+) {
+  const record = asRecord(item);
+  const label =
+    record?.eventType ??
+    record?.status ??
+    record?.result ??
+    record?.symbol ??
+    `Step ${index + 1}`;
+  const timestamp =
+    record?.timestamp ??
+    record?.createdAt ??
+    record?.decidedAt ??
+    record?.filledAt;
+  const latencyMs =
+    getNumberFromRecord(asRecord(record?.data), "latency_ms") ??
+    getNumberFromRecord(asRecord(record?.metadata), "latency_ms") ??
+    getNumberFromRecord(record, "latencyMs");
+  const timestampLabel = timestamp ? String(timestamp) : undefined;
+
+  return {
+    durationMs: latencyMs,
+    id: typeof record?.id === "string" ? record.id : undefined,
+    index,
+    isSelected: Boolean(selectedEventId && record?.id === selectedEventId),
+    label: String(label),
+    meta: timestampLabel,
+    sortTime: getSortTime(timestamp),
+  };
 }
 
 function InspectorArtifacts(props: { data: unknown }) {
@@ -179,7 +280,8 @@ function InspectorArtifacts(props: { data: unknown }) {
     <ul className="dashboard-inspector-artifacts">
       {artifacts.map((artifact, index) => {
         const record = asRecord(artifact);
-        const label = record?.name ?? record?.type ?? record?.id ?? `Artifact ${index + 1}`;
+        const label =
+          record?.name ?? record?.type ?? record?.id ?? `Artifact ${index + 1}`;
 
         return <li key={`${String(label)}-${index}`}>{String(label)}</li>;
       })}
@@ -205,6 +307,86 @@ function getArrayFromUnknown(value: unknown, key: string): Array<unknown> {
   }
 
   return [];
+}
+
+function getStringFromUnknown(value: unknown, key: string) {
+  const record = asRecord(value);
+  const direct = record?.[key];
+
+  return typeof direct === "string" ? direct : undefined;
+}
+
+function getNumberFromRecord(
+  record: Record<string, unknown> | undefined,
+  key: string,
+) {
+  const value = record?.[key];
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  return undefined;
+}
+
+function getSortTime(value: unknown) {
+  if (value instanceof Date) {
+    return value.valueOf();
+  }
+
+  if (typeof value === "string" || typeof value === "number") {
+    const parsed = new Date(value).valueOf();
+
+    return Number.isNaN(parsed) ? Number.MAX_SAFE_INTEGER : parsed;
+  }
+
+  return Number.MAX_SAFE_INTEGER;
+}
+
+function getTimelineOffset(sortTime: number, timelineStart: number) {
+  if (!Number.isFinite(sortTime) || sortTime === Number.MAX_SAFE_INTEGER) {
+    return 0;
+  }
+
+  return Math.max(0, sortTime - timelineStart);
+}
+
+function formatOffset(ms: number) {
+  return `+${formatDuration(ms)}`;
+}
+
+function formatDuration(ms: number | undefined) {
+  if (ms === undefined) {
+    return "--";
+  }
+
+  if (ms < 1000) {
+    return `${Math.round(ms)}ms`;
+  }
+
+  const seconds = ms / 1000;
+
+  if (seconds < 60) {
+    return `${formatCompactNumber(seconds)}s`;
+  }
+
+  const minutes = seconds / 60;
+
+  if (minutes < 60) {
+    return `${formatCompactNumber(minutes)}m`;
+  }
+
+  return `${formatCompactNumber(minutes / 60)}h`;
+}
+
+function formatCompactNumber(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {

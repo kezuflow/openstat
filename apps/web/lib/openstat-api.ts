@@ -299,30 +299,101 @@ async function getInspectorPayload(
     }
 > {
   if (kind === "event") {
-    const [event, resources] = await Promise.all([
-      getJson<unknown>(`/v1/events/${id}`),
-      getJson<unknown>(`/v1/events/${id}/resources`),
-    ]);
+    const event = await getJson<unknown>(`/v1/events/${id}`);
 
     if (!event.ok) {
       return event;
     }
 
+    const eventDetail = getEventFromPayload(event.data);
+    const traceId =
+      typeof eventDetail?.traceId === "string"
+        ? eventDetail.traceId
+        : undefined;
+    const runId =
+      typeof eventDetail?.runId === "string" ? eventDetail.runId : undefined;
+    const timelinePath = traceId
+      ? `/v1/events?limit=20&trace=${encodeURIComponent(traceId)}`
+      : runId
+        ? `/v1/events?limit=20&run=${encodeURIComponent(runId)}`
+        : undefined;
+    const [resources, timeline] = await Promise.all([
+      getJson<unknown>(`/v1/events/${id}/resources`),
+      timelinePath
+        ? getJson<{
+            events: DashboardEvent[];
+          }>(timelinePath)
+        : Promise.resolve({
+            ok: true as const,
+            data: { events: eventDetail ? [eventDetail] : [] },
+          }),
+    ]);
+
     return {
       ok: true,
       data: {
         event: event.data,
+        events: timeline.ok ? timeline.data.events : [],
         resources: resources.ok ? resources.data : undefined,
         resourceError: resources.ok ? undefined : resources.error,
+        selectedEventId: id,
+        timelineError: timeline.ok ? undefined : timeline.error,
+        timelineSource: traceId ? "trace" : runId ? "run" : "event",
       },
     };
   }
 
-  const pathByKind: Record<Exclude<DashboardInspectorKind, "event">, string> = {
+  if (kind === "trace") {
+    const events = await getJson<{
+      events: DashboardEvent[];
+    }>(`/v1/events?limit=20&trace=${encodeURIComponent(id)}`);
+
+    if (!events.ok) {
+      return events;
+    }
+
+    return {
+      ok: true,
+      data: {
+        detail: {
+          traceId: id,
+        },
+        events: events.data.events,
+        selectedTraceId: id,
+        timelineSource: "trace",
+      },
+    };
+  }
+
+  if (kind === "run" && !isUuid(id)) {
+    const events = await getJson<{
+      events: DashboardEvent[];
+    }>(`/v1/events?limit=20&run=${encodeURIComponent(id)}`);
+
+    if (!events.ok) {
+      return events;
+    }
+
+    return {
+      ok: true,
+      data: {
+        events: events.data.events,
+        run: {
+          externalRunId: id,
+        },
+        selectedRunId: id,
+        timelineSource: "run",
+      },
+    };
+  }
+
+  const pathByKind: Record<
+    Exclude<DashboardInspectorKind, "event" | "trace">,
+    string
+  > = {
     agent: `/v1/agents/${id}/timeline?limit=20`,
     notification: `/v1/notifications/${id}`,
     run: `/v1/runs/${id}/timeline?limit=20`,
-    trace: `/v1/analytics/traces/${id}`,
     trade: `/v1/trades/${id}`,
   };
 
@@ -437,6 +508,23 @@ function getInspectorSummary(kind: DashboardInspectorKind, data: unknown) {
 
 function idFromDetail(detail: Record<string, unknown> | undefined) {
   return detail?.traceId ?? detail?.id;
+}
+
+function getEventFromPayload(value: unknown): DashboardEvent | undefined {
+  const record = asRecord(value);
+  const event = asRecord(record?.event) ?? record;
+
+  if (typeof event?.id !== "string" || typeof event.eventType !== "string") {
+    return undefined;
+  }
+
+  return event as DashboardEvent;
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
+    value,
+  );
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
