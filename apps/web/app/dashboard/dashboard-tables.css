@@ -7,7 +7,7 @@
   border: 1px dashed var(--line);
   border-radius: min(32px, var(--radius-3xl));
   color: var(--muted);
-  background: #111311;
+  background: var(--surface-secondary);
 }
 
 .dashboard-table-wrap {
