@@ -28,6 +28,70 @@
   letter-spacing: 0;
 }
 
+body[data-dashboard-theme="dark"] {
+  --background: #050605;
+  --foreground: #f6f8ef;
+  --muted: #aab3a2;
+  --line: #242922;
+  --panel: #181a1b;
+  --accent: #a3e635;
+  --accent-foreground: #11140f;
+  --accent-soft: color-mix(in oklab, var(--accent) 18%, transparent);
+  --accent-strong: #a3e635;
+  --surface: #181a1b;
+  --surface-foreground: var(--foreground);
+  --surface-secondary: #232525;
+  --surface-secondary-foreground: var(--foreground);
+  --overlay: #181a1b;
+  --overlay-foreground: var(--foreground);
+  --default: #232525;
+  --default-foreground: var(--foreground);
+  --border: #242922;
+  --separator: #242922;
+  --backdrop: rgba(5, 6, 5, 0.72);
+  --field-background: #232525;
+  --field-foreground: var(--foreground);
+  --field-placeholder: #aab3a2;
+  --field-border: #333831;
+  --field-focus: var(--field-background);
+  --focus: var(--accent);
+  --danger: #ff6b5f;
+  --warning: #f4c64e;
+  --success: #59e67a;
+}
+
+body[data-dashboard-theme="light"] {
+  --background: #f6f4ea;
+  --foreground: #11140f;
+  --muted: #5f6658;
+  --line: #d9dccf;
+  --panel: #fffdf4;
+  --accent: #a3e635;
+  --accent-foreground: #183f16;
+  --accent-soft: color-mix(in oklab, var(--accent) 22%, transparent);
+  --accent-strong: #183f16;
+  --surface: #fffdf4;
+  --surface-foreground: var(--foreground);
+  --surface-secondary: #f0f2e8;
+  --surface-secondary-foreground: var(--foreground);
+  --overlay: #fffdf4;
+  --overlay-foreground: var(--foreground);
+  --default: #f0f2e8;
+  --default-foreground: var(--foreground);
+  --border: #d9dccf;
+  --separator: #d9dccf;
+  --backdrop: rgba(17, 20, 15, 0.44);
+  --field-background: #f6f4ea;
+  --field-foreground: var(--foreground);
+  --field-placeholder: #7a826f;
+  --field-border: transparent;
+  --field-focus: var(--field-background);
+  --focus: var(--accent-strong);
+  --danger: #b42318;
+  --warning: #a15c00;
+  --success: #257a26;
+}
+
 .dashboard-layout[data-dashboard-theme="light"] {
   --background: #f6f4ea;
   --foreground: #11140f;

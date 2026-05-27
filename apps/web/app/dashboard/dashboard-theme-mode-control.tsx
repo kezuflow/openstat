@@ -8,6 +8,8 @@ type DashboardThemeMode = "dark" | "light";
 const storageKey = "openstat-dashboard-theme-mode";
 
 function applyTheme(mode: DashboardThemeMode) {
+  document.body.dataset.dashboardTheme = mode;
+  document.documentElement.dataset.dashboardTheme = mode;
   document
     .querySelectorAll<HTMLElement>(".dashboard-layout")
     .forEach((layout) => {
