@@ -88,13 +88,29 @@ export async function buildApp() {
       info: {
         title: "OpenStat API",
         version: "0.0.0",
-        description:
+        description: [
           "API-first telemetry ingestion and monitoring for autonomous agents. SDKs are optional wrappers around this HTTP API.",
+          "",
+          "Agent and LLM usage: set `OPENSTAT_API_KEY` to an ingestion key from the OpenStat dashboard and send it on every ingestion request as `Authorization: Bearer ${OPENSTAT_API_KEY}`. Do not put the key in the JSON body and do not use `x-api-key`.",
+        ].join("\n"),
       },
+      servers: [{ url: env.apiPublicUrl }],
       tags: [
         {
           name: "Ingestion",
-          description: "Canonical event ingestion API for agents.",
+          description: [
+            "Canonical event ingestion API for agents.",
+            "",
+            "Agent and LLM usage: read `OPENSTAT_API_KEY` from the runtime environment or secret store, then send `Authorization: Bearer ${OPENSTAT_API_KEY}` and `Content-Type: application/json` with each request.",
+            "",
+            "Minimal curl example:",
+            "```sh",
+            'curl -X POST "$OPENSTAT_ENDPOINT/v1/ingest/events" \\',
+            '  -H "Authorization: Bearer $OPENSTAT_API_KEY" \\',
+            '  -H "Content-Type: application/json" \\',
+            '  -d \'{"type":"heartbeat","data":{}}\'',
+            "```",
+          ].join("\n"),
         },
         {
           name: "API Keys",
@@ -114,7 +130,8 @@ export async function buildApp() {
           bearerAuth: {
             type: "http",
             scheme: "bearer",
-            description: "OpenStat API key, for example `Bearer ostat_...`.",
+            description:
+              "OpenStat ingestion API key. Send it in the HTTP `Authorization` header exactly as `Bearer ${OPENSTAT_API_KEY}`. Keys usually look like `ostat_...`; never place the key in the JSON request body.",
           },
           sessionCookie: {
             type: "apiKey",

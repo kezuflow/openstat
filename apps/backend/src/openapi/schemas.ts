@@ -41,6 +41,21 @@ export const ingestEventBodySchema = {
   type: "object",
   required: ["type", "data"],
   additionalProperties: false,
+  examples: [
+    {
+      type: "decision",
+      agent: {
+        name: "trading-agent",
+        tags: ["production", "btc"],
+      },
+      data: {
+        action: "watch",
+        symbol: "BTC-USD",
+        reason: "No entry signal confirmed.",
+      },
+      tags: ["trading", "decision"],
+    },
+  ],
   properties: {
     id: {
       type: "string",
@@ -105,6 +120,30 @@ export const ingestBatchBodySchema = {
   type: "object",
   required: ["events"],
   additionalProperties: false,
+  examples: [
+    {
+      events: [
+        {
+          type: "decision",
+          agent: { name: "trading-agent" },
+          data: {
+            action: "buy",
+            symbol: "BTC-USD",
+            confidence: 0.82,
+          },
+        },
+        {
+          type: "order",
+          agent: { name: "trading-agent" },
+          data: {
+            side: "buy",
+            symbol: "BTC-USD",
+            quantity: 0.01,
+          },
+        },
+      ],
+    },
+  ],
   properties: {
     events: {
       type: "array",
@@ -118,6 +157,16 @@ export const ingestBatchBodySchema = {
 export const heartbeatBodySchema = {
   type: "object",
   additionalProperties: false,
+  examples: [
+    {
+      agent: {
+        name: "trading-agent",
+      },
+      data: {
+        status: "online",
+      },
+    },
+  ],
   properties: {
     id: { type: "string", minLength: 1, maxLength: 160 },
     schema_version: { type: "integer", const: 1, default: 1 },
