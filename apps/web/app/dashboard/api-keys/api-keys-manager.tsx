@@ -439,6 +439,8 @@ function ApiKeyStatusChip(props: { isRevoked: boolean }) {
 }
 
 async function requestJson<T>(path: string, init: RequestInit): Promise<T> {
+  await ensureClientWorkspaceInitialized();
+
   const response = await fetch(`${apiUrl}${path}`, {
     ...init,
     credentials: "include",
@@ -456,6 +458,13 @@ async function requestJson<T>(path: string, init: RequestInit): Promise<T> {
   }
 
   return data as T;
+}
+
+async function ensureClientWorkspaceInitialized() {
+  await fetch(`${apiUrl}/v1/workspace/init`, {
+    credentials: "include",
+    method: "POST",
+  });
 }
 
 function getErrorMessage(error: unknown) {
