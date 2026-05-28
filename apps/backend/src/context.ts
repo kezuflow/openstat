@@ -19,6 +19,18 @@ export const auth = createOpenStatAuth({
   baseUrl: env.betterAuthUrl,
   secret: env.betterAuthSecret,
   trustedOrigins: [env.appWebUrl, env.apiPublicUrl],
+  requireEmailVerification: env.authRequireEmailVerification,
+  emailDelivery:
+    env.authEmailProvider === "resend"
+      ? {
+          provider: "resend",
+          apiKey: env.resendApiKey ?? "",
+          from: env.authEmailFrom,
+        }
+      : {
+          provider: "log",
+          from: env.authEmailFrom,
+        },
   googleClientId: env.googleClientId,
   googleClientSecret: env.googleClientSecret,
 });

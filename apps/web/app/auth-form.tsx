@@ -262,6 +262,11 @@ export function AuthForm({ mode }: AuthFormProps) {
               />
               <FieldError />
             </TextField>
+            {mode === "sign-in" ? (
+              <Link className="signin-forgot-link" href="/forgot-password">
+                Forgot password?
+              </Link>
+            ) : null}
 
             {error ? <p className="signin-error">{error}</p> : null}
 

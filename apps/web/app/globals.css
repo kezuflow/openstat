@@ -669,6 +669,25 @@ p {
   font-weight: 600;
 }
 
+.signin-forgot-link {
+  align-self: flex-end;
+  color: #314b99;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.signin-recovery-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: min(100%, 520px);
+  min-height: 100svh;
+  margin: 0 auto;
+  padding: 56px 24px;
+  background: #ffffff;
+}
+
 .signin-form {
   display: flex;
   flex-direction: column;
@@ -720,6 +739,16 @@ p {
   border-radius: 8px;
   background: rgba(244, 63, 94, 0.08);
   color: var(--danger);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.signin-success {
+  padding: 10px 12px;
+  border: 1px solid rgba(34, 197, 94, 0.28);
+  border-radius: 8px;
+  background: rgba(34, 197, 94, 0.1);
+  color: #166534;
   font-size: 13px;
   line-height: 1.35;
 }

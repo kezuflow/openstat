@@ -167,6 +167,8 @@ export function createOpenStatAuth(options: {
   baseUrl: string;
   secret: string;
   trustedOrigins: string[];
+  requireEmailVerification: boolean;
+  emailDelivery: AuthEmailDelivery;
   googleClientId?: string;
   googleClientSecret?: string;
 }) {
@@ -178,8 +180,31 @@ export function createOpenStatAuth(options: {
       provider: "pg",
       schema,
     }),
+    emailVerification: {
+      sendOnSignUp: options.requireEmailVerification,
+      sendOnSignIn: options.requireEmailVerification,
+      autoSignInAfterVerification: true,
+      sendVerificationEmail: async ({ user, url }) => {
+        await sendAuthEmail({
+          delivery: options.emailDelivery,
+          kind: "email-verification",
+          to: user.email,
+          actionUrl: url,
+        });
+      },
+    },
     emailAndPassword: {
       enabled: true,
+      requireEmailVerification: options.requireEmailVerification,
+      sendResetPassword: async ({ user, url }) => {
+        await sendAuthEmail({
+          delivery: options.emailDelivery,
+          kind: "password-reset",
+          to: user.email,
+          actionUrl: url,
+        });
+      },
+      revokeSessionsOnPasswordReset: true,
     },
     socialProviders:
       options.googleClientId && options.googleClientSecret
@@ -191,6 +216,94 @@ export function createOpenStatAuth(options: {
           }
         : undefined,
   });
+}
+
+export type AuthEmailDelivery =
+  | {
+      provider: "log";
+      from?: string;
+    }
+  | {
+      provider: "resend";
+      apiKey: string;
+      from: string;
+    };
+
+type AuthEmailInput = {
+  delivery: AuthEmailDelivery;
+  kind: "email-verification" | "password-reset";
+  to: string;
+  actionUrl: string;
+};
+
+async function sendAuthEmail(input: AuthEmailInput) {
+  const message = createAuthEmailMessage(input);
+
+  if (input.delivery.provider === "log") {
+    console.info(
+      `[auth-email] ${message.subject} to ${input.to}: ${input.actionUrl}`,
+    );
+    return;
+  }
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${input.delivery.apiKey}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      from: input.delivery.from,
+      to: [input.to],
+      subject: message.subject,
+      html: message.html,
+      text: message.text,
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(
+      `Failed to send auth email through Resend (${response.status}). ${body}`,
+    );
+  }
+}
+
+function createAuthEmailMessage(input: AuthEmailInput) {
+  const subject =
+    input.kind === "email-verification"
+      ? "Verify your OpenStat email"
+      : "Reset your OpenStat password";
+  const heading =
+    input.kind === "email-verification"
+      ? "Verify your email"
+      : "Reset your password";
+  const body =
+    input.kind === "email-verification"
+      ? "Use this link to verify your OpenStat account."
+      : "Use this link to choose a new OpenStat password.";
+
+  return {
+    subject,
+    text: `${body}\n\n${input.actionUrl}\n\nIf you did not request this, you can ignore this email.`,
+    html: `<!doctype html>
+<html>
+  <body style="margin:0;background:#f7f7f4;color:#111111;font-family:Arial,sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;background:#ffffff;border:1px solid #dddddd;border-radius:8px;padding:28px;">
+            <tr><td style="font-size:20px;font-weight:700;">${heading}</td></tr>
+            <tr><td style="padding-top:12px;font-size:14px;line-height:22px;color:#444444;">${body}</td></tr>
+            <tr><td style="padding-top:24px;"><a href="${input.actionUrl}" style="display:inline-block;background:#050505;color:#ffffff;text-decoration:none;border-radius:8px;padding:12px 16px;font-size:14px;font-weight:700;">Continue to OpenStat</a></td></tr>
+            <tr><td style="padding-top:24px;font-size:12px;line-height:18px;color:#707070;">If you did not request this, you can ignore this email.</td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`,
+  };
 }
 
 function getBearerToken(authorizationHeader: string | undefined) {

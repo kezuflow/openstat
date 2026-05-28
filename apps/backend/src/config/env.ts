@@ -28,6 +28,10 @@ const rawEnvSchema = z.object({
     .default("postgres://openstat:openstat@localhost:5432/openstat"),
   BETTER_AUTH_SECRET: z.string().min(32).optional(),
   BETTER_AUTH_URL: z.string().url().optional(),
+  AUTH_REQUIRE_EMAIL_VERIFICATION: z.enum(["true", "false"]).optional(),
+  AUTH_EMAIL_PROVIDER: z.enum(["log", "resend"]).optional(),
+  AUTH_EMAIL_FROM: optionalNonEmptyString,
+  RESEND_API_KEY: optionalNonEmptyString,
   GOOGLE_CLIENT_ID: optionalNonEmptyString,
   GOOGLE_CLIENT_SECRET: optionalNonEmptyString,
   APP_WEB_URL: z.string().url().default("http://localhost:3000"),
@@ -73,6 +77,20 @@ if (parsedEnv.NODE_ENV === "production" && !parsedEnv.BETTER_AUTH_SECRET) {
   throw new Error("BETTER_AUTH_SECRET is required in production.");
 }
 
+const authEmailProvider =
+  parsedEnv.AUTH_EMAIL_PROVIDER ??
+  (parsedEnv.NODE_ENV === "production" ? "resend" : "log");
+
+if (parsedEnv.NODE_ENV === "production" && authEmailProvider === "log") {
+  throw new Error("AUTH_EMAIL_PROVIDER=log is not allowed in production.");
+}
+
+if (authEmailProvider === "resend" && !parsedEnv.RESEND_API_KEY) {
+  throw new Error(
+    "RESEND_API_KEY is required when AUTH_EMAIL_PROVIDER=resend.",
+  );
+}
+
 if (
   Boolean(parsedEnv.GOOGLE_CLIENT_ID) !==
   Boolean(parsedEnv.GOOGLE_CLIENT_SECRET)
@@ -90,6 +108,14 @@ export const env = {
   databaseUrl: parsedEnv.DATABASE_URL,
   betterAuthSecret: parsedEnv.BETTER_AUTH_SECRET ?? fallbackSecret,
   betterAuthUrl: parsedEnv.BETTER_AUTH_URL ?? parsedEnv.API_PUBLIC_URL,
+  authRequireEmailVerification:
+    parsedEnv.AUTH_REQUIRE_EMAIL_VERIFICATION === undefined
+      ? parsedEnv.NODE_ENV === "production"
+      : parsedEnv.AUTH_REQUIRE_EMAIL_VERIFICATION === "true",
+  authEmailProvider,
+  authEmailFrom:
+    parsedEnv.AUTH_EMAIL_FROM ?? "OpenStat <noreply@openstat.online>",
+  resendApiKey: parsedEnv.RESEND_API_KEY,
   googleClientId: parsedEnv.GOOGLE_CLIENT_ID,
   googleClientSecret: parsedEnv.GOOGLE_CLIENT_SECRET,
   appWebUrl: parsedEnv.APP_WEB_URL,
