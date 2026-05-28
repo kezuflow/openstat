@@ -2,7 +2,6 @@ import { cookies } from "next/headers";
 
 const apiUrl =
   process.env.NEXT_PUBLIC_OPENSTAT_API_URL ?? "http://localhost:4000";
-const dashboardApiKey = process.env.OPENSTAT_DASHBOARD_API_KEY;
 
 export type DashboardData = {
   overview?: DashboardOverview;
@@ -173,7 +172,6 @@ export async function getDashboardData(
   range: DashboardRange = "7d",
 ): Promise<DashboardData> {
   await ensureWorkspaceInitialized();
-  const authMode = await getDashboardAuthMode();
 
   const [overview, analytics, agents, runs, trades, notifications, apiKeys] =
     await Promise.all([
@@ -187,9 +185,7 @@ export async function getDashboardData(
       getJson<{ notifications: DashboardNotification[] }>(
         "/v1/notifications?limit=8",
       ),
-      authMode === "api-key"
-        ? Promise.resolve({ ok: true as const, data: { apiKeys: [] } })
-        : getJson<{ apiKeys: DashboardApiKey[] }>("/v1/api-keys"),
+      getJson<{ apiKeys: DashboardApiKey[] }>("/v1/api-keys"),
     ]);
 
   return {
@@ -601,17 +597,7 @@ function getDashboardAuthHeaders(cookieHeader: string): Record<string, string> {
     return { cookie: cookieHeader };
   }
 
-  return dashboardApiKey ? { authorization: `Bearer ${dashboardApiKey}` } : {};
-}
-
-async function getDashboardAuthMode() {
-  const cookieHeader = (await cookies()).toString();
-
-  if (hasBetterAuthCookie(cookieHeader)) {
-    return "session";
-  }
-
-  return dashboardApiKey ? "api-key" : "none";
+  return {};
 }
 
 function hasBetterAuthCookie(cookieHeader: string) {

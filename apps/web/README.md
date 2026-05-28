@@ -14,6 +14,10 @@ Important deployment variables:
 
 - `NEXT_PUBLIC_OPENSTAT_API_URL`: public backend origin used by dashboard reads, auth, and logout calls. Do not leave this as `localhost` in production.
 
+Do not configure a dashboard API key in production web deployments. Dashboard
+reads must use the signed-in Better Auth session so users only see their own
+workspace.
+
 For split deployments, set the backend env to trust the web origin:
 
 ```bash

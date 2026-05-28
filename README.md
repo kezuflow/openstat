@@ -122,9 +122,9 @@ Seed local demo data:
 pnpm --filter backend seed:dev
 ```
 
-For dashboard pages that should read with an API key instead of a browser
-session, set `OPENSTAT_DASHBOARD_API_KEY`. The web app uses
-`NEXT_PUBLIC_OPENSTAT_API_URL` and defaults to `http://localhost:4000`.
+The web app uses `NEXT_PUBLIC_OPENSTAT_API_URL` and defaults to
+`http://localhost:4000`. Dashboard pages read through the signed-in Better Auth
+session.
 
 ## Useful Commands
 
