@@ -5,6 +5,7 @@ import { registerHealthRoutes } from "./health.js";
 
 const state = vi.hoisted(() => ({
   databaseClient: vi.fn(),
+  getIngestionOutboxHealth: vi.fn(),
   ingestionSignalClient: undefined as
     | {
         ping: ReturnType<typeof vi.fn>;
@@ -12,8 +13,19 @@ const state = vi.hoisted(() => ({
     | undefined,
 }));
 
+vi.mock("@openstat/ingestion", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@openstat/ingestion")>();
+
+  return {
+    ...actual,
+    getIngestionOutboxHealth: state.getIngestionOutboxHealth,
+  };
+});
+
 vi.mock("../context.js", () => ({
   database: {
+    db: {},
     get client() {
       return state.databaseClient;
     },
@@ -27,6 +39,13 @@ describe("health routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     state.databaseClient.mockResolvedValue([{ "?column?": 1 }]);
+    state.getIngestionOutboxHealth.mockResolvedValue({
+      deadLettered: 0,
+      oldestPendingAgeMs: null,
+      pending: 0,
+      processing: 0,
+      retryable: 0,
+    });
     state.ingestionSignalClient = undefined;
   });
 
@@ -39,6 +58,7 @@ describe("health routes", () => {
 
     const body = response.json<{
       database: string;
+      outbox: { pending: number };
       redis: string;
       status: string;
       telemetry: { redis: unknown };
@@ -47,6 +67,7 @@ describe("health routes", () => {
     expect(response.statusCode).toBe(200);
     expect(body.status).toBe("ready");
     expect(body.database).toBe("ok");
+    expect(body.outbox.pending).toBe(0);
     expect(body.redis).toBe("disabled");
     expect(body.telemetry.redis).toEqual(expect.any(Object));
 

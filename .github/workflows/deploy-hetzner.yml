@@ -14,6 +14,20 @@ jobs:
   validate:
     name: Validate
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: openstat_test
+          POSTGRES_PASSWORD: openstat
+          POSTGRES_USER: openstat
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U openstat -d openstat_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -29,6 +43,11 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -37,6 +56,28 @@ jobs:
 
       - name: Lint
         run: pnpm lint
+
+      - name: Build
+        run: pnpm build
+
+      - name: Backend tests
+        run: pnpm --filter backend test
+
+      - name: Migrate integration database
+        env:
+          DATABASE_URL: postgres://openstat:openstat@localhost:5432/openstat_test
+        run: pnpm --filter @openstat/db db:migrate
+
+      - name: Backend integration tests
+        env:
+          OPENSTAT_INTEGRATION_DATABASE_URL: postgres://openstat:openstat@localhost:5432/openstat_test
+        run: pnpm --filter backend test:integration
+
+      - name: Python SDK tests
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e "sdks/python[test]"
+          python -m pytest sdks/python
 
   deploy:
     name: Deploy

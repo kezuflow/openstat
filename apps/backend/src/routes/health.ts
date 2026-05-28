@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { getIngestionOutboxHealth } from "@openstat/ingestion";
 
 import { database, ingestionSignalClient } from "../context.js";
 import { getRedisTelemetrySnapshot } from "../redis-telemetry.js";
@@ -13,11 +14,13 @@ export async function registerHealthRoutes(app: FastifyInstance) {
     try {
       await database.client`select 1`;
       const redis = await getRedisReadinessStatus();
+      const outbox = await getIngestionOutboxHealth({ db: database.db });
 
       return reply.send({
         status: "ready",
         database: "ok",
         redis,
+        outbox,
         telemetry: {
           redis: getRedisTelemetrySnapshot(),
         },

@@ -435,6 +435,56 @@ async function deleteCount(rows: Promise<unknown[]>) {
   return (await rows).length;
 }
 
+export type IngestionOutboxHealth = {
+  deadLettered: number;
+  oldestPendingAgeMs: number | null;
+  pending: number;
+  processing: number;
+  retryable: number;
+};
+
+export async function getIngestionOutboxHealth(options: {
+  db: Database["db"];
+  now?: Date;
+}): Promise<IngestionOutboxHealth> {
+  const now = options.now ?? new Date();
+  const [pendingRow] = await options.db
+    .select({
+      count: count(),
+      oldestCreatedAt: sql<Date | null>`min(${schema.ingestionOutbox.createdAt})`,
+    })
+    .from(schema.ingestionOutbox)
+    .where(
+      inArray(schema.ingestionOutbox.status, ["pending", "retryable"]),
+    );
+
+  const oldestPendingAt = pendingRow?.oldestCreatedAt
+    ? new Date(pendingRow.oldestCreatedAt)
+    : undefined;
+
+  return {
+    deadLettered: await countOutboxStatus(options.db, "dead_lettered"),
+    oldestPendingAgeMs: oldestPendingAt
+      ? Math.max(0, now.valueOf() - oldestPendingAt.valueOf())
+      : null,
+    pending: await countOutboxStatus(options.db, "pending"),
+    processing: await countOutboxStatus(options.db, "processing"),
+    retryable: await countOutboxStatus(options.db, "retryable"),
+  };
+}
+
+async function countOutboxStatus(
+  db: Database["db"],
+  status: (typeof schema.ingestionOutbox.$inferSelect)["status"],
+) {
+  const [row] = await db
+    .select({ count: count() })
+    .from(schema.ingestionOutbox)
+    .where(eq(schema.ingestionOutbox.status, status));
+
+  return Number(row?.count ?? 0);
+}
+
 export async function listEvents(options: {
   db: Database["db"];
   scope: ReadScope;
