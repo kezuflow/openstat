@@ -262,6 +262,32 @@ class OpenStatClient:
             }
         )
 
+    def record_tool_call(
+        self,
+        *,
+        agent: JsonObject | None = None,
+        run_id: str | None = None,
+        tool_name: str,
+        status: str | None = None,
+        summary: str | None = None,
+        metadata: JsonObject | None = None,
+    ) -> Any:
+        return self.send_event(
+            {
+                "agent": agent,
+                "type": "completion",
+                "run_id": run_id,
+                "data": {
+                    "status": status,
+                    "summary": summary,
+                },
+                "metadata": {
+                    **(metadata or {}),
+                    "tool_name": tool_name,
+                },
+            }
+        )
+
     def create_opentelemetry_http_config(self) -> JsonObject:
         return create_opentelemetry_http_config(
             api_key=self.config.api_key,
