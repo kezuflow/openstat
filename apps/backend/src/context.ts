@@ -19,6 +19,7 @@ export const auth = createOpenStatAuth({
   baseUrl: env.betterAuthUrl,
   secret: env.betterAuthSecret,
   trustedOrigins: [env.appWebUrl, env.apiPublicUrl],
+  cookieDomain: env.betterAuthCookieDomain,
   requireEmailVerification: env.authRequireEmailVerification,
   emailDelivery:
     env.authEmailProvider === "resend"

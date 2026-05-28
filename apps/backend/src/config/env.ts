@@ -28,6 +28,7 @@ const rawEnvSchema = z.object({
     .default("postgres://openstat:openstat@localhost:5432/openstat"),
   BETTER_AUTH_SECRET: z.string().min(32).optional(),
   BETTER_AUTH_URL: z.string().url().optional(),
+  BETTER_AUTH_COOKIE_DOMAIN: optionalNonEmptyString,
   AUTH_REQUIRE_EMAIL_VERIFICATION: z.enum(["true", "false"]).optional(),
   AUTH_EMAIL_PROVIDER: z.enum(["log", "resend"]).optional(),
   AUTH_EMAIL_FROM: optionalNonEmptyString,
@@ -108,6 +109,7 @@ export const env = {
   databaseUrl: parsedEnv.DATABASE_URL,
   betterAuthSecret: parsedEnv.BETTER_AUTH_SECRET ?? fallbackSecret,
   betterAuthUrl: parsedEnv.BETTER_AUTH_URL ?? parsedEnv.API_PUBLIC_URL,
+  betterAuthCookieDomain: parsedEnv.BETTER_AUTH_COOKIE_DOMAIN,
   authRequireEmailVerification:
     parsedEnv.AUTH_REQUIRE_EMAIL_VERIFICATION === undefined
       ? parsedEnv.NODE_ENV === "production"

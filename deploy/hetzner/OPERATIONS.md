@@ -83,6 +83,7 @@ Production email-password auth requires provider-backed email delivery. Set:
 
 ```text
 AUTH_REQUIRE_EMAIL_VERIFICATION=true
+BETTER_AUTH_COOKIE_DOMAIN=.openstat.online
 AUTH_EMAIL_PROVIDER=resend
 AUTH_EMAIL_FROM="OpenStat <noreply@openstat.online>"
 RESEND_API_KEY=<resend-api-key>

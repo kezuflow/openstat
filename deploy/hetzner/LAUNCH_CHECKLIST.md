@@ -12,6 +12,7 @@ Use this before calling the deployment production-grade early access.
   - `API_PUBLIC_URL`
   - `APP_WEB_URL`
   - `BETTER_AUTH_URL`
+  - `BETTER_AUTH_COOKIE_DOMAIN=.openstat.online`
   - `AUTH_EMAIL_PROVIDER=resend`
   - `AUTH_EMAIL_FROM`
   - `RESEND_API_KEY`

@@ -173,6 +173,7 @@ export async function getDashboardData(
   range: DashboardRange = "7d",
 ): Promise<DashboardData> {
   await ensureWorkspaceInitialized();
+  const authMode = await getDashboardAuthMode();
 
   const [overview, analytics, agents, runs, trades, notifications, apiKeys] =
     await Promise.all([
@@ -186,7 +187,7 @@ export async function getDashboardData(
       getJson<{ notifications: DashboardNotification[] }>(
         "/v1/notifications?limit=8",
       ),
-      dashboardApiKey
+      authMode === "api-key"
         ? Promise.resolve({ ok: true as const, data: { apiKeys: [] } })
         : getJson<{ apiKeys: DashboardApiKey[] }>("/v1/api-keys"),
     ]);
@@ -539,13 +540,9 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
 }
 
 async function ensureWorkspaceInitialized() {
-  if (dashboardApiKey) {
-    return;
-  }
-
   const cookieHeader = (await cookies()).toString();
 
-  if (!cookieHeader) {
+  if (!hasBetterAuthCookie(cookieHeader)) {
     return;
   }
 
@@ -574,14 +571,10 @@ async function getJson<T>(path: string): Promise<
 > {
   try {
     const cookieHeader = (await cookies()).toString();
+    const authHeaders = getDashboardAuthHeaders(cookieHeader);
     const response = await fetch(`${apiUrl}${path}`, {
       cache: "no-store",
-      headers: {
-        ...(dashboardApiKey
-          ? { authorization: `Bearer ${dashboardApiKey}` }
-          : {}),
-        ...(!dashboardApiKey && cookieHeader ? { cookie: cookieHeader } : {}),
-      },
+      headers: authHeaders,
     });
 
     if (!response.ok) {
@@ -601,4 +594,26 @@ async function getJson<T>(path: string): Promise<
       error: `${path} failed: ${error instanceof Error ? error.message : "unknown error"}`,
     };
   }
+}
+
+function getDashboardAuthHeaders(cookieHeader: string): Record<string, string> {
+  if (hasBetterAuthCookie(cookieHeader)) {
+    return { cookie: cookieHeader };
+  }
+
+  return dashboardApiKey ? { authorization: `Bearer ${dashboardApiKey}` } : {};
+}
+
+async function getDashboardAuthMode() {
+  const cookieHeader = (await cookies()).toString();
+
+  if (hasBetterAuthCookie(cookieHeader)) {
+    return "session";
+  }
+
+  return dashboardApiKey ? "api-key" : "none";
+}
+
+function hasBetterAuthCookie(cookieHeader: string) {
+  return cookieHeader.includes("better-auth.");
 }

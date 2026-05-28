@@ -169,6 +169,7 @@ export function createOpenStatAuth(options: {
   trustedOrigins: string[];
   requireEmailVerification: boolean;
   emailDelivery: AuthEmailDelivery;
+  cookieDomain?: string;
   googleClientId?: string;
   googleClientSecret?: string;
 }) {
@@ -176,6 +177,14 @@ export function createOpenStatAuth(options: {
     baseURL: options.baseUrl,
     secret: options.secret,
     trustedOrigins: options.trustedOrigins,
+    advanced: options.cookieDomain
+      ? {
+          crossSubDomainCookies: {
+            enabled: true,
+            domain: options.cookieDomain,
+          },
+        }
+      : undefined,
     database: drizzleAdapter(options.db, {
       provider: "pg",
       schema,

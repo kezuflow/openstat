@@ -31,6 +31,11 @@ type NavItem = {
   meta?: string;
 };
 
+type DashboardUser = {
+  email?: string;
+  name?: string;
+};
+
 const primaryNav: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: Home, isActive: true },
   { label: "Agents", href: "/dashboard/agents", icon: Bot },
@@ -139,16 +144,54 @@ function SidebarContent(props: {
   isCollapsed?: boolean;
   onNavigate?: () => void;
 }) {
+  const [user, setUser] = useState<DashboardUser | undefined>();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadUser() {
+      try {
+        const response = await fetch(`${apiUrl}/v1/me`, {
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const session = (await response.json()) as {
+          user?: DashboardUser;
+        };
+
+        if (isMounted) {
+          setUser(session.user);
+        }
+      } catch {
+        // The dashboard data fetches still surface auth problems.
+      }
+    }
+
+    void loadUser();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const displayName = user?.name || "OpenStat";
+  const displayEmail = user?.email || "Workspace";
+  const initials = getInitials(displayName, displayEmail);
+
   return (
     <div className="dashboard-sidebar-inner">
       <div>
         <div className="dashboard-profile">
           <Avatar className="dashboard-profile-avatar" size="md">
-            <Avatar.Fallback>OD</Avatar.Fallback>
+            <Avatar.Fallback>{initials}</Avatar.Fallback>
           </Avatar>
           <div className="dashboard-profile-copy">
-            <strong>OpenStat Demo</strong>
-            <span>demo@openstat.local</span>
+            <strong>{displayName}</strong>
+            <span>{displayEmail}</span>
           </div>
         </div>
 
@@ -178,6 +221,16 @@ function SidebarContent(props: {
       </nav>
     </div>
   );
+}
+
+function getInitials(name: string, email: string) {
+  const source = name === "OpenStat" ? email : name;
+  const parts = source
+    .split(/[\s@._-]+/u)
+    .filter(Boolean)
+    .slice(0, 2);
+
+  return (parts.map((part) => part[0]).join("") || "OS").toUpperCase();
 }
 
 function SidebarNavButton(props: {
