@@ -14,6 +14,11 @@ export type DashboardData = {
   errors: string[];
 };
 
+export type DashboardUser = {
+  email?: string;
+  name?: string;
+};
+
 export type DashboardInspectorKind =
   | "agent"
   | "event"
@@ -264,6 +269,35 @@ export async function getDashboardEvents(
     events: events.ok ? events.data.events : [],
     pagination: events.ok ? events.data.pagination : undefined,
   };
+}
+
+export async function getDashboardUser(): Promise<DashboardUser | undefined> {
+  const cookieHeader = (await cookies()).toString();
+
+  if (!hasBetterAuthCookie(cookieHeader)) {
+    return undefined;
+  }
+
+  try {
+    const response = await fetch(`${apiUrl}/v1/me`, {
+      cache: "no-store",
+      headers: {
+        cookie: cookieHeader,
+      },
+    });
+
+    if (!response.ok) {
+      return undefined;
+    }
+
+    const session = (await response.json()) as {
+      user?: DashboardUser;
+    };
+
+    return session.user;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function getDashboardInspectorData(

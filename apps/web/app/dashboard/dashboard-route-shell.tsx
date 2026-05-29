@@ -7,7 +7,6 @@ import type {
 } from "../../lib/openstat-api";
 import { DashboardTopToolbar } from "./dashboard-components";
 import { DashboardInspector } from "./dashboard-inspector";
-import { DashboardSidebar } from "./dashboard-sidebar";
 
 export function DashboardRouteShell(props: {
   children: ReactNode;
@@ -25,9 +24,7 @@ export function DashboardRouteShell(props: {
     ).length;
 
   return (
-    <div className="dashboard-layout">
-      <DashboardSidebar />
-
+    <>
       <main className="shell dashboard-content">
         <DashboardTopToolbar
           range={props.range}
@@ -43,6 +40,6 @@ export function DashboardRouteShell(props: {
         closeHref={props.closeHref ?? `/dashboard?range=${props.range}`}
         inspector={props.inspector}
       />
-    </div>
+    </>
   );
 }

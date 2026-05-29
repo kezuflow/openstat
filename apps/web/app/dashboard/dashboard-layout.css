@@ -92,6 +92,7 @@ body[data-dashboard-theme="light"] {
   --success: #257a26;
 }
 
+body[data-dashboard-theme="light"] .dashboard-layout,
 .dashboard-layout[data-dashboard-theme="light"] {
   --background: #f6f4ea;
   --foreground: #11140f;
@@ -128,11 +129,14 @@ body[data-dashboard-theme="light"] {
   transition: width 180ms ease;
 }
 
+body[data-dashboard-theme="light"] .dashboard-layout .dashboard-sidebar,
+body[data-dashboard-theme="light"] .dashboard-layout .dashboard-drawer-panel,
 .dashboard-layout[data-dashboard-theme="light"] .dashboard-sidebar,
 .dashboard-layout[data-dashboard-theme="light"] .dashboard-drawer-panel {
   background: var(--background);
 }
 
+body[data-dashboard-theme="light"] .dashboard-layout .dashboard-drawer-panel,
 .dashboard-layout[data-dashboard-theme="light"] .dashboard-drawer-panel {
   --foreground: #11140f;
   --muted: #5f6658;
@@ -203,6 +207,10 @@ body[data-dashboard-theme="light"] {
   line-height: 1;
 }
 
+body[data-dashboard-theme="light"]
+  .dashboard-layout
+  .dashboard-profile-avatar
+  .avatar__fallback,
 .dashboard-layout[data-dashboard-theme="light"]
   .dashboard-profile-avatar
   .avatar__fallback {
@@ -273,6 +281,22 @@ body[data-dashboard-theme="light"] {
   background: #1b1d1b;
 }
 
+body[data-dashboard-theme="light"]
+  .dashboard-layout
+  .dashboard-sidebar
+  .dashboard-nav-item:hover,
+body[data-dashboard-theme="light"]
+  .dashboard-layout
+  .dashboard-sidebar
+  .dashboard-nav-item[data-hovered="true"],
+body[data-dashboard-theme="light"]
+  .dashboard-layout
+  .dashboard-drawer-panel
+  .dashboard-nav-item:hover,
+body[data-dashboard-theme="light"]
+  .dashboard-layout
+  .dashboard-drawer-panel
+  .dashboard-nav-item[data-hovered="true"],
 .dashboard-layout[data-dashboard-theme="light"]
   .dashboard-sidebar
   .dashboard-nav-item:hover,
@@ -294,6 +318,14 @@ body[data-dashboard-theme="light"] {
   color: var(--foreground);
 }
 
+body[data-dashboard-theme="light"]
+  .dashboard-layout
+  .dashboard-sidebar
+  .dashboard-nav-item-active,
+body[data-dashboard-theme="light"]
+  .dashboard-layout
+  .dashboard-drawer-panel
+  .dashboard-nav-item-active,
 .dashboard-layout[data-dashboard-theme="light"]
   .dashboard-sidebar
   .dashboard-nav-item-active,

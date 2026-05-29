@@ -16,7 +16,6 @@ import {
   parseInspectorKind,
   type DashboardSearchParams,
 } from "./dashboard-page-utils";
-import { DashboardSidebar } from "./dashboard-sidebar";
 
 type DashboardProps = {
   searchParams?: Promise<DashboardSearchParams>;
@@ -41,9 +40,7 @@ export default async function Dashboard(props: DashboardProps) {
   const attentionItems = getDashboardAttentionItems(data, range);
 
   return (
-    <div className="dashboard-layout">
-      <DashboardSidebar />
-
+    <>
       <main className="shell dashboard-content" id="overview">
         <DashboardTopToolbar
           range={range}
@@ -63,6 +60,6 @@ export default async function Dashboard(props: DashboardProps) {
         closeHref={`/dashboard?range=${range}`}
         inspector={inspector}
       />
-    </div>
+    </>
   );
 }

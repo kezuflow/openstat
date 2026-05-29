@@ -20,6 +20,8 @@ import {
 import { Avatar, Button, Chip, Drawer, Separator } from "@heroui/react";
 import { useEffect, useState } from "react";
 
+import type { DashboardUser } from "../../lib/openstat-api";
+
 const apiUrl =
   process.env.NEXT_PUBLIC_OPENSTAT_API_URL ?? "http://localhost:4000";
 
@@ -29,11 +31,6 @@ type NavItem = {
   icon: LucideIcon;
   isActive?: boolean;
   meta?: string;
-};
-
-type DashboardUser = {
-  email?: string;
-  name?: string;
 };
 
 const primaryNav: NavItem[] = [
@@ -52,7 +49,7 @@ const secondaryNav: NavItem[] = [
   { label: "Log out", href: "/api/auth/sign-out", icon: LogOut },
 ];
 
-export function DashboardSidebar() {
+export function DashboardSidebar(props: { initialUser?: DashboardUser }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -79,7 +76,10 @@ export function DashboardSidebar() {
           .join(" ")}
         aria-label="Dashboard navigation"
       >
-        <SidebarContent isCollapsed={isCollapsed} />
+        <SidebarContent
+          initialUser={props.initialUser}
+          isCollapsed={isCollapsed}
+        />
       </aside>
 
       <div className="dashboard-mobile-menu">
@@ -106,7 +106,10 @@ export function DashboardSidebar() {
           >
             <Drawer.CloseTrigger />
             <Drawer.Body className="dashboard-drawer-body">
-              <SidebarContent onNavigate={() => setIsOpen(false)} />
+              <SidebarContent
+                initialUser={props.initialUser}
+                onNavigate={() => setIsOpen(false)}
+              />
             </Drawer.Body>
           </Drawer.Dialog>
         </Drawer.Content>
@@ -141,10 +144,13 @@ export function DashboardSidebarToggle() {
 }
 
 function SidebarContent(props: {
+  initialUser?: DashboardUser;
   isCollapsed?: boolean;
   onNavigate?: () => void;
 }) {
-  const [user, setUser] = useState<DashboardUser | undefined>();
+  const [user, setUser] = useState<DashboardUser | undefined>(
+    props.initialUser,
+  );
 
   useEffect(() => {
     let isMounted = true;

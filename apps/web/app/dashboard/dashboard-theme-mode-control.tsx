@@ -1,41 +1,14 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
-import { useEffect, useLayoutEffect, useState } from "react";
 
-type DashboardThemeMode = "dark" | "light";
-
-const storageKey = "openstat-dashboard-theme-mode";
-
-function applyTheme(mode: DashboardThemeMode) {
-  document.body.dataset.dashboardTheme = mode;
-  document.documentElement.dataset.dashboardTheme = mode;
-  document
-    .querySelectorAll<HTMLElement>(".dashboard-layout")
-    .forEach((layout) => {
-      layout.dataset.dashboardTheme = mode;
-      layout.dataset.dashboardThemeMode = mode;
-    });
-}
+import { useDashboardTheme } from "./dashboard-theme-provider";
 
 export function DashboardThemeModeControl() {
-  const [mode, setMode] = useState<DashboardThemeMode>("dark");
+  const { mode, setMode } = useDashboardTheme();
   const isDark = mode === "dark";
   const Icon = isDark ? Moon : Sun;
   const nextMode = isDark ? "light" : "dark";
-
-  useLayoutEffect(() => {
-    const savedMode = window.localStorage.getItem(storageKey);
-    const initialMode = savedMode === "light" ? "light" : "dark";
-
-    setMode(initialMode);
-    applyTheme(initialMode);
-  }, []);
-
-  useEffect(() => {
-    window.localStorage.setItem(storageKey, mode);
-    applyTheme(mode);
-  }, [mode]);
 
   return (
     <div className="dashboard-theme-control">
