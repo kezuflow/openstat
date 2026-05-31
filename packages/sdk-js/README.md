@@ -31,5 +31,22 @@ positions, PnL snapshots, heartbeats, errors, model usage, and tool calls. Use
 `sendEvent` or `sendBatch` when you need direct access to the normalized event
 model.
 
+Mantle-aware agents can record a transaction without changing the core event
+model:
+
+```ts
+await openstat.recordChainTransaction({
+  chain: "mantle",
+  chainId: 5003,
+  txHash: "0x...",
+  runId: run.runId,
+  action: "anchor_audit",
+});
+```
+
+The package also ships `openstat-realclaw` for observing RealClaw or
+Byreal-style commands. Use `openstat-realclaw exec --dry-run -- <command>`
+before any explicitly approved `--confirm` execution.
+
 For OpenTelemetry exporters, use `createOpenTelemetryHttpConfig` to get the
 OTLP/HTTP endpoints and authorization headers for traces, logs, and metrics.
