@@ -108,6 +108,38 @@ def test_opentelemetry_config_returns_otlp_http_targets():
     assert config["metrics"]["headers"]["authorization"] == "Bearer ostat_public_secret"
 
 
+def test_record_chain_transaction_emits_mantle_context(monkeypatch):
+    captured = {}
+
+    def fake_urlopen(req, timeout):
+        captured["body"] = json.loads(req.data.decode("utf-8"))
+        captured["timeout"] = timeout
+        return FakeResponse()
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    client = OpenStatClient(api_key="ostat_public_secret", service_name="pytest-agent")
+
+    client.record_chain_transaction(
+        agent={"id": "agent-mantle"},
+        run_id="run-mantle",
+        chain="mantle",
+        chain_id=5003,
+        tx_hash=f"0x{'a' * 64}",
+        action="anchor_audit",
+        status="submitted",
+    )
+
+    assert captured["body"]["type"] == "chain_transaction"
+    assert captured["body"]["run_id"] == "run-mantle"
+    assert captured["body"]["data"] == {
+        "chain": "mantle",
+        "chain_id": 5003,
+        "tx_hash": f"0x{'a' * 64}",
+        "action": "anchor_audit",
+        "status": "submitted",
+    }
+
+
 class ErrorBody:
     def __init__(self, body):
         self.body = body

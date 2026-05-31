@@ -31,6 +31,18 @@ import {
 
 export { redactTelemetryPayload } from "./redaction.js";
 export {
+  analyzeChainTransaction,
+  type AuditTransactionInput,
+} from "./audit-copilot.js";
+export {
+  createMantleRpcClient,
+  getMantleExplorerTransactionUrl,
+  getMantleTransactionReceipt,
+  MANTLE_PUBLIC_RPC_URLS,
+  type MantleChainId,
+} from "./mantle-rpc.js";
+export { reconcileMantleTransactions } from "./mantle-reconciliation.js";
+export {
   createProjectUpdatedMessage,
   createIngestionRedisClient,
   DEFAULT_PROJECT_CACHE_DOMAINS,
@@ -1422,9 +1434,87 @@ async function projectEvent(
   }
 
   await projectTradingEvent(db, row, createdEvent, agent?.id, event, timestamp);
+  await projectChainTransaction(
+    db,
+    row,
+    createdEvent,
+    agent?.id,
+    event,
+    timestamp,
+  );
   await maybeCreateFailureNotification(db, row, agent?.id, event);
   await maybeProjectLlmUsage(db, createdEvent.id, event);
   await catalogEventProperties(db, row, event);
+}
+
+async function projectChainTransaction(
+  db: Database["db"],
+  row: typeof schema.ingestionOutbox.$inferSelect,
+  createdEvent: typeof schema.events.$inferSelect,
+  agentId: string | undefined,
+  event: IngestEventInput,
+  timestamp: Date,
+) {
+  if (event.type !== "chain_transaction") {
+    return;
+  }
+
+  const data = event.data ?? {};
+  const chainId = getNumber(data.chain_id);
+  const transactionHash = getRequiredString(
+    data.tx_hash,
+    "chain_transaction.tx_hash",
+  ).toLowerCase();
+
+  if (chainId !== 5000 && chainId !== 5003) {
+    throw new IngestionError(
+      "INVALID_OUTBOX_PAYLOAD",
+      "Invalid Mantle chain ID.",
+    );
+  }
+
+  const incomingStatus = getChainReceiptStatus(data.status);
+  const [existing] = await db
+    .select({
+      id: schema.chainTransactions.id,
+      status: schema.chainTransactions.status,
+    })
+    .from(schema.chainTransactions)
+    .where(
+      and(
+        eq(schema.chainTransactions.projectId, row.projectId),
+        eq(schema.chainTransactions.chainId, chainId),
+        eq(schema.chainTransactions.transactionHash, transactionHash),
+      ),
+    )
+    .limit(1);
+  const status = advanceChainReceiptStatus(existing?.status, incomingStatus);
+  const values = {
+    organizationId: row.organizationId,
+    projectId: row.projectId,
+    agentId,
+    eventId: createdEvent.id,
+    externalRunId: event.run_id,
+    chain: "mantle",
+    chainId,
+    transactionHash,
+    action: getString(data.action),
+    status,
+    fromAddress: getLowercaseString(data.from_address),
+    toAddress: getLowercaseString(data.to_address),
+    submittedAt: timestamp,
+    updatedAt: new Date(),
+  } as const;
+
+  if (existing) {
+    await db
+      .update(schema.chainTransactions)
+      .set(values)
+      .where(eq(schema.chainTransactions.id, existing.id));
+    return;
+  }
+
+  await db.insert(schema.chainTransactions).values(values);
 }
 
 async function upsertAgent(
@@ -2115,6 +2205,37 @@ function getOrderStatus(value: unknown) {
         "Invalid order status.",
       );
   }
+}
+
+function getChainReceiptStatus(value: unknown) {
+  const status = getString(value) ?? "submitted";
+
+  switch (status) {
+    case "submitted":
+    case "confirmed":
+    case "reverted":
+      return status;
+    default:
+      throw new IngestionError(
+        "INVALID_OUTBOX_PAYLOAD",
+        "Invalid chain receipt status.",
+      );
+  }
+}
+
+function advanceChainReceiptStatus(
+  current: "submitted" | "confirmed" | "reverted" | undefined,
+  incoming: "submitted" | "confirmed" | "reverted",
+) {
+  if (current === "confirmed" || current === "reverted") {
+    return current;
+  }
+
+  return incoming;
+}
+
+function getLowercaseString(value: unknown) {
+  return getString(value)?.toLowerCase();
 }
 
 function getRangeStart(range: "24h" | "7d" | "30d") {

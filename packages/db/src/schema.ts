@@ -75,6 +75,12 @@ export const orderStatus = pgEnum("order_status", [
   "failed",
 ]);
 
+export const chainReceiptStatus = pgEnum("chain_receipt_status", [
+  "submitted",
+  "confirmed",
+  "reverted",
+]);
+
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -927,5 +933,185 @@ export const otelMetrics = pgTable(
       table.name,
       table.recordedAt,
     ),
+  ],
+);
+
+export const chainTransactions = pgTable(
+  "chain_transactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    agentId: uuid("agent_id").references(() => agents.id, {
+      onDelete: "set null",
+    }),
+    eventId: uuid("event_id").references(() => events.id, {
+      onDelete: "set null",
+    }),
+    externalRunId: text("external_run_id"),
+    chain: text("chain").notNull(),
+    chainId: integer("chain_id").notNull(),
+    transactionHash: text("transaction_hash").notNull(),
+    action: text("action"),
+    status: chainReceiptStatus("status").notNull().default("submitted"),
+    fromAddress: text("from_address"),
+    toAddress: text("to_address"),
+    blockNumber: text("block_number"),
+    gasUsed: text("gas_used"),
+    explorerUrl: text("explorer_url"),
+    receipt: jsonb("receipt").$type<Record<string, unknown>>(),
+    submittedAt: timestamp("submitted_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+    lastCheckedAt: timestamp("last_checked_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("chain_transactions_project_chain_hash_idx").on(
+      table.projectId,
+      table.chainId,
+      table.transactionHash,
+    ),
+    index("chain_transactions_status_checked_idx").on(
+      table.status,
+      table.lastCheckedAt,
+    ),
+    index("chain_transactions_project_run_idx").on(
+      table.projectId,
+      table.externalRunId,
+    ),
+    foreignKey({
+      columns: [table.organizationId, table.projectId],
+      foreignColumns: [projects.organizationId, projects.id],
+      name: "chain_transactions_project_scope_fk",
+    }).onDelete("cascade"),
+  ],
+);
+
+export const auditInsights = pgTable(
+  "audit_insights",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    agentId: uuid("agent_id").references(() => agents.id, {
+      onDelete: "set null",
+    }),
+    chainTransactionId: uuid("chain_transaction_id").references(
+      () => chainTransactions.id,
+      { onDelete: "set null" },
+    ),
+    externalRunId: text("external_run_id").notNull(),
+    provider: text("provider"),
+    model: text("model"),
+    verdict: text("verdict").notNull(),
+    riskScore: integer("risk_score").notNull(),
+    summary: text("summary").notNull(),
+    anomalyFlags: text("anomaly_flags")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
+    telemetryDigest: text("telemetry_digest").notNull(),
+    insightDigest: text("insight_digest").notNull(),
+    analysis: jsonb("analysis")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    ...timestamps,
+  },
+  (table) => [
+    index("audit_insights_project_run_created_idx").on(
+      table.projectId,
+      table.externalRunId,
+      table.createdAt,
+    ),
+    foreignKey({
+      columns: [table.organizationId, table.projectId],
+      foreignColumns: [projects.organizationId, projects.id],
+      name: "audit_insights_project_scope_fk",
+    }).onDelete("cascade"),
+  ],
+);
+
+export const auditAnchors = pgTable(
+  "audit_anchors",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    agentId: uuid("agent_id").references(() => agents.id, {
+      onDelete: "set null",
+    }),
+    auditInsightId: uuid("audit_insight_id").references(
+      () => auditInsights.id,
+      {
+        onDelete: "set null",
+      },
+    ),
+    externalRunId: text("external_run_id").notNull(),
+    chainId: integer("chain_id").notNull(),
+    contractAddress: text("contract_address").notNull(),
+    transactionHash: text("transaction_hash").notNull(),
+    submitterAddress: text("submitter_address").notNull(),
+    telemetryDigest: text("telemetry_digest").notNull(),
+    insightDigest: text("insight_digest").notNull(),
+    outcome: integer("outcome").notNull(),
+    blockNumber: text("block_number").notNull(),
+    logIndex: integer("log_index").notNull(),
+    explorerUrl: text("explorer_url").notNull(),
+    anchoredAt: timestamp("anchored_at", { withTimezone: true }).notNull(),
+    metadata: jsonb("metadata")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("audit_anchors_chain_contract_tx_log_idx").on(
+      table.chainId,
+      table.contractAddress,
+      table.transactionHash,
+      table.logIndex,
+    ),
+    index("audit_anchors_project_run_idx").on(
+      table.projectId,
+      table.externalRunId,
+    ),
+    foreignKey({
+      columns: [table.organizationId, table.projectId],
+      foreignColumns: [projects.organizationId, projects.id],
+      name: "audit_anchors_project_scope_fk",
+    }).onDelete("cascade"),
+  ],
+);
+
+export const chainIndexCursors = pgTable(
+  "chain_index_cursors",
+  {
+    chainId: integer("chain_id").notNull(),
+    contractAddress: text("contract_address").notNull(),
+    eventTopic: text("event_topic").notNull(),
+    lastIndexedBlock: text("last_indexed_block").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.chainId, table.contractAddress, table.eventTopic],
+    }),
   ],
 );

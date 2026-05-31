@@ -1,4 +1,5 @@
 import {
+  chainTransactionDataSchema,
   fillDataSchema,
   ingestEventBatchInputSchema,
   ingestEventInputSchema,
@@ -120,5 +121,38 @@ describe("OpenStat ingestion schemas", () => {
       derived_retention_days: 365,
       extra_sensitive_keys: [],
     });
+  });
+
+  it("accepts Mantle chain transactions and rejects malformed EVM references", () => {
+    expect(
+      ingestEventInputSchema.parse({
+        agent: { id: "mantle-agent" },
+        type: "chain_transaction",
+        run_id: "run_mantle_1",
+        data: {
+          chain: "mantle",
+          chain_id: 5003,
+          tx_hash: `0x${"a".repeat(64)}`,
+          action: "anchor_audit",
+          from_address: `0x${"b".repeat(40)}`,
+          status: "submitted",
+        },
+      }).type,
+    ).toBe("chain_transaction");
+
+    expect(() =>
+      chainTransactionDataSchema.parse({
+        chain: "mantle",
+        chain_id: 1,
+        tx_hash: `0x${"a".repeat(64)}`,
+      }),
+    ).toThrow();
+    expect(() =>
+      chainTransactionDataSchema.parse({
+        chain: "mantle",
+        chain_id: 5000,
+        tx_hash: "0xshort",
+      }),
+    ).toThrow();
   });
 });

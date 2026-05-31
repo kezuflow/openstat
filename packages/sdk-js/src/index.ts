@@ -19,6 +19,7 @@ export type NativeEvent = {
   agent?: AgentInput;
   project_id?: string;
   type:
+    | "chain_transaction"
     | "decision"
     | "risk_check"
     | "order"
@@ -117,6 +118,32 @@ export class OpenStatClient {
         action: input.action,
         confidence: input.confidence,
         rationale_summary: input.rationaleSummary,
+      },
+    });
+  }
+
+  recordChainTransaction(
+    input: {
+      chain: "mantle";
+      chainId: 5000 | 5003;
+      txHash: `0x${string}`;
+      action?: string;
+      status?: "submitted" | "confirmed" | "reverted";
+      fromAddress?: `0x${string}`;
+      toAddress?: `0x${string}`;
+    } & EventContext,
+  ) {
+    return this.sendEvent({
+      ...this.createEventContext(input),
+      type: "chain_transaction",
+      data: {
+        chain: input.chain,
+        chain_id: input.chainId,
+        tx_hash: input.txHash,
+        action: input.action,
+        status: input.status,
+        from_address: input.fromAddress,
+        to_address: input.toAddress,
       },
     });
   }

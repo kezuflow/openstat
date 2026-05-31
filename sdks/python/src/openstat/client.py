@@ -96,6 +96,36 @@ class OpenStatClient:
             }
         )
 
+    def record_chain_transaction(
+        self,
+        *,
+        agent: JsonObject | None = None,
+        run_id: str | None = None,
+        chain: str,
+        chain_id: int,
+        tx_hash: str,
+        action: str | None = None,
+        status: str | None = None,
+        from_address: str | None = None,
+        to_address: str | None = None,
+    ) -> Any:
+        return self.send_event(
+            {
+                "agent": agent,
+                "type": "chain_transaction",
+                "run_id": run_id,
+                "data": {
+                    "chain": chain,
+                    "chain_id": chain_id,
+                    "tx_hash": tx_hash,
+                    "action": action,
+                    "status": status,
+                    "from_address": from_address,
+                    "to_address": to_address,
+                },
+            }
+        )
+
     def record_risk_check(
         self,
         *,

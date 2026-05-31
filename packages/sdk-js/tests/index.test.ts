@@ -39,7 +39,9 @@ describe("OpenStatClient", () => {
 
     expect(requests).toHaveLength(1);
     expect(requests[0].url).toBe("https://api.example.com/v1/ingest/events");
-    expect(requests[0].headers.get("authorization")).toBe("Bearer ostat_public_secret");
+    expect(requests[0].headers.get("authorization")).toBe(
+      "Bearer ostat_public_secret",
+    );
     expect(requests[0].headers.get("x-openstat-source")).toBe("sdk");
 
     const body = (await requests[0].json()) as NativeEvent;
@@ -100,7 +102,9 @@ describe("OpenStatClient", () => {
         ),
     });
 
-    await expect(client.sendEvent({ type: "heartbeat", data: {} })).rejects.toMatchObject({
+    await expect(
+      client.sendEvent({ type: "heartbeat", data: {} }),
+    ).rejects.toMatchObject({
       name: "OpenStatApiError",
       status: 401,
       body: { error: { code: "INVALID_API_KEY", message: "Invalid API key." } },
@@ -216,6 +220,46 @@ describe("OpenStatClient", () => {
     expect(bodies[1].data).toMatchObject({ status: "partial" });
     expect(bodies[2]).toMatchObject({ run_id: "run-test" });
     expect(bodies[3].data).toMatchObject({ usage: { total_tokens: 42 } });
+  });
+
+  it("emits Mantle transaction telemetry with run context", async () => {
+    const requests: Request[] = [];
+    const client = createOpenStatClient({
+      apiKey: "ostat_public_secret",
+      serviceName: "mantle-agent",
+      fetch: async (input, init) => {
+        requests.push(new Request(input, init));
+        return createJsonResponse({ accepted: true });
+      },
+    });
+
+    await client.recordChainTransaction({
+      agent: { id: "agent-mantle" },
+      runId: "run-mantle",
+      chain: "mantle",
+      chainId: 5003,
+      txHash: `0x${"a".repeat(64)}`,
+      action: "anchor_audit",
+      status: "submitted",
+      fromAddress: `0x${"b".repeat(40)}`,
+      toAddress: `0x${"c".repeat(40)}`,
+    });
+
+    const body = (await requests[0].json()) as NativeEvent;
+    expect(body).toMatchObject({
+      agent: { id: "agent-mantle" },
+      run_id: "run-mantle",
+      type: "chain_transaction",
+      data: {
+        action: "anchor_audit",
+        chain: "mantle",
+        chain_id: 5003,
+        from_address: `0x${"b".repeat(40)}`,
+        status: "submitted",
+        to_address: `0x${"c".repeat(40)}`,
+        tx_hash: `0x${"a".repeat(64)}`,
+      },
+    });
   });
 });
 

@@ -64,6 +64,18 @@ const rawEnvSchema = z.object({
   INGESTION_WORKER_POLL_MS: z.coerce.number().int().positive().default(1_000),
   INGESTION_LOCK_TTL_SECONDS: z.coerce.number().int().positive().default(60),
   INGESTION_WORKER_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5),
+  MANTLE_RECONCILIATION_ENABLED: z.enum(["true", "false"]).optional(),
+  MANTLE_RECONCILIATION_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(15_000),
+  MANTLE_RPC_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
+  MANTLE_MAINNET_RPC_URL: z.string().url().default("https://rpc.mantle.xyz"),
+  MANTLE_SEPOLIA_RPC_URL: z
+    .string()
+    .url()
+    .default("https://rpc.sepolia.mantle.xyz"),
   RETENTION_SWEEP_ENABLED: z.enum(["true", "false"]).optional(),
   RETENTION_SWEEP_INTERVAL_MS: z.coerce
     .number()
@@ -142,6 +154,14 @@ export const env = {
   ingestionWorkerPollMs: parsedEnv.INGESTION_WORKER_POLL_MS,
   ingestionLockTtlSeconds: parsedEnv.INGESTION_LOCK_TTL_SECONDS,
   ingestionWorkerMaxAttempts: parsedEnv.INGESTION_WORKER_MAX_ATTEMPTS,
+  mantleReconciliationEnabled:
+    parsedEnv.MANTLE_RECONCILIATION_ENABLED === undefined
+      ? true
+      : parsedEnv.MANTLE_RECONCILIATION_ENABLED === "true",
+  mantleReconciliationIntervalMs: parsedEnv.MANTLE_RECONCILIATION_INTERVAL_MS,
+  mantleRpcTimeoutMs: parsedEnv.MANTLE_RPC_TIMEOUT_MS,
+  mantleMainnetRpcUrl: parsedEnv.MANTLE_MAINNET_RPC_URL,
+  mantleSepoliaRpcUrl: parsedEnv.MANTLE_SEPOLIA_RPC_URL,
   retentionSweepEnabled:
     parsedEnv.RETENTION_SWEEP_ENABLED === undefined
       ? parsedEnv.NODE_ENV === "production"

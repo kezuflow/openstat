@@ -5,6 +5,7 @@ const decimalInputSchema = z.union([z.string().min(1), z.number().finite()]);
 const timestampMillisSchema = z.number().int().positive();
 
 export const normalizedEventTypeSchema = z.enum([
+  "chain_transaction",
   "decision",
   "risk_check",
   "order",
@@ -14,6 +15,19 @@ export const normalizedEventTypeSchema = z.enum([
   "heartbeat",
   "error",
   "completion",
+]);
+
+export const evmAddressSchema = z
+  .string()
+  .regex(/^0x[0-9a-f]{40}$/iu, "Expected a 20-byte EVM address.");
+export const evmTransactionHashSchema = z
+  .string()
+  .regex(/^0x[0-9a-f]{64}$/iu, "Expected a 32-byte EVM transaction hash.");
+export const mantleChainIdSchema = z.union([z.literal(5000), z.literal(5003)]);
+export const chainReceiptStatusSchema = z.enum([
+  "submitted",
+  "confirmed",
+  "reverted",
 ]);
 
 export const tradingSideSchema = z.enum(["buy", "sell"]);
@@ -128,7 +142,18 @@ export const errorDataSchema = z.object({
   retryable: z.boolean().optional(),
 });
 
+export const chainTransactionDataSchema = z.object({
+  chain: z.literal("mantle"),
+  chain_id: mantleChainIdSchema,
+  tx_hash: evmTransactionHashSchema,
+  action: z.string().min(1).max(160).optional(),
+  status: chainReceiptStatusSchema.default("submitted"),
+  from_address: evmAddressSchema.optional(),
+  to_address: evmAddressSchema.optional(),
+});
+
 export const normalizedEventDataSchemas = {
+  chain_transaction: chainTransactionDataSchema,
   completion: completionDataSchema,
   decision: decisionDataSchema,
   error: errorDataSchema,

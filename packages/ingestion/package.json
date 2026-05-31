@@ -12,20 +12,23 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@openstat/auth": "workspace:*",
     "@openstat/db": "workspace:*",
     "@openstat/schemas": "workspace:*",
     "drizzle-orm": "^0.45.2",
-    "redis": "4.7.0"
+    "redis": "4.7.0",
+    "viem": "^2.51.3"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/node": "^22.15.3",
     "eslint": "^9.39.1",
-    "typescript": "5.9.2"
+    "typescript": "5.9.2",
+    "vitest": "^4.1.5"
   }
 }

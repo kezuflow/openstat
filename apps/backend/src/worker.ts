@@ -5,6 +5,7 @@ import {
   createProjectUpdatedMessage,
   DEFAULT_PROJECT_CACHE_DOMAINS,
   invalidateProjectReadCaches,
+  reconcileMantleTransactions,
   processClaim,
   REDIS_CHANNELS,
   sweepRetention,
@@ -29,6 +30,7 @@ let shuttingDown = false;
 let pendingWakeup = false;
 let wakeupResolver: (() => void) | undefined;
 let lastRetentionSweepAt = 0;
+let lastMantleReconciliationAt = 0;
 
 process.on("SIGINT", () => {
   shuttingDown = true;
@@ -103,7 +105,49 @@ async function runWorkerPass() {
     defaultOfflineSeconds: env.defaultAgentOfflineSeconds,
   });
 
+  await runMantleReconciliationIfDue();
   await runRetentionSweepIfDue();
+}
+
+async function runMantleReconciliationIfDue() {
+  if (!env.mantleReconciliationEnabled) {
+    return;
+  }
+
+  const now = Date.now();
+
+  if (now - lastMantleReconciliationAt < env.mantleReconciliationIntervalMs) {
+    return;
+  }
+
+  lastMantleReconciliationAt = now;
+
+  try {
+    const result = await reconcileMantleTransactions({
+      db: database.db,
+      pollIntervalMs: env.mantleReconciliationIntervalMs,
+      rpcUrls: {
+        5000: env.mantleMainnetRpcUrl,
+        5003: env.mantleSepoliaRpcUrl,
+      },
+      timeoutMs: env.mantleRpcTimeoutMs,
+    });
+
+    if (result.checked > 0) {
+      console.info({ workerId, ...result }, "Reconciled Mantle transactions");
+    }
+  } catch (error) {
+    captureException(error, {
+      worker: {
+        id: workerId,
+        task: "mantle_reconciliation",
+      },
+    });
+    console.warn(
+      { error, workerId },
+      "Mantle transaction reconciliation failed",
+    );
+  }
 }
 
 async function runRetentionSweepIfDue() {
