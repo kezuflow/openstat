@@ -13,6 +13,7 @@ product for autonomous agents.
 - `apps/docs`: Next.js docs app, currently on port `3001`.
 - `apps/backend`: Fastify API server, currently on port `4000`.
 - `packages/ui`: shared React component package exported as `@repo/ui/*`.
+- `packages/contracts`: Hardhat workspace for optional onchain audit anchors.
 - `packages/eslint-config`: shared ESLint configs.
 - `packages/typescript-config`: shared TypeScript configs.
 
@@ -62,6 +63,9 @@ pnpm --filter backend dev
 pnpm --filter backend test
 pnpm --filter backend test:integration
 pnpm --filter backend seed:dev
+pnpm --filter @openstat/contracts test
+pnpm --filter @openstat/contracts deploy:mantle-sepolia
+pnpm --filter openstat build
 ```
 
 ## Environment
@@ -77,6 +81,13 @@ Default local services:
 - Docs app: `http://localhost:3001`
 - Postgres: `postgres://openstat:openstat@localhost:5432/openstat`
 - Redis: `redis://localhost:6379`
+- Mantle mainnet RPC: `https://rpc.mantle.xyz`
+- Mantle Sepolia RPC: `https://rpc.sepolia.mantle.xyz`
+
+Mantle receipt reconciliation is optional and read-only. Configure
+`MANTLE_MAINNET_RPC_URL` and `MANTLE_SEPOLIA_RPC_URL` with Alchemy endpoints in
+deployed environments when available. Never store RPC API keys, wallet private
+keys, or signing credentials in telemetry or committed files.
 
 For split web/API deployments, do not leave web API variables pointed at
 `localhost`. Set `apps/web` `NEXT_PUBLIC_OPENSTAT_API_URL` to the public backend
@@ -144,7 +155,16 @@ the page in a browser when practical.
 validation after editing them.
 - Avoid importing app-specific code from shared packages.
 - Avoid editing `node_modules`, `.turbo`, `.next`, or other generated/cache
-directories.
+  directories.
+- Keep Mantle-specific RPC code behind the ingestion adapter. Persist generic
+  chain transaction telemetry so later chain integrations do not change the
+  core event model.
+- The public JavaScript SDK remains the `openstat` package. Ship agent wrappers
+  such as `openstat-realclaw` inside it instead of creating a competing SDK
+  package identity.
+- Contract deployment commands default to dry-run behavior. Never broadcast a
+  deployment or transaction without explicit user approval immediately before
+  the broadcast command.
 
 ## Commit Messages
 
