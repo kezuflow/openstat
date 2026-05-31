@@ -173,6 +173,18 @@ export type DashboardApiKey = {
   createdAt: string;
 };
 
+export type DashboardChainTransaction = {
+  id: string;
+  action?: string | null;
+  chain: "mantle";
+  chainId: 5000 | 5003;
+  explorerUrl?: string | null;
+  externalRunId?: string | null;
+  status: "submitted" | "confirmed" | "reverted";
+  submittedAt: string;
+  transactionHash: string;
+};
+
 export async function getDashboardData(
   range: DashboardRange = "7d",
 ): Promise<DashboardData> {
@@ -268,6 +280,19 @@ export async function getDashboardEvents(
     errors: events.ok ? [] : [events.error],
     events: events.ok ? events.data.events : [],
     pagination: events.ok ? events.data.pagination : undefined,
+  };
+}
+
+export async function getDashboardMantleTransactions() {
+  await ensureWorkspaceInitialized();
+
+  const transactions = await getJson<{
+    transactions: DashboardChainTransaction[];
+  }>("/v1/audit/transactions?limit=50");
+
+  return {
+    errors: transactions.ok ? [] : [transactions.error],
+    transactions: transactions.ok ? transactions.data.transactions : [],
   };
 }
 

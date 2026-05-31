@@ -1,0 +1,176 @@
+.mantle-page {
+  min-height: 100vh;
+  padding: 0 6vw 5rem;
+  color: #eef3e8;
+  background:
+    radial-gradient(
+      circle at 76% 18%,
+      rgba(163, 230, 53, 0.16),
+      transparent 24rem
+    ),
+    #0c0d12;
+}
+
+.mantle-nav,
+.mantle-actions,
+.mantle-verdict {
+  display: flex;
+  align-items: center;
+}
+
+.mantle-nav {
+  justify-content: space-between;
+  min-height: 4.5rem;
+  border-bottom: 1px solid rgba(238, 243, 232, 0.12);
+}
+
+.mantle-brand {
+  color: #a3e635;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.mantle-nav-link,
+.mantle-button {
+  display: inline-flex;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.mantle-nav-link {
+  color: #d8e0d0;
+  font-size: 0.88rem;
+}
+
+.mantle-hero {
+  max-width: 58rem;
+  padding: 8rem 0 6rem;
+}
+
+.mantle-eyebrow {
+  margin-bottom: 0.9rem;
+  color: #a3e635;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.mantle-hero h1 {
+  max-width: 52rem;
+  font-size: clamp(3rem, 7vw, 6.5rem);
+  line-height: 0.96;
+  letter-spacing: -0.085em;
+}
+
+.mantle-lede,
+.mantle-audit-card p,
+.mantle-step p {
+  color: #aeb9a7;
+}
+
+.mantle-lede {
+  max-width: 44rem;
+  margin-top: 1.5rem;
+  font-size: 1.08rem;
+}
+
+.mantle-actions {
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.mantle-button {
+  padding: 0.7rem 0.95rem;
+  border-radius: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.mantle-button-primary {
+  color: #16220e;
+  background: #a3e635;
+}
+
+.mantle-button-secondary {
+  color: #dce5d4;
+  border: 1px solid rgba(238, 243, 232, 0.18);
+}
+
+.mantle-flow,
+.mantle-audit-card {
+  max-width: 74rem;
+}
+
+.mantle-section-heading h2,
+.mantle-audit-card h2 {
+  font-size: clamp(1.8rem, 3vw, 3rem);
+  line-height: 1.05;
+  letter-spacing: -0.06em;
+}
+
+.mantle-step-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.8rem;
+  margin-top: 1.5rem;
+}
+
+.mantle-step,
+.mantle-audit-card {
+  border: 1px solid rgba(238, 243, 232, 0.13);
+  border-radius: 0.75rem;
+  background: rgba(23, 25, 25, 0.84);
+}
+
+.mantle-step {
+  padding: 1.25rem;
+}
+
+.mantle-step svg {
+  color: #a3e635;
+}
+
+.mantle-step h3 {
+  margin: 2.2rem 0 0.35rem;
+  font-size: 1rem;
+}
+
+.mantle-step p,
+.mantle-audit-card p {
+  max-width: 40rem;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.mantle-audit-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2rem;
+  align-items: end;
+  margin-top: 4rem;
+  padding: 1.5rem;
+}
+
+.mantle-audit-card h2 {
+  margin-bottom: 0.6rem;
+}
+
+.mantle-verdict {
+  gap: 0.5rem;
+  max-width: 15rem;
+  color: #a3e635;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .mantle-hero {
+    padding: 5rem 0 4rem;
+  }
+
+  .mantle-step-grid,
+  .mantle-audit-card {
+    grid-template-columns: 1fr;
+  }
+}
