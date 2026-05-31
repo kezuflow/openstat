@@ -59,6 +59,7 @@ export async function buildApp() {
       "X-Requested-With",
       "X-OpenStat-Organization-Id",
       "X-OpenStat-Project-Id",
+      "X-OpenStat-Source",
     ],
     maxAge: 86_400,
   });

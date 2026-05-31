@@ -43,6 +43,15 @@ export type TradingIdentity = {
   venue?: string;
 };
 
+export type EventContext = {
+  agent?: AgentInput;
+  runId?: string;
+  traceId?: string;
+  spanId?: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
+};
+
 export type StartAgentRunInput = {
   runId?: string;
   strategy?: string;
@@ -93,16 +102,14 @@ export class OpenStatClient {
   }
 
   recordDecision(input: {
-    agent?: AgentInput;
-    runId?: string;
     action: string;
     confidence?: number;
     rationaleSummary?: string;
-  } & TradingIdentity) {
+  } & EventContext &
+    TradingIdentity) {
     return this.sendEvent({
-      agent: input.agent,
+      ...this.createEventContext(input),
       type: "decision",
-      run_id: input.runId,
       data: {
         strategy: input.strategy,
         symbol: input.symbol,
@@ -115,16 +122,13 @@ export class OpenStatClient {
   }
 
   recordRiskCheck(input: {
-    agent?: AgentInput;
-    runId?: string;
     decisionId?: string;
     result: "approved" | "rejected" | "warn";
     reason?: string;
-  }) {
+  } & EventContext) {
     return this.sendEvent({
-      agent: input.agent,
+      ...this.createEventContext(input),
       type: "risk_check",
-      run_id: input.runId,
       data: {
         decision_id: input.decisionId,
         result: input.result,
@@ -134,21 +138,28 @@ export class OpenStatClient {
   }
 
   recordOrder(input: {
-    agent?: AgentInput;
-    runId?: string;
     orderId?: string;
+    decisionId?: string;
     side: "buy" | "sell";
     orderType: "market" | "limit" | "stop" | "stop_limit";
     quantity: string | number;
     price?: string | number;
-    status?: string;
-  } & TradingIdentity) {
+    status?:
+      | "pending"
+      | "submitted"
+      | "partially_filled"
+      | "filled"
+      | "cancelled"
+      | "rejected"
+      | "failed";
+  } & EventContext &
+    TradingIdentity) {
     return this.sendEvent({
-      agent: input.agent,
+      ...this.createEventContext(input),
       type: "order",
-      run_id: input.runId,
       data: {
         order_id: input.orderId,
+        decision_id: input.decisionId,
         strategy: input.strategy,
         symbol: input.symbol,
         venue: input.venue,
@@ -162,19 +173,18 @@ export class OpenStatClient {
   }
 
   recordFill(input: {
-    agent?: AgentInput;
-    runId?: string;
     fillId?: string;
     orderId?: string;
     side: "buy" | "sell";
     quantity: string | number;
     price: string | number;
     fee?: string | number;
-  } & TradingIdentity) {
+    status?: "partial" | "filled" | "cancelled";
+  } & EventContext &
+    TradingIdentity) {
     return this.sendEvent({
-      agent: input.agent,
+      ...this.createEventContext(input),
       type: "fill",
-      run_id: input.runId,
       data: {
         fill_id: input.fillId,
         order_id: input.orderId,
@@ -185,20 +195,38 @@ export class OpenStatClient {
         quantity: input.quantity,
         price: input.price,
         fee: input.fee,
+        status: input.status,
+      },
+    });
+  }
+
+  recordPosition(input: {
+    quantity: string | number;
+    averagePrice?: string | number;
+  } & EventContext &
+    TradingIdentity) {
+    return this.sendEvent({
+      ...this.createEventContext(input),
+      type: "position",
+      data: {
+        strategy: input.strategy,
+        symbol: input.symbol,
+        venue: input.venue,
+        quantity: input.quantity,
+        average_price: input.averagePrice,
       },
     });
   }
 
   recordPnlSnapshot(input: {
-    agent?: AgentInput;
     strategy?: string;
     symbol?: string;
     realizedPnl?: string | number;
     unrealizedPnl?: string | number;
     equity?: string | number;
-  }) {
+  } & EventContext) {
     return this.sendEvent({
-      agent: input.agent,
+      ...this.createEventContext(input),
       type: "pnl_snapshot",
       data: {
         strategy: input.strategy,
@@ -211,13 +239,12 @@ export class OpenStatClient {
   }
 
   sendHeartbeat(input: {
-    agent?: AgentInput;
     status?: "online" | "stale" | "offline" | "failing" | "unknown";
     expectedCheckInSeconds?: number;
     summary?: string;
-  } = {}) {
+  } & EventContext = {}) {
     return this.sendEvent({
-      agent: input.agent,
+      ...this.createEventContext(input),
       type: "heartbeat",
       data: {
         status: input.status ?? "online",
@@ -227,21 +254,35 @@ export class OpenStatClient {
     });
   }
 
+  recordError(input: {
+    code?: string;
+    message: string;
+    retryable?: boolean;
+  } & EventContext) {
+    return this.sendEvent({
+      ...this.createEventContext(input),
+      type: "error",
+      data: {
+        code: input.code,
+        message: input.message,
+        retryable: input.retryable,
+      },
+    });
+  }
+
   recordModelUsage(input: {
-    agent?: AgentInput;
-    runId?: string;
     provider?: string;
     model?: string;
     status?: string;
     latencyMs?: number;
     inputTokens?: number;
     outputTokens?: number;
+    totalTokens?: number;
     summary?: string;
-  }) {
+  } & EventContext) {
     return this.sendEvent({
-      agent: input.agent,
+      ...this.createEventContext(input),
       type: "completion",
-      run_id: input.runId,
       data: {
         provider: input.provider,
         model: input.model,
@@ -250,6 +291,7 @@ export class OpenStatClient {
         usage: {
           input_tokens: input.inputTokens,
           output_tokens: input.outputTokens,
+          total_tokens: input.totalTokens,
         },
         summary: input.summary,
       },
@@ -257,17 +299,13 @@ export class OpenStatClient {
   }
 
   recordToolCall(input: {
-    agent?: AgentInput;
-    runId?: string;
     toolName: string;
     status?: string;
     summary?: string;
-    metadata?: Record<string, unknown>;
-  }) {
+  } & EventContext) {
     return this.sendEvent({
-      agent: input.agent,
+      ...this.createEventContext(input),
       type: "completion",
-      run_id: input.runId,
       data: {
         status: input.status,
         summary: input.summary,
@@ -305,6 +343,18 @@ export class OpenStatClient {
     return {
       authorization: `Bearer ${this.config.apiKey}`,
       "content-type": "application/json",
+      "x-openstat-source": "sdk",
+    };
+  }
+
+  private createEventContext(input: EventContext) {
+    return {
+      agent: input.agent,
+      run_id: input.runId,
+      trace_id: input.traceId,
+      span_id: input.spanId,
+      tags: input.tags,
+      metadata: input.metadata,
     };
   }
 }

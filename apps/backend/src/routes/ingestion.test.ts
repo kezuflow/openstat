@@ -136,6 +136,62 @@ describe("ingestion routes", () => {
 
     await app.close();
   });
+
+  it("records SDK source headers across native ingestion routes", async () => {
+    const app = await createApp();
+    const requests = [
+      {
+        url: "/v1/ingest/events",
+        payload: {
+          type: "decision",
+          data: {
+            action: "watch",
+            symbol: "BTC-USD",
+          },
+        },
+      },
+      {
+        url: "/v1/ingest/batch",
+        payload: {
+          events: [
+            {
+              type: "heartbeat",
+              data: {},
+            },
+          ],
+        },
+      },
+      {
+        url: "/v1/ingest/heartbeat",
+        payload: {
+          data: {
+            status: "online",
+          },
+        },
+      },
+    ];
+
+    for (const request of requests) {
+      const response = await app.inject({
+        method: "POST",
+        url: request.url,
+        headers: {
+          authorization: "Bearer ostat_public_secret",
+          "x-openstat-source": "sdk",
+        },
+        payload: request.payload,
+      });
+
+      expect(response.statusCode).toBe(202);
+      expect(state.ingestEvent).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          source: "sdk",
+        }),
+      );
+    }
+
+    await app.close();
+  });
 });
 
 async function createApp() {

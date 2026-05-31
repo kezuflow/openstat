@@ -26,5 +26,10 @@ await openstat.recordDecision({
 });
 ```
 
+Native helpers are available for decisions, risk checks, orders, fills,
+positions, PnL snapshots, heartbeats, errors, model usage, and tool calls. Use
+`sendEvent` or `sendBatch` when you need direct access to the normalized event
+model.
+
 For OpenTelemetry exporters, use `createOpenTelemetryHttpConfig` to get the
 OTLP/HTTP endpoints and authorization headers for traces, logs, and metrics.

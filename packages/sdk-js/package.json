@@ -1,6 +1,6 @@
 {
   "name": "openstat",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "OpenStat SDK for AI trading agent telemetry",
   "type": "module",
   "license": "MIT",

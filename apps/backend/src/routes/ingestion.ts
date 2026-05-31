@@ -65,7 +65,7 @@ export async function registerIngestionRoutes(app: FastifyInstance) {
         db: database.db,
         auth,
         input: { events: [input] },
-        source: "http",
+        source: getNativeIngestionSource(request.headers["x-openstat-source"]),
         publisher: ingestionSignalPublisher,
         requestId: request.id,
       });
@@ -106,7 +106,7 @@ export async function registerIngestionRoutes(app: FastifyInstance) {
         db: database.db,
         auth,
         input,
-        source: "http",
+        source: getNativeIngestionSource(request.headers["x-openstat-source"]),
         publisher: ingestionSignalPublisher,
         requestId: request.id,
       });
@@ -161,7 +161,7 @@ export async function registerIngestionRoutes(app: FastifyInstance) {
         db: database.db,
         auth,
         input: { events: [input] },
-        source: "http",
+        source: getNativeIngestionSource(request.headers["x-openstat-source"]),
         publisher: ingestionSignalPublisher,
         requestId: request.id,
       });
@@ -169,4 +169,8 @@ export async function registerIngestionRoutes(app: FastifyInstance) {
       return reply.status(202).send(result);
     },
   );
+}
+
+function getNativeIngestionSource(sourceHeader: unknown) {
+  return sourceHeader === "sdk" ? "sdk" : "http";
 }
