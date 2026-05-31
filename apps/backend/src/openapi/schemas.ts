@@ -1,6 +1,74 @@
 export const bearerSecurity = [{ bearerAuth: [] }] as const;
 export const sessionCookieSecurity = [{ sessionCookie: [] }] as const;
 
+export const chainTransactionSchema = {
+  type: "object",
+  required: [
+    "id",
+    "organizationId",
+    "projectId",
+    "chain",
+    "chainId",
+    "transactionHash",
+    "status",
+    "submittedAt",
+    "createdAt",
+    "updatedAt",
+  ],
+  additionalProperties: true,
+  properties: {
+    id: { type: "string", format: "uuid" },
+    chain: { type: "string", const: "mantle" },
+    chainId: { type: "integer", enum: [5000, 5003] },
+    transactionHash: { type: "string" },
+    action: { type: ["string", "null"] },
+    status: { type: "string", enum: ["submitted", "confirmed", "reverted"] },
+    explorerUrl: { type: ["string", "null"] },
+  },
+} as const;
+
+export const chainTransactionListResponseSchema = {
+  type: "object",
+  required: ["transactions"],
+  properties: {
+    transactions: {
+      type: "array",
+      items: chainTransactionSchema,
+    },
+  },
+} as const;
+
+export const auditInsightResponseSchema = {
+  type: "object",
+  required: ["insight"],
+  properties: {
+    insight: {
+      type: "object",
+      additionalProperties: true,
+      required: [
+        "id",
+        "externalRunId",
+        "verdict",
+        "riskScore",
+        "summary",
+        "anomalyFlags",
+        "telemetryDigest",
+        "insightDigest",
+      ],
+      properties: {
+        id: { type: "string", format: "uuid" },
+        externalRunId: { type: "string" },
+        verdict: { type: "string", enum: ["pass", "warning", "fail"] },
+        riskScore: { type: "integer", minimum: 0, maximum: 100 },
+        summary: { type: "string" },
+        anomalyFlags: { type: "array", items: { type: "string" } },
+        telemetryDigest: { type: "string" },
+        insightDigest: { type: "string" },
+      },
+    },
+  },
+} as const;
+
 export const errorResponseSchema = {
   type: "object",
   required: ["error"],
