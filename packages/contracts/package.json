@@ -1,0 +1,26 @@
+{
+  "name": "@openstat/contracts",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "hardhat compile",
+    "compile": "hardhat compile",
+    "test": "hardhat test solidity",
+    "check-types": "tsc --noEmit",
+    "deploy:mantle-sepolia": "tsx scripts/deploy-mantle-sepolia.ts",
+    "verify:mantle-sepolia": "tsx scripts/verify-mantle-sepolia.ts",
+    "read:audit": "tsx scripts/read-audit.ts"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "viem": "^2.51.3"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^22.15.3",
+    "hardhat": "^3.7.0",
+    "tsx": "^4.20.6",
+    "typescript": "5.9.2"
+  }
+}
