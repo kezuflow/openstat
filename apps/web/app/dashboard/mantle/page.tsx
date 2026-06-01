@@ -16,5 +16,5 @@ export default async function MantleRedirectPage(
   const searchParams = await props.searchParams;
   const range = parseDashboardRange(getFirstParam(searchParams?.range));
 
-  redirect(`/dashboard/onchain?range=${range}&chain=mantle`);
+  redirect(`/dashboard/onchain/mantle?range=${range}`);
 }

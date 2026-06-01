@@ -14,7 +14,6 @@ export function DashboardRouteShell(props: {
   data: DashboardData;
   inspector?: DashboardInspectorData;
   range: DashboardRange;
-  rangeQueryParams?: Record<string, string | undefined>;
   title: string;
 }) {
   const rangeBasePath = props.closeHref?.split("?")[0] ?? "/dashboard";
@@ -30,7 +29,6 @@ export function DashboardRouteShell(props: {
         <DashboardTopToolbar
           range={props.range}
           rangeBasePath={rangeBasePath}
-          rangeQueryParams={props.rangeQueryParams}
           title={props.title}
           unreadNotifications={unreadNotifications}
         />

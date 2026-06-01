@@ -65,8 +65,7 @@
   line-height: 16px;
 }
 
-.onchain-filter select,
-.onchain-filter button {
+.onchain-filter select {
   min-height: 34px;
   border: 1px solid var(--line);
   border-radius: var(--radius-3xl);
@@ -80,16 +79,6 @@
 .onchain-filter select {
   min-width: 130px;
   padding: 0 12px;
-}
-
-.onchain-filter button {
-  padding: 0 14px;
-  cursor: pointer;
-}
-
-.onchain-filter button:hover {
-  border-color: color-mix(in oklab, var(--accent) 45%, var(--line));
-  background: color-mix(in oklab, var(--surface-secondary) 82%, var(--accent));
 }
 
 .dashboard-settings-list {
