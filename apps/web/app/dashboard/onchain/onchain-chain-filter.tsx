@@ -3,23 +3,12 @@
 import { useRouter } from "next/navigation";
 
 import type { DashboardChainFilter } from "../../../lib/openstat-api";
+import { onchainChainFilters } from "./onchain-chain-options";
 
 type OnchainChainFilterProps = {
   chain: DashboardChainFilter;
-  getHref: (chain: DashboardChainFilter) => string;
-  range: string;
+  hrefByChain: Record<DashboardChainFilter, string>;
 };
-
-const chainFilters = [
-  { href: "/dashboard/onchain", label: "All chains", value: "all" },
-  { href: "/dashboard/onchain/mantle", label: "Mantle", value: "mantle" },
-  { href: "/dashboard/onchain/base", label: "Base", value: "base" },
-  { href: "/dashboard/onchain/bnb", label: "BNB Chain", value: "bnb" },
-] as const satisfies Array<{
-  href: string;
-  label: string;
-  value: DashboardChainFilter;
-}>;
 
 export function OnchainChainFilter(props: OnchainChainFilterProps) {
   const router = useRouter();
@@ -32,12 +21,12 @@ export function OnchainChainFilter(props: OnchainChainFilterProps) {
         id="onchain-chain"
         onChange={(event) => {
           router.push(
-            props.getHref(event.target.value as DashboardChainFilter),
+            props.hrefByChain[event.target.value as DashboardChainFilter],
           );
         }}
         value={props.chain}
       >
-        {chainFilters.map((filter) => (
+        {onchainChainFilters.map((filter) => (
           <option key={filter.value} value={filter.value}>
             {filter.label}
           </option>
@@ -45,12 +34,4 @@ export function OnchainChainFilter(props: OnchainChainFilterProps) {
       </select>
     </div>
   );
-}
-
-export function getChainFilterLabel(chain: DashboardChainFilter) {
-  return chainFilters.find((filter) => filter.value === chain)?.label;
-}
-
-export function getChainFilterHref(chain: DashboardChainFilter) {
-  return chainFilters.find((filter) => filter.value === chain)?.href;
 }

@@ -18,8 +18,8 @@ import { DashboardRouteShell } from "../dashboard-route-shell";
 import {
   getChainFilterLabel,
   getChainFilterHref,
-  OnchainChainFilter,
-} from "./onchain-chain-filter";
+} from "./onchain-chain-options";
+import { OnchainChainFilter } from "./onchain-chain-filter";
 
 export type OnchainDashboardProps = {
   chain: DashboardChainFilter;
@@ -46,8 +46,12 @@ export async function OnchainDashboard(props: OnchainDashboardProps) {
         actions={
           <OnchainChainFilter
             chain={props.chain}
-            getHref={(chain) => buildOnchainHref({ chain, range })}
-            range={range}
+            hrefByChain={{
+              all: buildOnchainHref({ chain: "all", range }),
+              base: buildOnchainHref({ chain: "base", range }),
+              bnb: buildOnchainHref({ chain: "bnb", range }),
+              mantle: buildOnchainHref({ chain: "mantle", range }),
+            }}
           />
         }
         eyebrow="Blockchain verification"
