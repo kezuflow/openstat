@@ -468,14 +468,16 @@ function ApiKeyStatusChip(props: { isRevoked: boolean }) {
 
 async function requestJson<T>(path: string, init: RequestInit): Promise<T> {
   await ensureClientWorkspaceInitialized();
+  const headers = new Headers(init.headers);
+
+  if (init.body && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
 
   const response = await fetch(`${apiUrl}${path}`, {
     ...init,
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...init.headers,
-    },
+    headers,
   });
   const data = (await response.json().catch(() => undefined)) as
     | { error?: { message?: string } }
