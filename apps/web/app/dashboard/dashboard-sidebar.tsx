@@ -25,6 +25,7 @@ import type { DashboardUser } from "../../lib/openstat-api";
 
 const apiUrl =
   process.env.NEXT_PUBLIC_OPENSTAT_API_URL ?? "http://localhost:4000";
+const cachedDashboardUserKey = "openstat.dashboard-user";
 
 type NavItem = {
   label: string;
@@ -158,12 +159,19 @@ function SidebarContent(props: {
     let isMounted = true;
 
     async function loadUser() {
+      const cachedUser = getCachedDashboardUser();
+
+      if (cachedUser && isMounted) {
+        setUser(cachedUser);
+      }
+
       try {
         const response = await fetch(`${apiUrl}/v1/me`, {
           credentials: "include",
         });
 
         if (!response.ok) {
+          clearCachedDashboardUser();
           return;
         }
 
@@ -174,6 +182,8 @@ function SidebarContent(props: {
         if (isMounted) {
           setUser(session.user);
         }
+
+        cacheDashboardUser(session.user);
       } catch {
         // The dashboard data fetches still surface auth problems.
       }
@@ -289,6 +299,7 @@ function SidebarNavButton(props: {
           credentials: "include",
         });
       } finally {
+        clearCachedDashboardUser();
         window.location.href = "/";
       }
 
@@ -332,4 +343,32 @@ function SidebarNavButton(props: {
       ) : null}
     </Button>
   );
+}
+
+function cacheDashboardUser(user: DashboardUser | undefined) {
+  if (!user) {
+    clearCachedDashboardUser();
+    return;
+  }
+
+  window.sessionStorage.setItem(cachedDashboardUserKey, JSON.stringify(user));
+}
+
+function clearCachedDashboardUser() {
+  window.sessionStorage.removeItem(cachedDashboardUserKey);
+}
+
+function getCachedDashboardUser(): DashboardUser | undefined {
+  const cachedUser = window.sessionStorage.getItem(cachedDashboardUserKey);
+
+  if (!cachedUser) {
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(cachedUser) as DashboardUser;
+  } catch {
+    clearCachedDashboardUser();
+    return undefined;
+  }
 }

@@ -189,6 +189,12 @@ export function createOpenStatAuth(options: {
       provider: "pg",
       schema,
     }),
+    session: {
+      cookieCache: {
+        enabled: true,
+        maxAge: 60,
+      },
+    },
     emailVerification: {
       sendOnSignUp: options.requireEmailVerification,
       sendOnSignIn: options.requireEmailVerification,

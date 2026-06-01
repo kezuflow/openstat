@@ -106,6 +106,8 @@ For the hosted `*.openstat.online` deployment, the backend resolves the shared
 Better Auth cookie domain as `.openstat.online`. Set
 `BETTER_AUTH_COOKIE_DOMAIN` explicitly for custom split web/API deployments
 that need shared session cookies.
+Better Auth session checks use a short-lived signed cookie cache to avoid a
+database lookup on every dashboard refresh while keeping revocation lag small.
 
 For split web/API deployments, do not leave web API variables pointed at
 `localhost`. Set `apps/web` `NEXT_PUBLIC_OPENSTAT_API_URL` to the public backend
