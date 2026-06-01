@@ -974,6 +974,7 @@ export const chainTransactions = pgTable(
   (table) => [
     uniqueIndex("chain_transactions_project_chain_hash_idx").on(
       table.projectId,
+      table.chain,
       table.chainId,
       table.transactionHash,
     ),

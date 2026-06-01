@@ -1,0 +1,2 @@
+DROP INDEX "chain_transactions_project_chain_hash_idx";--> statement-breakpoint
+CREATE UNIQUE INDEX "chain_transactions_project_chain_hash_idx" ON "chain_transactions" USING btree ("project_id","chain","chain_id","transaction_hash");

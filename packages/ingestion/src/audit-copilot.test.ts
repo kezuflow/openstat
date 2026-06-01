@@ -5,6 +5,7 @@ import { summarizeMantleRpcError } from "./integrations/mantle/rpc.js";
 
 const confirmedTransaction = {
   action: "anchor_audit",
+  chain: "mantle",
   chainId: 5003,
   status: "confirmed" as const,
   transactionHash: `0x${"a".repeat(64)}`,

@@ -1521,6 +1521,7 @@ async function projectChainTransaction(
     .where(
       and(
         eq(schema.chainTransactions.projectId, row.projectId),
+        eq(schema.chainTransactions.chain, chain),
         eq(schema.chainTransactions.chainId, chainId),
         eq(schema.chainTransactions.transactionHash, transactionHash),
       ),

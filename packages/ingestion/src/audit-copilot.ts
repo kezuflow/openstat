@@ -19,6 +19,7 @@ export type RunAuditInput = {
   transactions: Array<{
     action?: string | null;
     blockNumber?: string | null;
+    chain: string;
     chainId: number;
     explorerUrl?: string | null;
     gasUsed?: string | null;

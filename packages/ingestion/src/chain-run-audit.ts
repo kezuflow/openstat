@@ -49,6 +49,7 @@ export async function getChainRunAudit(options: {
         .select({
           action: schema.chainTransactions.action,
           blockNumber: schema.chainTransactions.blockNumber,
+          chain: schema.chainTransactions.chain,
           chainId: schema.chainTransactions.chainId,
           explorerUrl: schema.chainTransactions.explorerUrl,
           gasUsed: schema.chainTransactions.gasUsed,
@@ -111,6 +112,7 @@ export async function createChainRunAuditInsight(options: {
     transactions: audit.chainTransactions.map((transaction) => ({
       action: transaction.action,
       blockNumber: transaction.blockNumber,
+      chain: transaction.chain,
       chainId: transaction.chainId,
       explorerUrl: transaction.explorerUrl,
       gasUsed: transaction.gasUsed,
