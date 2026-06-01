@@ -53,6 +53,45 @@
   gap: 16px;
 }
 
+.onchain-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.onchain-filter label {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.onchain-filter select,
+.onchain-filter button {
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-3xl);
+  background: var(--surface-secondary);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.onchain-filter select {
+  min-width: 130px;
+  padding: 0 12px;
+}
+
+.onchain-filter button {
+  padding: 0 14px;
+  cursor: pointer;
+}
+
+.onchain-filter button:hover {
+  border-color: color-mix(in oklab, var(--accent) 45%, var(--line));
+  background: color-mix(in oklab, var(--surface-secondary) 82%, var(--accent));
+}
+
 .dashboard-settings-list {
   display: grid;
   gap: 10px;

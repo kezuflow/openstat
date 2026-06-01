@@ -4,6 +4,7 @@ import type {
 } from "../../lib/openstat-api";
 
 export type DashboardSearchParams = {
+  chain?: string | string[];
   cursor?: string | string[];
   cursorStack?: string | string[];
   eventScope?: string | string[];

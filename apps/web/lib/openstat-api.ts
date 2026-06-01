@@ -292,12 +292,24 @@ export async function getDashboardEvents(
   };
 }
 
-export async function getDashboardMantleTransactions() {
+export type DashboardChainFilter = "all" | "mantle" | "base" | "bnb";
+
+export async function getDashboardOnchainTransactions(
+  options: {
+    chain?: Exclude<DashboardChainFilter, "all">;
+  } = {},
+) {
   await ensureWorkspaceInitialized();
+
+  const query = new URLSearchParams({ limit: "50" });
+
+  if (options.chain) {
+    query.set("chain", options.chain);
+  }
 
   const transactions = await getJson<{
     transactions: DashboardChainTransaction[];
-  }>("/v1/audit/transactions?chain=mantle&limit=50");
+  }>(`/v1/audit/transactions?${query.toString()}`);
 
   return {
     errors: transactions.ok ? [] : [transactions.error],

@@ -19,6 +19,7 @@ export function DashboardTopToolbar(props: {
   eyebrow?: string;
   range: DashboardRange;
   rangeBasePath?: string;
+  rangeQueryParams?: Record<string, string | undefined>;
   showSignIn?: boolean;
   title?: string;
   unreadNotifications: number;
@@ -69,7 +70,11 @@ export function DashboardTopToolbar(props: {
               <a
                 aria-current={props.range === range ? "page" : undefined}
                 className="dashboard-range-link"
-                href={`${rangeBasePath}?range=${range}`}
+                href={buildRangeHref(
+                  rangeBasePath,
+                  range,
+                  props.rangeQueryParams,
+                )}
                 key={range}
               >
                 {range}
@@ -80,7 +85,11 @@ export function DashboardTopToolbar(props: {
           <a
             aria-label="Refresh dashboard"
             className="dashboard-icon-link"
-            href={`${rangeBasePath}?range=${props.range}`}
+            href={buildRangeHref(
+              rangeBasePath,
+              props.range,
+              props.rangeQueryParams,
+            )}
           >
             <RefreshCw aria-hidden="true" size={16} />
           </a>
@@ -94,6 +103,22 @@ export function DashboardTopToolbar(props: {
       </div>
     </header>
   );
+}
+
+function buildRangeHref(
+  rangeBasePath: string,
+  range: DashboardRange,
+  params: Record<string, string | undefined> = {},
+) {
+  const query = new URLSearchParams({ range });
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value) {
+      query.set(key, value);
+    }
+  }
+
+  return `${rangeBasePath}?${query.toString()}`;
 }
 
 export function DashboardPanel(props: {
