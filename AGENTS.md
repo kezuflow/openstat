@@ -102,6 +102,11 @@ Mantle anchor indexing is also optional. Enable
 `MANTLE_SEPOLIA_ANCHOR_CONTRACT_ADDRESS` and, for initial backfill,
 `MANTLE_ANCHOR_INDEX_START_BLOCK`.
 
+For the hosted `*.openstat.online` deployment, the backend resolves the shared
+Better Auth cookie domain as `.openstat.online`. Set
+`BETTER_AUTH_COOKIE_DOMAIN` explicitly for custom split web/API deployments
+that need shared session cookies.
+
 For split web/API deployments, do not leave web API variables pointed at
 `localhost`. Set `apps/web` `NEXT_PUBLIC_OPENSTAT_API_URL` to the public backend
 origin, and set backend `APP_WEB_URL`, `API_PUBLIC_URL`, and `BETTER_AUTH_URL`

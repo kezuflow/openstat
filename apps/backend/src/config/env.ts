@@ -1,6 +1,8 @@
 import { config as loadEnv } from "dotenv";
 import { z } from "zod";
 
+import { resolveAuthCookieDomain } from "./auth-cookie-domain.js";
+
 loadEnv({ quiet: true });
 
 const nodeEnvSchema = z
@@ -216,7 +218,11 @@ export const env = {
   databaseUrl: parsedEnv.DATABASE_URL,
   betterAuthSecret: parsedEnv.BETTER_AUTH_SECRET ?? fallbackSecret,
   betterAuthUrl: parsedEnv.BETTER_AUTH_URL ?? parsedEnv.API_PUBLIC_URL,
-  betterAuthCookieDomain: parsedEnv.BETTER_AUTH_COOKIE_DOMAIN,
+  betterAuthCookieDomain: resolveAuthCookieDomain({
+    apiPublicUrl: parsedEnv.API_PUBLIC_URL,
+    appWebUrl: parsedEnv.APP_WEB_URL,
+    configuredDomain: parsedEnv.BETTER_AUTH_COOKIE_DOMAIN,
+  }),
   authRequireEmailVerification:
     parsedEnv.AUTH_REQUIRE_EMAIL_VERIFICATION === undefined
       ? parsedEnv.NODE_ENV === "production"

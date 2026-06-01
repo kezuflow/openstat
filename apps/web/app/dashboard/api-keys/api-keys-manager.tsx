@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertDialog,
   Button,
@@ -54,6 +54,34 @@ export function ApiKeysManager(props: {
     () => apiKeys.filter((apiKey) => !apiKey.revokedAt).length,
     [apiKeys],
   );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadApiKeys() {
+      try {
+        const response = await requestJson<{
+          apiKeys: Array<DashboardApiKey>;
+        }>("/v1/api-keys", {
+          method: "GET",
+        });
+
+        if (isMounted) {
+          setApiKeys(response.apiKeys);
+        }
+      } catch (requestError) {
+        if (isMounted && props.initialApiKeys.length === 0) {
+          setError(getErrorMessage(requestError));
+        }
+      }
+    }
+
+    void loadApiKeys();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [props.initialApiKeys.length]);
 
   async function createApiKey(formData: FormData) {
     setError(undefined);
