@@ -1,6 +1,6 @@
 import { schema } from "@openstat/db";
 import { fromNodeHeaders } from "better-auth/node";
-import { eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 
 import { auth, database } from "../context.js";
@@ -24,7 +24,9 @@ export async function registerWorkspaceRoutes(app: FastifyInstance) {
     const existingMembership = await findFirstMembership(session.user.id);
 
     if (existingMembership) {
-      const project = await ensureDefaultProject(existingMembership.organizationId);
+      const project = await ensureDefaultProject(
+        existingMembership.organizationId,
+      );
 
       return {
         workspaceId: existingMembership.organizationId,
@@ -86,20 +88,46 @@ async function findFirstMembership(userId: string) {
     })
     .from(schema.memberships)
     .where(eq(schema.memberships.userId, userId))
+    .orderBy(asc(schema.memberships.createdAt))
     .limit(1);
 
   return membership;
 }
 
 async function ensureDefaultProject(organizationId: string) {
+  const [defaultProject] = await database.db
+    .select({ id: schema.projects.id })
+    .from(schema.projects)
+    .where(
+      and(
+        eq(schema.projects.organizationId, organizationId),
+        eq(schema.projects.isDefault, true),
+      ),
+    )
+    .limit(1);
+
+  if (defaultProject) {
+    return defaultProject;
+  }
+
   const [existingProject] = await database.db
     .select({ id: schema.projects.id })
     .from(schema.projects)
     .where(eq(schema.projects.organizationId, organizationId))
+    .orderBy(asc(schema.projects.createdAt), asc(schema.projects.id))
     .limit(1);
 
   if (existingProject) {
-    return existingProject;
+    const [project] = await database.db
+      .update(schema.projects)
+      .set({
+        isDefault: true,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.projects.id, existingProject.id))
+      .returning({ id: schema.projects.id });
+
+    return project ?? existingProject;
   }
 
   const [project] = await database.db
