@@ -186,22 +186,10 @@ function SidebarContent(props: {
     };
   }, []);
 
-  const displayName = user?.name || "OpenStat";
-  const displayEmail = user?.email || "Workspace";
-  const initials = getInitials(displayName, displayEmail);
-
   return (
     <div className="dashboard-sidebar-inner">
       <div>
-        <div className="dashboard-profile">
-          <Avatar className="dashboard-profile-avatar" size="md">
-            <Avatar.Fallback>{initials}</Avatar.Fallback>
-          </Avatar>
-          <div className="dashboard-profile-copy">
-            <strong>{displayName}</strong>
-            <span>{displayEmail}</span>
-          </div>
-        </div>
+        <DashboardProfile user={user} />
 
         <Separator className="dashboard-sidebar-separator" variant="tertiary" />
 
@@ -231,14 +219,48 @@ function SidebarContent(props: {
   );
 }
 
-function getInitials(name: string, email: string) {
-  const source = name === "OpenStat" ? email : name;
-  const parts = source
+function DashboardProfile(props: { user?: DashboardUser }) {
+  const displayEmail = props.user?.email?.trim();
+  const displayName = props.user?.name?.trim() || displayEmail;
+
+  if (!displayName) {
+    return (
+      <div
+        aria-busy="true"
+        aria-label="Loading profile"
+        className="dashboard-profile dashboard-profile-loading"
+      >
+        <span className="dashboard-profile-loading-avatar" />
+        <span className="dashboard-profile-loading-copy">
+          <span />
+          <span />
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="dashboard-profile">
+      <Avatar className="dashboard-profile-avatar" size="md">
+        <Avatar.Fallback>{getInitials(displayName)}</Avatar.Fallback>
+      </Avatar>
+      <div className="dashboard-profile-copy">
+        <strong>{displayName}</strong>
+        {displayEmail && displayEmail !== displayName ? (
+          <span>{displayEmail}</span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function getInitials(name: string) {
+  const parts = name
     .split(/[\s@._-]+/u)
     .filter(Boolean)
     .slice(0, 2);
 
-  return (parts.map((part) => part[0]).join("") || "OS").toUpperCase();
+  return parts.map((part) => part[0]).join("").toUpperCase();
 }
 
 function SidebarNavButton(props: {

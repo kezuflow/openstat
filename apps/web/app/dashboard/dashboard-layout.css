@@ -198,6 +198,34 @@ body[data-dashboard-theme="light"] .dashboard-layout .dashboard-drawer-panel,
   height: 36px;
 }
 
+.dashboard-profile-loading-avatar,
+.dashboard-profile-loading-copy span {
+  display: block;
+  border-radius: var(--radius);
+  background: color-mix(in oklab, var(--muted) 22%, transparent);
+}
+
+.dashboard-profile-loading-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+
+.dashboard-profile-loading-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.dashboard-profile-loading-copy span:first-child {
+  width: 82px;
+  height: 12px;
+}
+
+.dashboard-profile-loading-copy span:last-child {
+  width: 116px;
+  height: 10px;
+}
+
 .dashboard-profile-avatar .avatar__fallback {
   border: 1px solid color-mix(in oklab, var(--accent) 34%, #050605);
   background: linear-gradient(135deg, #050605 0%, #11140f 48%, var(--accent) 100%);
