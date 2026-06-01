@@ -13,6 +13,8 @@ export type OpenStatClientConfig = {
   fetch?: typeof fetch;
 };
 
+export const DEFAULT_OPENSTAT_ENDPOINT = "https://api.openstat.online";
+
 export type NativeEvent = {
   id?: string;
   schema_version?: 1;
@@ -68,7 +70,7 @@ export class OpenStatClient {
   private readonly fetcher: typeof fetch;
 
   constructor(private readonly config: OpenStatClientConfig) {
-    this.endpoint = (config.endpoint ?? "http://localhost:4000").replace(
+    this.endpoint = (config.endpoint ?? DEFAULT_OPENSTAT_ENDPOINT).replace(
       /\/$/u,
       "",
     );
@@ -410,7 +412,7 @@ export class OpenStatClient {
 }
 
 export function createOpenTelemetryHttpConfig(config: OpenStatClientConfig) {
-  const endpoint = (config.endpoint ?? "http://localhost:4000").replace(
+  const endpoint = (config.endpoint ?? DEFAULT_OPENSTAT_ENDPOINT).replace(
     /\/$/u,
     "",
   );

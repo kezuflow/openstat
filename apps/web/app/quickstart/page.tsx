@@ -40,7 +40,7 @@ export default function QuickstartPage() {
               <code>OPENSTAT_API_KEY</code>.
             </p>
             <pre>
-              <code>{`OPENSTAT_API_KEY=ostat_...\nOPENSTAT_ENDPOINT=http://localhost:4000`}</code>
+              <code>{`OPENSTAT_API_KEY=ostat_...\nOPENSTAT_ENDPOINT=https://api.openstat.online`}</code>
             </pre>
           </div>
         </section>
@@ -54,7 +54,7 @@ export default function QuickstartPage() {
               and OpenTelemetry HTTP exporter configuration.
             </p>
             <pre>
-              <code>{`pnpm add openstat\npip install openstat`}</code>
+              <code>{`pnpm add openstat\npip install openstat-sdk`}</code>
             </pre>
           </div>
         </section>

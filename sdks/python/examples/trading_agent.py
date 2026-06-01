@@ -1,9 +1,11 @@
+import os
+
 from openstat import OpenStatClient
 
 
 client = OpenStatClient(
     api_key="ostat_demo_secret",
-    endpoint="http://localhost:4000",
+    endpoint=os.getenv("OPENSTAT_ENDPOINT"),
     service_name="python-paper-trader",
     environment="development",
 )

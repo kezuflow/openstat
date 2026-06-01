@@ -2,12 +2,16 @@
 
 Python helpers for sending native OpenStat telemetry from AI trading agents.
 
+```sh
+pip install openstat-sdk
+```
+
 ```python
 from openstat import OpenStatClient
 
 client = OpenStatClient(
     api_key="ostat_...",
-    endpoint="https://api.example.com",
+    endpoint="https://api.openstat.online",
     service_name="paper-trader",
     environment="production",
 )
@@ -25,6 +29,10 @@ client.record_decision(
     rationale_summary="Momentum and risk budget aligned.",
 )
 ```
+
+`endpoint` defaults to `https://api.openstat.online`. Set
+`OPENSTAT_ENDPOINT=http://localhost:4000` only when sending telemetry to a local
+OpenStat API during development.
 
 Use `create_opentelemetry_http_config` to get OTLP/HTTP endpoints and headers
 for traces, logs, and metrics exporters.
