@@ -84,6 +84,7 @@ describe("OpenStat ingestion schemas", () => {
           usage: {
             input_tokens: 10,
             output_tokens: 20,
+            total_tokens: 30,
           },
         },
       }).type,

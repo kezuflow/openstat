@@ -97,6 +97,62 @@ def test_record_tool_call_matches_completion_shape(monkeypatch):
     assert captured["body"]["metadata"]["service_name"] == "pytest-agent"
 
 
+def test_expanded_helpers_match_native_event_shape(monkeypatch):
+    captured = []
+
+    def fake_urlopen(req, timeout):
+        captured.append(json.loads(req.data.decode("utf-8")))
+        return FakeResponse()
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    client = OpenStatClient(api_key="ostat_public_secret", service_name="pytest-agent")
+
+    client.record_order(
+        agent={"id": "agent-test"},
+        run_id="run_123",
+        trace_id="trace_123",
+        span_id="span_123",
+        tags=["paper"],
+        metadata={"broker": "paper"},
+        decision_id="decision_123",
+        symbol="BTC-USD",
+        side="buy",
+        order_type="limit",
+        quantity="0.10",
+    )
+    client.record_fill(
+        symbol="BTC-USD",
+        side="buy",
+        quantity="0.10",
+        price="62500",
+        status="partial",
+    )
+    client.record_position(
+        strategy="breakout",
+        symbol="BTC-USD",
+        venue="paper",
+        quantity="0.10",
+        average_price="62500",
+    )
+    client.record_error(code="BROKER_TIMEOUT", message="Broker timed out.", retryable=True)
+    client.record_model_usage(model="gpt-5.4", total_tokens=42)
+
+    assert captured[0]["run_id"] == "run_123"
+    assert captured[0]["trace_id"] == "trace_123"
+    assert captured[0]["span_id"] == "span_123"
+    assert captured[0]["tags"] == ["paper"]
+    assert captured[0]["metadata"]["broker"] == "paper"
+    assert captured[0]["data"]["decision_id"] == "decision_123"
+    assert captured[1]["type"] == "fill"
+    assert captured[1]["data"]["status"] == "partial"
+    assert captured[2]["type"] == "position"
+    assert captured[2]["data"]["average_price"] == "62500"
+    assert captured[3]["type"] == "error"
+    assert captured[3]["data"]["retryable"] is True
+    assert captured[4]["type"] == "completion"
+    assert captured[4]["data"]["usage"]["total_tokens"] == 42
+
+
 def test_send_event_raises_api_error(monkeypatch):
     def fake_urlopen(_req, timeout):
         raise HTTPError(

@@ -75,6 +75,12 @@ export const orderStatus = pgEnum("order_status", [
   "failed",
 ]);
 
+export const fillStatus = pgEnum("fill_status", [
+  "partial",
+  "filled",
+  "cancelled",
+]);
+
 export const chainReceiptStatus = pgEnum("chain_receipt_status", [
   "submitted",
   "confirmed",
@@ -677,6 +683,7 @@ export const fills = pgTable(
     quantity: text("quantity").notNull(),
     price: text("price").notNull(),
     fee: text("fee"),
+    status: fillStatus("status").notNull().default("filled"),
     filledAt: timestamp("filled_at", { withTimezone: true }).notNull(),
     metadata: jsonb("metadata")
       .$type<Record<string, unknown>>()

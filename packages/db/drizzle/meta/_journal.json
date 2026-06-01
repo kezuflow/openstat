@@ -29,6 +29,13 @@
       "when": 1780301348522,
       "tag": "0003_smiling_blockbuster",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1780330380476,
+      "tag": "0004_nebulous_vindicator",
+      "breakpoints": true
     }
   ]
 }

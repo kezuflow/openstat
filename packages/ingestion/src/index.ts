@@ -1604,6 +1604,7 @@ async function maybeProjectLlmUsage(
   const usage = isRecord(data.usage) ? data.usage : {};
   const inputTokens = getNumber(usage.input_tokens);
   const outputTokens = getNumber(usage.output_tokens);
+  const totalTokens = getNumber(usage.total_tokens);
   const latencyMs =
     getNumber(data.latency_ms) ?? getNumber(metadata.latency_ms);
 
@@ -1612,6 +1613,7 @@ async function maybeProjectLlmUsage(
     !provider &&
     inputTokens === undefined &&
     outputTokens === undefined &&
+    totalTokens === undefined &&
     latencyMs === undefined
   ) {
     return;
@@ -1624,9 +1626,10 @@ async function maybeProjectLlmUsage(
     inputTokens,
     outputTokens,
     totalTokens:
-      inputTokens !== undefined && outputTokens !== undefined
+      totalTokens ??
+      (inputTokens !== undefined && outputTokens !== undefined
         ? inputTokens + outputTokens
-        : undefined,
+        : undefined),
     latencyMs,
     status: getString(data.status),
   });
@@ -1713,6 +1716,7 @@ async function projectTradingEvent(
         quantity: getDecimalString(data.quantity, "fill.quantity"),
         price: getDecimalString(data.price, "fill.price"),
         fee: getOptionalDecimalString(data.fee),
+        status: getFillStatus(data.status),
         filledAt: timestamp,
         metadata: event.metadata ?? {},
       });
@@ -2257,6 +2261,19 @@ function getOrderStatus(value: unknown) {
         "INVALID_OUTBOX_PAYLOAD",
         "Invalid order status.",
       );
+  }
+}
+
+function getFillStatus(value: unknown) {
+  const status = getString(value) ?? "filled";
+
+  switch (status) {
+    case "partial":
+    case "filled":
+    case "cancelled":
+      return status;
+    default:
+      throw new IngestionError("INVALID_OUTBOX_PAYLOAD", "Invalid fill status.");
   }
 }
 

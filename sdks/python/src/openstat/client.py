@@ -74,6 +74,10 @@ class OpenStatClient:
         *,
         agent: JsonObject | None = None,
         run_id: str | None = None,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+        tags: list[str] | None = None,
+        metadata: JsonObject | None = None,
         strategy: str | None = None,
         symbol: str,
         venue: str | None = None,
@@ -83,9 +87,15 @@ class OpenStatClient:
     ) -> Any:
         return self.send_event(
             {
-                "agent": agent,
+                **self._event_context(
+                    agent=agent,
+                    run_id=run_id,
+                    trace_id=trace_id,
+                    span_id=span_id,
+                    tags=tags,
+                    metadata=metadata,
+                ),
                 "type": "decision",
-                "run_id": run_id,
                 "data": {
                     "strategy": strategy,
                     "symbol": symbol,
@@ -102,6 +112,10 @@ class OpenStatClient:
         *,
         agent: JsonObject | None = None,
         run_id: str | None = None,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+        tags: list[str] | None = None,
+        metadata: JsonObject | None = None,
         chain: str,
         chain_id: int,
         tx_hash: str,
@@ -112,9 +126,15 @@ class OpenStatClient:
     ) -> Any:
         return self.send_event(
             {
-                "agent": agent,
+                **self._event_context(
+                    agent=agent,
+                    run_id=run_id,
+                    trace_id=trace_id,
+                    span_id=span_id,
+                    tags=tags,
+                    metadata=metadata,
+                ),
                 "type": "chain_transaction",
-                "run_id": run_id,
                 "data": {
                     "chain": chain,
                     "chain_id": chain_id,
@@ -132,15 +152,25 @@ class OpenStatClient:
         *,
         agent: JsonObject | None = None,
         run_id: str | None = None,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+        tags: list[str] | None = None,
+        metadata: JsonObject | None = None,
         decision_id: str | None = None,
         result: str,
         reason: str | None = None,
     ) -> Any:
         return self.send_event(
             {
-                "agent": agent,
+                **self._event_context(
+                    agent=agent,
+                    run_id=run_id,
+                    trace_id=trace_id,
+                    span_id=span_id,
+                    tags=tags,
+                    metadata=metadata,
+                ),
                 "type": "risk_check",
-                "run_id": run_id,
                 "data": {
                     "decision_id": decision_id,
                     "result": result,
@@ -154,7 +184,12 @@ class OpenStatClient:
         *,
         agent: JsonObject | None = None,
         run_id: str | None = None,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+        tags: list[str] | None = None,
+        metadata: JsonObject | None = None,
         order_id: str | None = None,
+        decision_id: str | None = None,
         strategy: str | None = None,
         symbol: str,
         venue: str | None = None,
@@ -166,11 +201,18 @@ class OpenStatClient:
     ) -> Any:
         return self.send_event(
             {
-                "agent": agent,
+                **self._event_context(
+                    agent=agent,
+                    run_id=run_id,
+                    trace_id=trace_id,
+                    span_id=span_id,
+                    tags=tags,
+                    metadata=metadata,
+                ),
                 "type": "order",
-                "run_id": run_id,
                 "data": {
                     "order_id": order_id,
+                    "decision_id": decision_id,
                     "strategy": strategy,
                     "symbol": symbol,
                     "venue": venue,
@@ -188,6 +230,10 @@ class OpenStatClient:
         *,
         agent: JsonObject | None = None,
         run_id: str | None = None,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+        tags: list[str] | None = None,
+        metadata: JsonObject | None = None,
         fill_id: str | None = None,
         order_id: str | None = None,
         strategy: str | None = None,
@@ -197,12 +243,19 @@ class OpenStatClient:
         quantity: str | int | float,
         price: str | int | float,
         fee: str | int | float | None = None,
+        status: str | None = None,
     ) -> Any:
         return self.send_event(
             {
-                "agent": agent,
+                **self._event_context(
+                    agent=agent,
+                    run_id=run_id,
+                    trace_id=trace_id,
+                    span_id=span_id,
+                    tags=tags,
+                    metadata=metadata,
+                ),
                 "type": "fill",
-                "run_id": run_id,
                 "data": {
                     "fill_id": fill_id,
                     "order_id": order_id,
@@ -213,6 +266,43 @@ class OpenStatClient:
                     "quantity": quantity,
                     "price": price,
                     "fee": fee,
+                    "status": status,
+                },
+            }
+        )
+
+    def record_position(
+        self,
+        *,
+        agent: JsonObject | None = None,
+        run_id: str | None = None,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+        tags: list[str] | None = None,
+        metadata: JsonObject | None = None,
+        strategy: str | None = None,
+        symbol: str,
+        venue: str | None = None,
+        quantity: str | int | float,
+        average_price: str | int | float | None = None,
+    ) -> Any:
+        return self.send_event(
+            {
+                **self._event_context(
+                    agent=agent,
+                    run_id=run_id,
+                    trace_id=trace_id,
+                    span_id=span_id,
+                    tags=tags,
+                    metadata=metadata,
+                ),
+                "type": "position",
+                "data": {
+                    "strategy": strategy,
+                    "symbol": symbol,
+                    "venue": venue,
+                    "quantity": quantity,
+                    "average_price": average_price,
                 },
             }
         )
@@ -221,6 +311,11 @@ class OpenStatClient:
         self,
         *,
         agent: JsonObject | None = None,
+        run_id: str | None = None,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+        tags: list[str] | None = None,
+        metadata: JsonObject | None = None,
         strategy: str | None = None,
         symbol: str | None = None,
         realized_pnl: str | int | float | None = None,
@@ -229,7 +324,14 @@ class OpenStatClient:
     ) -> Any:
         return self.send_event(
             {
-                "agent": agent,
+                **self._event_context(
+                    agent=agent,
+                    run_id=run_id,
+                    trace_id=trace_id,
+                    span_id=span_id,
+                    tags=tags,
+                    metadata=metadata,
+                ),
                 "type": "pnl_snapshot",
                 "data": {
                     "strategy": strategy,
@@ -245,13 +347,25 @@ class OpenStatClient:
         self,
         *,
         agent: JsonObject | None = None,
+        run_id: str | None = None,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+        tags: list[str] | None = None,
+        metadata: JsonObject | None = None,
         status: str = "online",
         expected_check_in_seconds: int | None = None,
         summary: str | None = None,
     ) -> Any:
         return self.send_event(
             {
-                "agent": agent,
+                **self._event_context(
+                    agent=agent,
+                    run_id=run_id,
+                    trace_id=trace_id,
+                    span_id=span_id,
+                    tags=tags,
+                    metadata=metadata,
+                ),
                 "type": "heartbeat",
                 "data": {
                     "status": status,
@@ -261,24 +375,67 @@ class OpenStatClient:
             }
         )
 
+    def record_error(
+        self,
+        *,
+        agent: JsonObject | None = None,
+        run_id: str | None = None,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+        tags: list[str] | None = None,
+        metadata: JsonObject | None = None,
+        code: str | None = None,
+        message: str,
+        retryable: bool | None = None,
+    ) -> Any:
+        return self.send_event(
+            {
+                **self._event_context(
+                    agent=agent,
+                    run_id=run_id,
+                    trace_id=trace_id,
+                    span_id=span_id,
+                    tags=tags,
+                    metadata=metadata,
+                ),
+                "type": "error",
+                "data": {
+                    "code": code,
+                    "message": message,
+                    "retryable": retryable,
+                },
+            }
+        )
+
     def record_model_usage(
         self,
         *,
         agent: JsonObject | None = None,
         run_id: str | None = None,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+        tags: list[str] | None = None,
+        metadata: JsonObject | None = None,
         provider: str | None = None,
         model: str | None = None,
         status: str | None = None,
         latency_ms: int | None = None,
         input_tokens: int | None = None,
         output_tokens: int | None = None,
+        total_tokens: int | None = None,
         summary: str | None = None,
     ) -> Any:
         return self.send_event(
             {
-                "agent": agent,
+                **self._event_context(
+                    agent=agent,
+                    run_id=run_id,
+                    trace_id=trace_id,
+                    span_id=span_id,
+                    tags=tags,
+                    metadata=metadata,
+                ),
                 "type": "completion",
-                "run_id": run_id,
                 "data": {
                     "provider": provider,
                     "model": model,
@@ -287,6 +444,7 @@ class OpenStatClient:
                     "usage": {
                         "input_tokens": input_tokens,
                         "output_tokens": output_tokens,
+                        "total_tokens": total_tokens,
                     },
                     "summary": summary,
                 },
@@ -298,23 +456,33 @@ class OpenStatClient:
         *,
         agent: JsonObject | None = None,
         run_id: str | None = None,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+        tags: list[str] | None = None,
         tool_name: str,
         status: str | None = None,
         summary: str | None = None,
         metadata: JsonObject | None = None,
     ) -> Any:
+        tool_metadata = {
+            **(metadata or {}),
+            "tool_name": tool_name,
+        }
+
         return self.send_event(
             {
-                "agent": agent,
+                **self._event_context(
+                    agent=agent,
+                    run_id=run_id,
+                    trace_id=trace_id,
+                    span_id=span_id,
+                    tags=tags,
+                    metadata=tool_metadata,
+                ),
                 "type": "completion",
-                "run_id": run_id,
                 "data": {
                     "status": status,
                     "summary": summary,
-                },
-                "metadata": {
-                    **(metadata or {}),
-                    "tool_name": tool_name,
                 },
             }
         )
@@ -345,6 +513,25 @@ class OpenStatClient:
                 "redaction_enabled": self.config.default_redaction,
             }
         )
+
+    def _event_context(
+        self,
+        *,
+        agent: JsonObject | None = None,
+        run_id: str | None = None,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+        tags: list[str] | None = None,
+        metadata: JsonObject | None = None,
+    ) -> JsonObject:
+        return {
+            "agent": agent,
+            "run_id": run_id,
+            "trace_id": trace_id,
+            "span_id": span_id,
+            "tags": tags,
+            "metadata": metadata,
+        }
 
     def _post(self, path: str, payload: JsonObject) -> Any:
         body = json.dumps(_drop_none(payload)).encode("utf-8")
