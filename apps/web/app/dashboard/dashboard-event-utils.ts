@@ -73,7 +73,7 @@ export function summarizeEvent(event: DashboardEvent) {
     }
     case "fill": {
       return [
-        "Filled",
+        capitalize(getString(data.status) ?? "filled"),
         getDecimal(data.quantity),
         getString(data.symbol),
         getDecimal(data.price) ? `at ${getDecimal(data.price)}` : undefined,
@@ -82,7 +82,14 @@ export function summarizeEvent(event: DashboardEvent) {
         .join(" ");
     }
     case "position": {
-      return ["Position", getDecimal(data.quantity), getString(data.symbol)]
+      return [
+        "Position",
+        getDecimal(data.quantity),
+        getString(data.symbol),
+        getDecimal(data.average_price)
+          ? `avg ${getDecimal(data.average_price)}`
+          : undefined,
+      ]
         .filter(Boolean)
         .join(" ");
     }
@@ -95,6 +102,9 @@ export function summarizeEvent(event: DashboardEvent) {
         getDecimal(data.realized_pnl)
           ? `realized ${getDecimal(data.realized_pnl)}`
           : undefined,
+        getDecimal(data.unrealized_pnl)
+          ? `unrealized ${getDecimal(data.unrealized_pnl)}`
+          : undefined,
       ]
         .filter(Boolean)
         .join(" - ");
@@ -106,6 +116,8 @@ export function summarizeEvent(event: DashboardEvent) {
       );
     }
     case "completion": {
+      const usage = getRecord(data.usage);
+
       return [
         getString(data.model) ??
           getString(event.metadata?.model) ??
@@ -113,12 +125,21 @@ export function summarizeEvent(event: DashboardEvent) {
         getNumber(data.latency_ms) === undefined
           ? undefined
           : `${getNumber(data.latency_ms)}ms`,
+        getNumber(usage?.total_tokens) === undefined
+          ? undefined
+          : `${getNumber(usage?.total_tokens)?.toLocaleString()} tokens`,
       ]
         .filter(Boolean)
         .join(" - ");
     }
     case "error": {
-      return getString(data.message) ?? getString(data.code) ?? "Error event";
+      const code = getString(data.code);
+      const message = getString(data.message);
+      const retryable = data.retryable === true ? "retryable" : undefined;
+
+      return (
+        [code, message, retryable].filter(Boolean).join(" - ") || "Error event"
+      );
     }
     default:
       return "Telemetry event";
@@ -171,6 +192,12 @@ function getString(value: unknown) {
 function getNumber(value: unknown) {
   return typeof value === "number" && Number.isFinite(value)
     ? value
+    : undefined;
+}
+
+function getRecord(value: unknown) {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
     : undefined;
 }
 

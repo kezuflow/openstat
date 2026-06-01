@@ -19,7 +19,6 @@ import {
   getChainFilterLabel,
   getChainFilterHref,
 } from "./onchain-chain-options";
-import { OnchainChainFilter } from "./onchain-chain-filter";
 
 export type OnchainDashboardProps = {
   chain: DashboardChainFilter;
@@ -43,17 +42,6 @@ export async function OnchainDashboard(props: OnchainDashboardProps) {
       title="Onchain transactions"
     >
       <DashboardPanel
-        actions={
-          <OnchainChainFilter
-            chain={props.chain}
-            hrefByChain={{
-              all: buildOnchainHref({ chain: "all", range }),
-              base: buildOnchainHref({ chain: "base", range }),
-              bnb: buildOnchainHref({ chain: "bnb", range }),
-              mantle: buildOnchainHref({ chain: "mantle", range }),
-            }}
-          />
-        }
         eyebrow="Blockchain verification"
         title="Observed transactions"
         titleCount={onchain.transactions.length}

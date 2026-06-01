@@ -6,5 +6,5 @@ type OnchainPageProps = {
 };
 
 export default function OnchainTransactionsPage(props: OnchainPageProps) {
-  return <OnchainDashboard chain="all" searchParams={props.searchParams} />;
+  return <OnchainDashboard chain="mantle" searchParams={props.searchParams} />;
 }

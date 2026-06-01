@@ -75,6 +75,10 @@ export function DashboardInspector(props: {
                     Timeline
                     <Tabs.Indicator />
                   </Tabs.Tab>
+                  <Tabs.Tab id="details">
+                    Details
+                    <Tabs.Indicator />
+                  </Tabs.Tab>
                   <Tabs.Tab id="raw">
                     Raw
                     <Tabs.Indicator />
@@ -107,6 +111,13 @@ export function DashboardInspector(props: {
                 <InspectorTimeline data={props.inspector.data} />
               </Tabs.Panel>
 
+              <Tabs.Panel className="dashboard-inspector-panel" id="details">
+                <InspectorDetails
+                  data={props.inspector.data}
+                  kind={props.inspector.kind}
+                />
+              </Tabs.Panel>
+
               <Tabs.Panel className="dashboard-inspector-panel" id="raw">
                 <pre className="dashboard-inspector-json">
                   {JSON.stringify(props.inspector.data, null, 2)}
@@ -122,6 +133,236 @@ export function DashboardInspector(props: {
       </Drawer.Content>
     </Drawer.Backdrop>
   );
+}
+
+function InspectorDetails(props: {
+  data: unknown;
+  kind: DashboardInspectorData["kind"];
+}) {
+  const sections = getInspectorDetailSections(props.kind, props.data);
+
+  if (sections.length === 0) {
+    return (
+      <p className="dashboard-inspector-muted">
+        No structured details are available for this item yet.
+      </p>
+    );
+  }
+
+  return (
+    <div className="dashboard-inspector-details">
+      {sections.map((section, index) => (
+        <section key={`${section.title}-${index}`}>
+          <h3>{section.title}</h3>
+          <dl>
+            {section.entries.map((entry) => (
+              <div key={entry.label}>
+                <dt>{entry.label}</dt>
+                <dd>{entry.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function getInspectorDetailSections(
+  kind: DashboardInspectorData["kind"],
+  data: unknown,
+) {
+  const record = asRecord(data);
+
+  if (kind === "event") {
+    const eventContainer = asRecord(record?.event);
+    const event = asRecord(eventContainer?.event) ?? eventContainer;
+
+    return getEventSections(event);
+  }
+
+  if (kind === "trade") {
+    const trade = asRecord(record?.trade) ?? record;
+    const order = asRecord(trade?.order) ?? trade;
+    const decision = asRecord(trade?.decision);
+    const fills = Array.isArray(trade?.fills) ? trade.fills : [];
+
+    return [
+      createDetailSection("Order", order, [
+        "externalOrderId",
+        "decisionId",
+        "strategy",
+        "symbol",
+        "venue",
+        "side",
+        "orderType",
+        "quantity",
+        "price",
+        "status",
+        "submittedAt",
+        "metadata",
+      ]),
+      createDetailSection("Decision", decision, [
+        "strategy",
+        "symbol",
+        "action",
+        "confidence",
+        "rationaleSummary",
+        "decidedAt",
+        "metadata",
+      ]),
+      ...fills.map((fill, index) =>
+        createDetailSection(`Fill ${index + 1}`, asRecord(fill), [
+          "externalFillId",
+          "symbol",
+          "venue",
+          "side",
+          "quantity",
+          "price",
+          "fee",
+          "status",
+          "filledAt",
+          "metadata",
+        ]),
+      ),
+    ].filter(isDetailSection);
+  }
+
+  if (kind === "run") {
+    const run = asRecord(record?.run);
+    const decisions = Array.isArray(record?.decisions) ? record.decisions : [];
+
+    return [
+      createDetailSection("Run", run, [
+        "externalRunId",
+        "strategy",
+        "status",
+        "startedAt",
+        "endedAt",
+        "metadata",
+      ]),
+      ...decisions.map((decision, index) =>
+        createDetailSection(`Decision ${index + 1}`, asRecord(decision), [
+          "strategy",
+          "symbol",
+          "action",
+          "confidence",
+          "rationaleSummary",
+          "decidedAt",
+          "metadata",
+        ]),
+      ),
+    ].filter(isDetailSection);
+  }
+
+  if (kind === "trace") {
+    const events = getArrayFromUnknown(data, "events");
+
+    return events.flatMap((event, index) =>
+      getEventSections(asRecord(event), `Event ${index + 1}`),
+    );
+  }
+
+  const detail = asRecord(record?.[kind]) ?? record;
+
+  return [createDetailSection(formatDetailLabel(kind), detail)].filter(
+    isDetailSection,
+  );
+}
+
+function getEventSections(
+  event: Record<string, unknown> | undefined,
+  title = "Event",
+) {
+  return [
+    createDetailSection(title, event, [
+      "eventType",
+      "source",
+      "traceId",
+      "spanId",
+      "runId",
+      "timestamp",
+      "tags",
+    ]),
+    createDetailSection("Data", asRecord(event?.data)),
+    createDetailSection("Metadata", asRecord(event?.metadata)),
+  ].filter(isDetailSection);
+}
+
+type InspectorDetailSection = {
+  entries: Array<{ label: string; value: string }>;
+  title: string;
+};
+
+function createDetailSection(
+  title: string,
+  record: Record<string, unknown> | undefined,
+  keys?: string[],
+): InspectorDetailSection | undefined {
+  if (!record) {
+    return undefined;
+  }
+
+  const entries = (keys ?? Object.keys(record))
+    .flatMap((key) => {
+      const value = record[key];
+      const formatted = formatDetailValue(value);
+
+      return formatted === undefined
+        ? []
+        : [{ label: formatDetailLabel(key), value: formatted }];
+    })
+    .slice(0, 24);
+
+  return entries.length > 0 ? { entries, title } : undefined;
+}
+
+function isDetailSection(
+  section: InspectorDetailSection | undefined,
+): section is InspectorDetailSection {
+  return Boolean(section);
+}
+
+function formatDetailLabel(value: string) {
+  const spaced = value
+    .replaceAll("_", " ")
+    .replace(/([a-z0-9])([A-Z])/gu, "$1 $2")
+    .trim();
+
+  return spaced
+    ? `${spaced.slice(0, 1).toUpperCase()}${spaced.slice(1)}`
+    : value;
+}
+
+function formatDetailValue(value: unknown) {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return undefined;
+    }
+
+    return value.every(
+      (item) =>
+        typeof item === "string" ||
+        typeof item === "number" ||
+        typeof item === "boolean",
+    )
+      ? value.map(String).join(", ")
+      : JSON.stringify(value, null, 2);
+  }
+
+  if (typeof value === "object") {
+    const record = asRecord(value);
+
+    return record && Object.keys(record).length > 0
+      ? JSON.stringify(record, null, 2)
+      : undefined;
+  }
+
+  return String(value);
 }
 
 function InspectorTimeline(props: { data: unknown }) {
