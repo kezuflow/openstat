@@ -14,6 +14,19 @@ const optionalNonEmptyString = z.preprocess((value) => {
 
   return value;
 }, z.string().min(1).optional());
+const optionalEvmAddress = z.preprocess(
+  (value) => {
+    if (typeof value === "string" && value.trim() === "") {
+      return undefined;
+    }
+
+    return value;
+  },
+  z
+    .string()
+    .regex(/^0x[0-9a-f]{40}$/iu)
+    .optional(),
+);
 
 const rawEnvSchema = z.object({
   NODE_ENV: nodeEnvSchema,
@@ -64,7 +77,20 @@ const rawEnvSchema = z.object({
   INGESTION_WORKER_POLL_MS: z.coerce.number().int().positive().default(1_000),
   INGESTION_LOCK_TTL_SECONDS: z.coerce.number().int().positive().default(60),
   INGESTION_WORKER_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5),
+  CHAIN_RECONCILIATION_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .optional(),
+  CHAIN_RPC_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
   MANTLE_RECONCILIATION_ENABLED: z.enum(["true", "false"]).optional(),
+  MANTLE_ANCHOR_INDEXING_ENABLED: z.enum(["true", "false"]).optional(),
+  MANTLE_SEPOLIA_ANCHOR_CONTRACT_ADDRESS: optionalEvmAddress,
+  MANTLE_ANCHOR_INDEX_START_BLOCK: z.coerce
+    .number()
+    .int()
+    .nonnegative()
+    .optional(),
   MANTLE_RECONCILIATION_INTERVAL_MS: z.coerce
     .number()
     .int()
@@ -76,6 +102,18 @@ const rawEnvSchema = z.object({
     .string()
     .url()
     .default("https://rpc.sepolia.mantle.xyz"),
+  BASE_RECONCILIATION_ENABLED: z.enum(["true", "false"]).optional(),
+  BASE_MAINNET_RPC_URL: z.string().url().default("https://mainnet.base.org"),
+  BASE_SEPOLIA_RPC_URL: z.string().url().default("https://sepolia.base.org"),
+  BNB_RECONCILIATION_ENABLED: z.enum(["true", "false"]).optional(),
+  BNB_MAINNET_RPC_URL: z
+    .string()
+    .url()
+    .default("https://bsc-dataseed.bnbchain.org"),
+  BNB_TESTNET_RPC_URL: z
+    .string()
+    .url()
+    .default("https://data-seed-prebsc-1-s1.bnbchain.org:8545"),
   RETENTION_SWEEP_ENABLED: z.enum(["true", "false"]).optional(),
   RETENTION_SWEEP_INTERVAL_MS: z.coerce
     .number()
@@ -117,6 +155,59 @@ if (
   );
 }
 
+const mantleReconciliationEnabled =
+  parsedEnv.MANTLE_RECONCILIATION_ENABLED === undefined
+    ? true
+    : parsedEnv.MANTLE_RECONCILIATION_ENABLED === "true";
+const baseReconciliationEnabled =
+  parsedEnv.BASE_RECONCILIATION_ENABLED === "true";
+const bnbReconciliationEnabled =
+  parsedEnv.BNB_RECONCILIATION_ENABLED === "true";
+const chainReconciliationTargets = [
+  ...(mantleReconciliationEnabled
+    ? [
+        {
+          chain: "mantle",
+          chainId: 5000,
+          rpcUrl: parsedEnv.MANTLE_MAINNET_RPC_URL,
+        },
+        {
+          chain: "mantle",
+          chainId: 5003,
+          rpcUrl: parsedEnv.MANTLE_SEPOLIA_RPC_URL,
+        },
+      ]
+    : []),
+  ...(baseReconciliationEnabled
+    ? [
+        {
+          chain: "base",
+          chainId: 8453,
+          rpcUrl: parsedEnv.BASE_MAINNET_RPC_URL,
+        },
+        {
+          chain: "base",
+          chainId: 84532,
+          rpcUrl: parsedEnv.BASE_SEPOLIA_RPC_URL,
+        },
+      ]
+    : []),
+  ...(bnbReconciliationEnabled
+    ? [
+        {
+          chain: "bnb",
+          chainId: 56,
+          rpcUrl: parsedEnv.BNB_MAINNET_RPC_URL,
+        },
+        {
+          chain: "bnb",
+          chainId: 97,
+          rpcUrl: parsedEnv.BNB_TESTNET_RPC_URL,
+        },
+      ]
+    : []),
+] as const;
+
 export const env = {
   nodeEnv: parsedEnv.NODE_ENV,
   port: parsedEnv.PORT,
@@ -154,12 +245,17 @@ export const env = {
   ingestionWorkerPollMs: parsedEnv.INGESTION_WORKER_POLL_MS,
   ingestionLockTtlSeconds: parsedEnv.INGESTION_LOCK_TTL_SECONDS,
   ingestionWorkerMaxAttempts: parsedEnv.INGESTION_WORKER_MAX_ATTEMPTS,
-  mantleReconciliationEnabled:
-    parsedEnv.MANTLE_RECONCILIATION_ENABLED === undefined
-      ? true
-      : parsedEnv.MANTLE_RECONCILIATION_ENABLED === "true",
-  mantleReconciliationIntervalMs: parsedEnv.MANTLE_RECONCILIATION_INTERVAL_MS,
-  mantleRpcTimeoutMs: parsedEnv.MANTLE_RPC_TIMEOUT_MS,
+  chainReconciliationTargets,
+  chainReconciliationIntervalMs:
+    parsedEnv.CHAIN_RECONCILIATION_INTERVAL_MS ??
+    parsedEnv.MANTLE_RECONCILIATION_INTERVAL_MS,
+  chainRpcTimeoutMs:
+    parsedEnv.CHAIN_RPC_TIMEOUT_MS ?? parsedEnv.MANTLE_RPC_TIMEOUT_MS,
+  mantleAnchorIndexingEnabled:
+    parsedEnv.MANTLE_ANCHOR_INDEXING_ENABLED === "true",
+  mantleSepoliaAnchorContractAddress:
+    parsedEnv.MANTLE_SEPOLIA_ANCHOR_CONTRACT_ADDRESS,
+  mantleAnchorIndexStartBlock: parsedEnv.MANTLE_ANCHOR_INDEX_START_BLOCK,
   mantleMainnetRpcUrl: parsedEnv.MANTLE_MAINNET_RPC_URL,
   mantleSepoliaRpcUrl: parsedEnv.MANTLE_SEPOLIA_RPC_URL,
   retentionSweepEnabled:

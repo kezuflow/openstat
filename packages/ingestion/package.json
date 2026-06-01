@@ -21,7 +21,8 @@
     "@openstat/schemas": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "redis": "4.7.0",
-    "viem": "^2.51.3"
+    "viem": "^2.51.3",
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",

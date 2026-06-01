@@ -12,17 +12,17 @@ product for autonomous agents.
 - `apps/web`: Next.js dashboard app, currently on port `3000`.
 - `apps/docs`: Next.js docs app, currently on port `3001`.
 - `apps/backend`: Fastify API server, currently on port `4000`.
+- `packages/auth`: authentication helpers.
+- `packages/db`: Drizzle schema, migrations, and database utilities.
+- `packages/ingestion`: ingestion, projections, analytics, and optional
+  integration adapters under `src/integrations/*`.
+- `packages/schemas`: shared Zod contracts.
+- `packages/sdk-js`: public `openstat` JavaScript SDK and bundled
+  `openstat-realclaw` wrapper.
 - `packages/ui`: shared React component package exported as `@repo/ui/*`.
 - `packages/contracts`: Hardhat workspace for optional onchain audit anchors.
 - `packages/eslint-config`: shared ESLint configs.
 - `packages/typescript-config`: shared TypeScript configs.
-
-Current backend source imports `@openstat/auth`, `@openstat/db`,
-`@openstat/ingestion`, and `@openstat/schemas`. Those packages are referenced as
-workspace dependencies but are not present under `packages/*` in this checkout.
-If backend builds or tests fail on missing `@openstat/*` modules, first restore
-or add those workspace packages instead of patching around the imports in app
-code.
 
 The product/system design direction lives in
 `docs/plans/openstat-system-design.md`. Read it before making architecture,
@@ -83,11 +83,22 @@ Default local services:
 - Redis: `redis://localhost:6379`
 - Mantle mainnet RPC: `https://rpc.mantle.xyz`
 - Mantle Sepolia RPC: `https://rpc.sepolia.mantle.xyz`
+- Base mainnet RPC: `https://mainnet.base.org`
+- Base Sepolia RPC: `https://sepolia.base.org`
+- BNB Chain mainnet RPC: `https://bsc-dataseed.bnbchain.org`
+- BNB Chain testnet RPC: `https://data-seed-prebsc-1-s1.bnbchain.org:8545`
 
-Mantle receipt reconciliation is optional and read-only. Configure
-`MANTLE_MAINNET_RPC_URL` and `MANTLE_SEPOLIA_RPC_URL` with Alchemy endpoints in
-deployed environments when available. Never store RPC API keys, wallet private
-keys, or signing credentials in telemetry or committed files.
+Chain receipt reconciliation is optional and read-only. Mantle is enabled by
+default; Base and BNB Chain adapters are opt-in through
+`BASE_RECONCILIATION_ENABLED` and `BNB_RECONCILIATION_ENABLED`. Configure
+provider-specific RPC URLs in deployed environments when available. Never store
+RPC API keys, wallet private keys, or signing credentials in telemetry or
+committed files.
+
+Mantle anchor indexing is also optional. Enable
+`MANTLE_ANCHOR_INDEXING_ENABLED` only after setting
+`MANTLE_SEPOLIA_ANCHOR_CONTRACT_ADDRESS` and, for initial backfill,
+`MANTLE_ANCHOR_INDEX_START_BLOCK`.
 
 For split web/API deployments, do not leave web API variables pointed at
 `localhost`. Set `apps/web` `NEXT_PUBLIC_OPENSTAT_API_URL` to the public backend
@@ -100,65 +111,71 @@ ignored.
 ## Backend Conventions
 
 - Edit backend source under `apps/backend/src`; treat `apps/backend/dist` as
-generated build output.
+  generated build output.
 - Keep relative TypeScript imports ESM-compatible. Existing backend source uses
-`.js` extensions in relative imports, for example `./app.js`.
+  `.js` extensions in relative imports, for example `./app.js`.
 - Register Fastify routes from `apps/backend/src/app.ts`.
 - Keep request validation at route boundaries with Zod schemas and Fastify
-OpenAPI schemas.
+  OpenAPI schemas.
 - When adding or changing API behavior, update
-`apps/backend/src/openapi/schemas.ts` and route tests together.
+  `apps/backend/src/openapi/schemas.ts` and route tests together.
 - Preserve organization/project scoping through `auth-scope.ts`; do not bypass
-`resolveReadScope`, `requireSessionScope`, or ingestion auth helpers.
+  `resolveReadScope`, `requireSessionScope`, or ingestion auth helpers.
 - Keep API error responses stable and route-specific, especially error `code`
-values that tests or clients may rely on.
+  values that tests or clients may rely on.
 - Use `app.inject`-style tests for route behavior when possible. Mock database
-and auth dependencies in route unit tests.
+  and auth dependencies in route unit tests.
 - Run `pnpm --filter backend test` after backend route/auth/ingestion changes.
 - Run `pnpm --filter backend test:integration` only when Postgres and any
-required local services are available.
+  required local services are available.
 
 ## Frontend Conventions
 
 - `apps/web` and `apps/docs` use the Next.js App Router.
 - Keep page code in `app/` and package-shared components in `packages/ui/src`.
 - Import shared UI components through `@repo/ui/<component>`, matching the
-package export pattern.
+  package export pattern.
 - Prefer existing CSS module/global CSS patterns before adding new styling
-systems.
+  systems.
 - `apps/web` uses HeroUI v3 with Tailwind CSS v4. Keep
-`@import "tailwindcss";` before `@import "@heroui/styles";` in global CSS.
+  `@import "tailwindcss";` before `@import "@heroui/styles";` in global CSS.
 - When using HeroUI components, follow HeroUI v3 principles: semantic variants
-(`primary`, `secondary`, `tertiary`, `danger`), compound composition, and theme
-tokens before custom slot styling.
+  (`primary`, `secondary`, `tertiary`, `danger`), compound composition, and theme
+  tokens before custom slot styling.
 - Do not define app-owned global CSS selectors that collide with HeroUI BEM
-classes such as `.button`, `.modal`, `.input`, `.label`, `.textfield`,
-`.field-error`, `.card`, `.chip`, `.tabs`, `.popover`, `.drawer`, `.surface`,
-or `.tooltip`. Prefix app-specific classes by feature, for example
-`.landing-*`, `.dashboard-*`, or `.signin-*`.
+  classes such as `.button`, `.modal`, `.input`, `.label`, `.textfield`,
+  `.field-error`, `.card`, `.chip`, `.tabs`, `.popover`, `.drawer`, `.surface`,
+  or `.tooltip`. Prefix app-specific classes by feature, for example
+  `.landing-*`, `.dashboard-*`, or `.signin-*`.
 - Do not hand-roll borders, radius, focus rings, or field surfaces for HeroUI
-primitives. Prefer HeroUI theme variables such as `--accent`,
-`--accent-foreground`, `--surface`, `--overlay`, `--field-*`, `--focus`, and
-`--radius`; add component-specific CSS only for layout, spacing, and genuinely
-product-specific composition.
+  primitives. Prefer HeroUI theme variables such as `--accent`,
+  `--accent-foreground`, `--surface`, `--overlay`, `--field-*`, `--focus`, and
+  `--radius`; add component-specific CSS only for layout, spacing, and genuinely
+  product-specific composition.
 - Do not add app-owned `font-size`, `font-weight`, or `line-height` overrides to
   HeroUI primitives or reusable controls by default. Use HeroUI component
   sizing, variants, and typography defaults first; add custom typography only
   for page-level editorial content or a deliberately scoped product exception.
 - After meaningful UI changes, run the relevant filtered dev server and verify
-the page in a browser when practical.
+  the page in a browser when practical.
 
 ## Package Boundaries
 
 - `packages/ui` should stay framework-light and reusable by both Next apps.
 - Shared TypeScript and ESLint changes affect the whole monorepo; run broader
-validation after editing them.
+  validation after editing them.
 - Avoid importing app-specific code from shared packages.
 - Avoid editing `node_modules`, `.turbo`, `.next`, or other generated/cache
   directories.
-- Keep Mantle-specific RPC code behind the ingestion adapter. Persist generic
-  chain transaction telemetry so later chain integrations do not change the
-  core event model.
+- Keep Mantle-specific behavior under
+  `packages/ingestion/src/integrations/mantle`. Persist generic chain
+  transaction telemetry so later chain integrations use sibling adapter
+  directories without changing the core event model. Register
+  projection-facing chain adapters in
+  `packages/ingestion/src/integrations/registry.ts` and reuse the generic
+  receipt reconciler. Do not add chain-specific branches to core ingestion or
+  the worker. Mantle, Base, and BNB Chain are registered EVM adapters; workers
+  should poll only explicitly configured RPC targets.
 - The public JavaScript SDK remains the `openstat` package. Ship agent wrappers
   such as `openstat-realclaw` inside it instead of creating a competing SDK
   package identity.
@@ -200,8 +217,8 @@ chore(repo): document commit message convention
 - Keep edits scoped to the user request.
 - Prefer existing repo patterns over new abstractions.
 - Add tests when changing backend behavior, authorization, data scoping,
-validation, or response shapes.
+  validation, or response shapes.
 - If generated files appear after builds, do not commit or hand-edit them unless
-the project policy changes.
+  the project policy changes.
 - Update this file when new packages, services, scripts, ports, or verification
-steps are added.
+  steps are added.

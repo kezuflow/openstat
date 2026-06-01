@@ -5,7 +5,10 @@ import {
   createProjectUpdatedMessage,
   DEFAULT_PROJECT_CACHE_DOMAINS,
   invalidateProjectReadCaches,
-  reconcileMantleTransactions,
+  indexMantleAuditAnchors,
+  reconcilePendingChainTransactions,
+  summarizeChainRpcError,
+  summarizeMantleRpcError,
   processClaim,
   REDIS_CHANNELS,
   sweepRetention,
@@ -30,7 +33,8 @@ let shuttingDown = false;
 let pendingWakeup = false;
 let wakeupResolver: (() => void) | undefined;
 let lastRetentionSweepAt = 0;
-let lastMantleReconciliationAt = 0;
+let lastChainReconciliationAt = 0;
+let lastMantleAnchorIndexAt = 0;
 
 process.on("SIGINT", () => {
   shuttingDown = true;
@@ -105,48 +109,101 @@ async function runWorkerPass() {
     defaultOfflineSeconds: env.defaultAgentOfflineSeconds,
   });
 
-  await runMantleReconciliationIfDue();
+  await runChainReconciliationIfDue();
+  await runMantleAnchorIndexIfDue();
   await runRetentionSweepIfDue();
 }
 
-async function runMantleReconciliationIfDue() {
-  if (!env.mantleReconciliationEnabled) {
+async function runMantleAnchorIndexIfDue() {
+  if (
+    !env.mantleAnchorIndexingEnabled ||
+    !env.mantleSepoliaAnchorContractAddress
+  ) {
     return;
   }
 
   const now = Date.now();
 
-  if (now - lastMantleReconciliationAt < env.mantleReconciliationIntervalMs) {
+  if (now - lastMantleAnchorIndexAt < env.chainReconciliationIntervalMs) {
     return;
   }
 
-  lastMantleReconciliationAt = now;
+  lastMantleAnchorIndexAt = now;
 
   try {
-    const result = await reconcileMantleTransactions({
+    const result = await indexMantleAuditAnchors({
+      contractAddress: env.mantleSepoliaAnchorContractAddress,
       db: database.db,
-      pollIntervalMs: env.mantleReconciliationIntervalMs,
-      rpcUrls: {
-        5000: env.mantleMainnetRpcUrl,
-        5003: env.mantleSepoliaRpcUrl,
+      fromBlock:
+        env.mantleAnchorIndexStartBlock === undefined
+          ? undefined
+          : BigInt(env.mantleAnchorIndexStartBlock),
+      rpcUrl: env.mantleSepoliaRpcUrl,
+      timeoutMs: env.chainRpcTimeoutMs,
+    });
+
+    if (result.indexed > 0) {
+      console.info({ workerId, ...result }, "Indexed Mantle audit anchors");
+    }
+  } catch (error) {
+    const summary = summarizeMantleRpcError(error);
+
+    captureException(new Error(summary), {
+      worker: {
+        id: workerId,
+        task: "mantle_anchor_indexing",
       },
-      timeoutMs: env.mantleRpcTimeoutMs,
+    });
+    console.warn({ error: summary, workerId }, "Mantle anchor indexing failed");
+  }
+}
+
+async function runChainReconciliationIfDue() {
+  if (env.chainReconciliationTargets.length === 0) {
+    return;
+  }
+
+  const now = Date.now();
+
+  if (now - lastChainReconciliationAt < env.chainReconciliationIntervalMs) {
+    return;
+  }
+
+  lastChainReconciliationAt = now;
+
+  try {
+    const result = await reconcilePendingChainTransactions({
+      db: database.db,
+      pollIntervalMs: env.chainReconciliationIntervalMs,
+      targets: env.chainReconciliationTargets,
+      timeoutMs: env.chainRpcTimeoutMs,
+      onError: ({ chain, chainId, error, transactionHash }) => {
+        console.warn(
+          {
+            chain,
+            chainId,
+            error: summarizeChainRpcError(error),
+            transactionHash,
+            workerId,
+          },
+          "Chain transaction reconciliation request failed",
+        );
+      },
     });
 
     if (result.checked > 0) {
-      console.info({ workerId, ...result }, "Reconciled Mantle transactions");
+      console.info({ workerId, ...result }, "Reconciled chain transactions");
     }
   } catch (error) {
-    captureException(error, {
+    const summary = summarizeChainRpcError(error);
+
+    captureException(new Error(summary), {
       worker: {
         id: workerId,
-        task: "mantle_reconciliation",
+        task: "chain_reconciliation",
       },
     });
-    console.warn(
-      { error, workerId },
-      "Mantle transaction reconciliation failed",
-    );
+    console.warn({ error: summary, workerId }, "Chain reconciliation failed");
   }
 }
 

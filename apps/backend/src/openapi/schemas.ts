@@ -18,8 +18,8 @@ export const chainTransactionSchema = {
   additionalProperties: true,
   properties: {
     id: { type: "string", format: "uuid" },
-    chain: { type: "string", const: "mantle" },
-    chainId: { type: "integer", enum: [5000, 5003] },
+    chain: { type: "string" },
+    chainId: { type: "integer", minimum: 1 },
     transactionHash: { type: "string" },
     action: { type: ["string", "null"] },
     status: { type: "string", enum: ["submitted", "confirmed", "reverted"] },
@@ -68,6 +68,30 @@ export const auditInsightResponseSchema = {
     },
   },
 } as const;
+
+export const chainRunAuditResponseSchema = {
+  type: "object",
+  required: ["audit"],
+  properties: {
+    audit: {
+      type: "object",
+      additionalProperties: true,
+      required: ["run", "events", "chainTransactions"],
+      properties: {
+        run: { type: "object", additionalProperties: true },
+        events: { type: "array", items: { type: "object" } },
+        chainTransactions: {
+          type: "array",
+          items: { type: "object", additionalProperties: true },
+        },
+        insight: { type: ["object", "null"], additionalProperties: true },
+        anchor: { type: ["object", "null"], additionalProperties: true },
+      },
+    },
+  },
+} as const;
+
+export const mantleRunAuditResponseSchema = chainRunAuditResponseSchema;
 
 export const errorResponseSchema = {
   type: "object",

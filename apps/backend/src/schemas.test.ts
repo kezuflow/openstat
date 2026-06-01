@@ -123,7 +123,7 @@ describe("OpenStat ingestion schemas", () => {
     });
   });
 
-  it("accepts Mantle chain transactions and rejects malformed EVM references", () => {
+  it("accepts normalized chain transactions and rejects malformed EVM references", () => {
     expect(
       ingestEventInputSchema.parse({
         agent: { id: "mantle-agent" },
@@ -140,10 +140,24 @@ describe("OpenStat ingestion schemas", () => {
       }).type,
     ).toBe("chain_transaction");
 
+    expect(
+      chainTransactionDataSchema.parse({
+        chain: "base",
+        chain_id: 8453,
+        tx_hash: `0x${"a".repeat(64)}`,
+      }).chain,
+    ).toBe("base");
     expect(() =>
       chainTransactionDataSchema.parse({
         chain: "mantle",
-        chain_id: 1,
+        chain_id: 0,
+        tx_hash: `0x${"a".repeat(64)}`,
+      }),
+    ).toThrow();
+    expect(() =>
+      chainTransactionDataSchema.parse({
+        chain: "Base Mainnet",
+        chain_id: 8453,
         tx_hash: `0x${"a".repeat(64)}`,
       }),
     ).toThrow();

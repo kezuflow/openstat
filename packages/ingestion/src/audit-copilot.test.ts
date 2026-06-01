@@ -1,16 +1,32 @@
 import { describe, expect, it } from "vitest";
 
-import { analyzeChainTransaction } from "./audit-copilot.js";
+import { analyzeRunAudit } from "./audit-copilot.js";
+import { summarizeMantleRpcError } from "./integrations/mantle/rpc.js";
 
-describe("analyzeChainTransaction", () => {
-  it("passes a confirmed transaction with complete audit context", () => {
-    const result = analyzeChainTransaction({
-      action: "anchor_audit",
-      blockNumber: "42",
-      chainId: 5003,
+const confirmedTransaction = {
+  action: "anchor_audit",
+  chainId: 5003,
+  status: "confirmed" as const,
+  transactionHash: `0x${"a".repeat(64)}`,
+};
+
+describe("analyzeRunAudit", () => {
+  it("passes a confirmed run with intent and risk context", () => {
+    const result = analyzeRunAudit({
+      events: [
+        {
+          data: { action: "anchor" },
+          eventType: "decision",
+          timestamp: "2026-06-01T00:00:00.000Z",
+        },
+        {
+          data: { result: "approved" },
+          eventType: "risk_check",
+          timestamp: "2026-06-01T00:00:01.000Z",
+        },
+      ],
       externalRunId: "run_123",
-      status: "confirmed",
-      transactionHash: `0x${"a".repeat(64)}`,
+      transactions: [confirmedTransaction],
     });
 
     expect(result).toMatchObject({
@@ -22,21 +38,37 @@ describe("analyzeChainTransaction", () => {
     expect(result.insightDigest).toMatch(/^0x[0-9a-f]{64}$/u);
   });
 
-  it("fails a reverted transaction and explains missing context", () => {
-    const result = analyzeChainTransaction({
-      chainId: 5000,
-      status: "reverted",
-      transactionHash: `0x${"b".repeat(64)}`,
-    });
+  it("fails a reverted run and produces stable canonical digests", () => {
+    const input = {
+      events: [],
+      externalRunId: "run_reverted",
+      transactions: [{ ...confirmedTransaction, status: "reverted" as const }],
+    };
 
-    expect(result).toMatchObject({
+    expect(analyzeRunAudit(input)).toMatchObject({
       anomalyFlags: [
+        "missing_timeline_context",
         "transaction_reverted",
-        "missing_run_context",
-        "missing_action_context",
+        "missing_decision_context",
+        "missing_risk_check_context",
       ],
-      riskScore: 95,
+      riskScore: 90,
       verdict: "fail",
     });
+    expect(analyzeRunAudit(input).telemetryDigest).toBe(
+      analyzeRunAudit(structuredClone(input)).telemetryDigest,
+    );
+  });
+});
+
+describe("summarizeMantleRpcError", () => {
+  it("does not expose hosted RPC credentials", () => {
+    const error = new Error(
+      "Request failed at https://mantle-mainnet.g.alchemy.com/v2/super-secret.",
+    );
+
+    expect(summarizeMantleRpcError(error)).toBe(
+      "Mantle RPC request failed (Error).",
+    );
   });
 });

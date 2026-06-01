@@ -22,6 +22,7 @@ import {
 } from "drizzle-orm";
 
 import { getDecisionToTradeSeries } from "./analytics-series.js";
+import { getChainTransactionExplorerUrl } from "./integrations/index.js";
 import { redactTelemetryPayload } from "./redaction.js";
 import {
   REDIS_CHANNELS,
@@ -31,17 +32,37 @@ import {
 
 export { redactTelemetryPayload } from "./redaction.js";
 export {
-  analyzeChainTransaction,
-  type AuditTransactionInput,
+  analyzeRunAudit,
+  auditInsightSchema,
+  type RunAuditInput,
 } from "./audit-copilot.js";
 export {
+  createChainRunAuditInsight,
+  createChainRunAuditInsight as createMantleRunAuditInsight,
+  getChainRunAudit,
+  getChainRunAudit as getMantleRunAudit,
+} from "./chain-run-audit.js";
+export {
+  indexMantleAuditAnchors,
+  reconcileMantleTransactions,
+} from "./integrations/mantle/index.js";
+export {
+  AUDIT_ANCHORED_EVENT,
   createMantleRpcClient,
+  getMantleAuditAnchorLogs,
+  getMantleBlockNumber,
+  getMantleExplorerContractUrl,
   getMantleExplorerTransactionUrl,
   getMantleTransactionReceipt,
   MANTLE_PUBLIC_RPC_URLS,
+  reconcilePendingChainTransactions,
+  summarizeChainRpcError,
+  summarizeMantleRpcError,
+  type ChainReconciliationTarget,
+  type ChainTransactionAdapter,
+  type ChainTransactionReceipt,
   type MantleChainId,
-} from "./mantle-rpc.js";
-export { reconcileMantleTransactions } from "./mantle-reconciliation.js";
+} from "./integrations/index.js";
 export {
   createProjectUpdatedMessage,
   createIngestionRedisClient,
@@ -1074,12 +1095,15 @@ export async function getAnalyticsSummary(options: {
 
 async function getCurrentPnlSummary(db: Database["db"], projectId: string) {
   const snapshots = await db
-    .selectDistinctOn([schema.pnlSnapshots.strategy, schema.pnlSnapshots.symbol], {
-      realizedPnl: schema.pnlSnapshots.realizedPnl,
-      strategy: schema.pnlSnapshots.strategy,
-      symbol: schema.pnlSnapshots.symbol,
-      unrealizedPnl: schema.pnlSnapshots.unrealizedPnl,
-    })
+    .selectDistinctOn(
+      [schema.pnlSnapshots.strategy, schema.pnlSnapshots.symbol],
+      {
+        realizedPnl: schema.pnlSnapshots.realizedPnl,
+        strategy: schema.pnlSnapshots.strategy,
+        symbol: schema.pnlSnapshots.symbol,
+        unrealizedPnl: schema.pnlSnapshots.unrealizedPnl,
+      },
+    )
     .from(schema.pnlSnapshots)
     .where(eq(schema.pnlSnapshots.projectId, projectId))
     .orderBy(
@@ -1460,16 +1484,30 @@ async function projectChainTransaction(
   }
 
   const data = event.data ?? {};
+  const chain = getRequiredString(data.chain, "chain_transaction.chain");
   const chainId = getNumber(data.chain_id);
-  const transactionHash = getRequiredString(
+  const transactionHash = getTransactionHash(
     data.tx_hash,
     "chain_transaction.tx_hash",
-  ).toLowerCase();
+  );
 
-  if (chainId !== 5000 && chainId !== 5003) {
+  if (chainId === undefined) {
     throw new IngestionError(
       "INVALID_OUTBOX_PAYLOAD",
-      "Invalid Mantle chain ID.",
+      "Missing required chain_transaction.chain_id.",
+    );
+  }
+
+  const explorerUrl = getChainTransactionExplorerUrl({
+    chain,
+    chainId,
+    transactionHash,
+  });
+
+  if (!explorerUrl) {
+    throw new IngestionError(
+      "INVALID_OUTBOX_PAYLOAD",
+      "Invalid chain integration or chain ID.",
     );
   }
 
@@ -1495,9 +1533,10 @@ async function projectChainTransaction(
     agentId,
     eventId: createdEvent.id,
     externalRunId: event.run_id,
-    chain: "mantle",
+    chain,
     chainId,
     transactionHash,
+    explorerUrl,
     action: getString(data.action),
     status,
     fromAddress: getLowercaseString(data.from_address),
@@ -2148,6 +2187,19 @@ function getRequiredString(value: unknown, field: string) {
   }
 
   return text;
+}
+
+function getTransactionHash(value: unknown, field: string): `0x${string}` {
+  const text = getRequiredString(value, field).toLowerCase();
+
+  if (!/^0x[0-9a-f]{64}$/u.test(text)) {
+    throw new IngestionError(
+      "INVALID_OUTBOX_PAYLOAD",
+      `Invalid required ${field}.`,
+    );
+  }
+
+  return text as `0x${string}`;
 }
 
 function getDecimalString(value: unknown, field: string) {

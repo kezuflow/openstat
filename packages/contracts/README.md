@@ -30,3 +30,10 @@ Confirm the deployed bytecode is readable from Mantle Sepolia:
 ```sh
 pnpm --filter @openstat/contracts verify:mantle-sepolia -- 0x...
 ```
+
+This command checks bytecode presence only. After deployment, verify the
+Solidity source through the Mantle Explorer verification surface and record the
+contract address, deployment transaction hash, explorer URL, compiler version,
+optimizer settings, and deployment date here.
+
+No Mantle Sepolia deployment has been broadcast from this workspace yet.

@@ -32,6 +32,37 @@ Still planned:
 - More complete dashboard management flows.
 - End-to-end validation on a fresh production-like deployment.
 
+## OpenStat For Mantle
+
+The optional Mantle module correlates an autonomous agent run with its Mantle
+transaction receipts, a deterministic redacted audit insight, and an onchain
+audit commitment. OpenStat remains the analytics layer: it does not custody
+wallets or sign transactions from the backend.
+
+The public `openstat` JavaScript package includes the `openstat-realclaw`
+wrapper. Preview a Byreal-style command before any write:
+
+```sh
+openstat-realclaw exec --dry-run -- <byreal-command> <args>
+openstat-realclaw exec --fixture --dry-run -- fixture
+```
+
+The repeatable local fixture emits allowlisted tool and chain telemetry without
+a wallet. A real `--confirm` command must only be run after reviewing its dry
+run and explicitly approving the write.
+
+Mantle receipt reconciliation works with the public RPC endpoints by default.
+For deployed environments, set `MANTLE_MAINNET_RPC_URL` and
+`MANTLE_SEPOLIA_RPC_URL` to secret Alchemy endpoints. Enable anchor indexing
+only after deploying and verifying `OpenStatAuditAnchor` on Mantle Sepolia.
+
+The same read-only receipt worker supports registered Base and BNB Chain
+adapters. Set `BASE_RECONCILIATION_ENABLED=true` or
+`BNB_RECONCILIATION_ENABLED=true` and replace the corresponding public RPC
+defaults with hosted provider URLs in deployed environments.
+
+See `packages/contracts/README.md` for non-broadcast deployment preparation.
+
 ## Repository Layout
 
 ```text
@@ -41,8 +72,9 @@ apps/
   docs/           Next.js docs app
 packages/
   auth/           API key and auth helpers
+  contracts/      Optional Mantle audit anchor contract workspace
   db/             Drizzle schema, migrations, and database utilities
-  ingestion/      Ingestion, redaction, projection, and read-query logic
+  ingestion/      Core ingestion plus optional integrations/* adapters
   schemas/        Shared Zod contracts
   sdk-js/         TypeScript OpenStat SDK
   ui/             Shared React UI components

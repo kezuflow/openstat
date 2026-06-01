@@ -1,6 +1,12 @@
 import "dotenv/config";
 
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import {
+  createPublicClient,
+  createWalletClient,
+  encodeDeployData,
+  http,
+  type Hex,
+} from "viem";
 import { mantleSepoliaTestnet } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 
@@ -31,6 +37,17 @@ if (chainId !== expectedChainId) {
 console.log(`Network chain ID: ${chainId}`);
 console.log(`Deployer: ${account.address}`);
 
+const artifact = await readAuditAnchorArtifact();
+const estimatedGas = await publicClient.estimateGas({
+  account,
+  data: encodeDeployData({
+    abi: artifact.abi,
+    bytecode: artifact.bytecode,
+  }),
+});
+
+console.log(`Estimated deployment gas: ${estimatedGas}`);
+
 if (!confirmed) {
   console.log("Dry run only. Re-run with --confirm to broadcast deployment.");
   process.exit(0);
@@ -41,7 +58,6 @@ const walletClient = createWalletClient({
   chain: mantleSepoliaTestnet,
   transport,
 });
-const artifact = await readAuditAnchorArtifact();
 const hash = await walletClient.deployContract({
   abi: artifact.abi,
   bytecode: artifact.bytecode,

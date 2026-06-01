@@ -1,27 +1,32 @@
 #!/usr/bin/env node
 
 import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 import { createOpenStatClient } from "./index.js";
 
-const args = process.argv.slice(2);
-
-if (args.includes("--help") || args.length === 0) {
-  printUsage();
-  process.exit(0);
+if (fileURLToPath(import.meta.url) === process.argv[1]) {
+  await main(process.argv.slice(2));
 }
 
-const command = args[0];
+export async function main(args: string[]) {
+  if (args.includes("--help") || args.length === 0) {
+    printUsage();
+    return;
+  }
 
-if (command === "observe") {
-  await observeTransaction(args.slice(1));
-} else if (command === "exec") {
-  await executeObservedCommand(args.slice(1));
-} else {
-  throw new Error(`Unknown openstat-realclaw command: ${command}`);
+  const command = args[0];
+
+  if (command === "observe") {
+    await observeTransaction(args.slice(1));
+  } else if (command === "exec") {
+    await executeObservedCommand(args.slice(1));
+  } else {
+    throw new Error(`Unknown openstat-realclaw command: ${command}`);
+  }
 }
 
-async function observeTransaction(commandArgs: string[]) {
+export async function observeTransaction(commandArgs: string[]) {
   const transactionHash = getRequiredOption(commandArgs, "--tx-hash");
   const chainId = getChainId(getOption(commandArgs, "--chain-id") ?? "5003");
 
@@ -41,7 +46,7 @@ async function observeTransaction(commandArgs: string[]) {
   console.info(`Observed Mantle transaction ${transactionHash}.`);
 }
 
-async function executeObservedCommand(commandArgs: string[]) {
+export async function executeObservedCommand(commandArgs: string[]) {
   const separatorIndex = commandArgs.indexOf("--");
 
   if (separatorIndex === -1 || separatorIndex === commandArgs.length - 1) {
@@ -52,12 +57,12 @@ async function executeObservedCommand(commandArgs: string[]) {
   const childArgs = commandArgs.slice(separatorIndex + 1);
   const previewOnly = wrapperArgs.includes("--dry-run");
   const confirmed = wrapperArgs.includes("--confirm");
+  const fixture = wrapperArgs.includes("--fixture");
+  const runId = getOption(wrapperArgs, "--run-id") ?? `realclaw_${Date.now()}`;
+  const action =
+    getOption(wrapperArgs, "--action") ?? "realclaw_wrapped_action";
 
-  if (!previewOnly && !confirmed) {
-    throw new Error(
-      "Wrapped execution requires `--dry-run` or an explicit `--confirm`.",
-    );
-  }
+  assertExactlyOneSafetyFlag({ confirmed, previewOnly });
 
   if (previewOnly && !childArgs.includes("--dry-run")) {
     childArgs.push("--dry-run");
@@ -67,41 +72,97 @@ async function executeObservedCommand(commandArgs: string[]) {
     childArgs.push("--confirm");
   }
 
-  const output = await runCommand(childArgs);
+  const startedAt = Date.now();
 
-  if (previewOnly) {
-    console.info("Dry run complete. No transaction telemetry was emitted.");
-    return;
+  try {
+    const output = fixture
+      ? getFixtureOutput({ confirmed })
+      : await runCommand(childArgs);
+
+    await recordSafeToolCall({
+      action,
+      durationMs: Date.now() - startedAt,
+      runId,
+      status: previewOnly ? "dry_run" : "confirmed",
+    });
+
+    if (previewOnly) {
+      console.info("Dry run complete. No transaction telemetry was emitted.");
+      return;
+    }
+
+    const transactionHash = findTransactionHash(output);
+
+    if (!transactionHash) {
+      console.warn(
+        "Wrapped command completed without a transaction hash; nothing was emitted.",
+      );
+      return;
+    }
+
+    await observeTransaction([
+      "--tx-hash",
+      transactionHash,
+      "--chain-id",
+      getOption(wrapperArgs, "--chain-id") ?? "5000",
+      "--action",
+      action,
+      "--run-id",
+      runId,
+    ]);
+  } catch (error) {
+    await recordSafeToolCall({
+      action,
+      durationMs: Date.now() - startedAt,
+      runId,
+      status: "failed",
+    });
+    throw error;
   }
+}
 
-  const transactionHash = findTransactionHash(output);
-
-  if (!transactionHash) {
-    console.warn(
-      "Wrapped command completed without a transaction hash; nothing was emitted.",
+export function assertExactlyOneSafetyFlag(options: {
+  confirmed: boolean;
+  previewOnly: boolean;
+}) {
+  if (options.previewOnly === options.confirmed) {
+    throw new Error(
+      "Wrapped execution requires exactly one of `--dry-run` or `--confirm`.",
     );
-    return;
   }
-
-  await observeTransaction([
-    "--tx-hash",
-    transactionHash,
-    "--chain-id",
-    getOption(wrapperArgs, "--chain-id") ?? "5000",
-    "--action",
-    getOption(wrapperArgs, "--action") ?? "realclaw_wrapped_action",
-    "--run-id",
-    getOption(wrapperArgs, "--run-id") ?? `realclaw_${Date.now()}`,
-  ]);
 }
 
 function getClient() {
   return createOpenStatClient({
     apiKey: getRequiredEnvironmentVariable("OPENSTAT_API_KEY"),
-    endpoint: process.env.OPENSTAT_ENDPOINT,
+    endpoint: process.env.OPENSTAT_ENDPOINT ?? process.env.OPENSTAT_API_URL,
     environment: process.env.OPENSTAT_ENVIRONMENT ?? "development",
     serviceName: process.env.OPENSTAT_SERVICE_NAME ?? "realclaw",
   });
+}
+
+async function recordSafeToolCall(options: {
+  action: string;
+  durationMs: number;
+  runId: string;
+  status: string;
+}) {
+  if (!process.env.OPENSTAT_API_KEY) {
+    return;
+  }
+
+  await getClient().recordToolCall({
+    runId: options.runId,
+    status: options.status,
+    summary: `${options.action} ${options.status} in ${options.durationMs}ms.`,
+    toolName: "openstat-realclaw",
+  });
+}
+
+function getFixtureOutput(options: { confirmed: boolean }) {
+  return options.confirmed
+    ? `Fixture transaction: 0x${"a".repeat(64)}`
+    : "Fixture dry run completed without broadcast.";
 }
 
 function runCommand(commandArgs: string[]) {
@@ -114,7 +175,6 @@ function runCommand(commandArgs: string[]) {
     }
 
     const child = spawn(executable, childArgs, {
-      shell: process.platform === "win32",
       stdio: ["ignore", "pipe", "pipe"],
     });
     let output = "";
@@ -189,5 +249,7 @@ function printUsage() {
   console.info(`Usage:
   openstat-realclaw observe --tx-hash 0x... [--chain-id 5003] [--run-id run_...]
   openstat-realclaw exec --dry-run -- <byreal command>
-  openstat-realclaw exec --confirm [--chain-id 5000] -- <byreal command>`);
+  openstat-realclaw exec --confirm [--chain-id 5000] -- <byreal command>
+  openstat-realclaw exec --fixture --dry-run -- fixture
+  openstat-realclaw exec --fixture --confirm -- fixture`);
 }

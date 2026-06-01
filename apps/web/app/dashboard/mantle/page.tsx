@@ -87,6 +87,36 @@ export default async function MantlePage(props: MantlePageProps) {
                 transaction.externalRunId ?? "Uncorrelated",
             },
             {
+              key: "insight",
+              label: "Audit Copilot",
+              render: (transaction) =>
+                transaction.insight ? (
+                  <span title={transaction.insight.summary}>
+                    {transaction.insight.verdict} ·{" "}
+                    {transaction.insight.riskScore}/100
+                  </span>
+                ) : (
+                  "Not analyzed"
+                ),
+            },
+            {
+              key: "proof",
+              label: "Proof",
+              render: (transaction) =>
+                transaction.anchor ? (
+                  <a
+                    className="dashboard-table-primary"
+                    href={transaction.anchor.explorerUrl}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    Anchored
+                  </a>
+                ) : (
+                  "Awaiting anchor"
+                ),
+            },
+            {
               key: "submitted",
               label: "Submitted",
               render: (transaction) => formatDateTime(transaction.submittedAt),

@@ -323,6 +323,9 @@ importers:
       viem:
         specifier: ^2.51.3
         version: 2.51.3(typescript@5.9.2)(zod@4.4.3)
+      zod:
+        specifier: ^4.1.13
+        version: 4.4.3
     devDependencies:
       '@repo/eslint-config':
         specifier: workspace:*

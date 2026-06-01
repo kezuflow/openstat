@@ -174,10 +174,19 @@ export type DashboardApiKey = {
 };
 
 export type DashboardChainTransaction = {
+  anchor?: {
+    explorerUrl: string;
+    transactionHash: string;
+  } | null;
   id: string;
+  insight?: {
+    riskScore: number;
+    summary: string;
+    verdict: "pass" | "warning" | "fail";
+  } | null;
   action?: string | null;
-  chain: "mantle";
-  chainId: 5000 | 5003;
+  chain: string;
+  chainId: number;
   explorerUrl?: string | null;
   externalRunId?: string | null;
   status: "submitted" | "confirmed" | "reverted";
@@ -288,7 +297,7 @@ export async function getDashboardMantleTransactions() {
 
   const transactions = await getJson<{
     transactions: DashboardChainTransaction[];
-  }>("/v1/audit/transactions?limit=50");
+  }>("/v1/audit/transactions?chain=mantle&limit=50");
 
   return {
     errors: transactions.ok ? [] : [transactions.error],

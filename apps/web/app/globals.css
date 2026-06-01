@@ -11,7 +11,6 @@
 @import "./dashboard/dashboard-agent-uptime.css";
 @import "./dashboard/dashboard-routes.css";
 @import "./dashboard/dashboard-inspector.css";
-@import "./mantle/mantle-showcase.css";
 
 :root {
   --font-sans:

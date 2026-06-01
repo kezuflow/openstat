@@ -23,7 +23,13 @@ export const evmAddressSchema = z
 export const evmTransactionHashSchema = z
   .string()
   .regex(/^0x[0-9a-f]{64}$/iu, "Expected a 32-byte EVM transaction hash.");
-export const mantleChainIdSchema = z.union([z.literal(5000), z.literal(5003)]);
+export const chainIntegrationSchema = z
+  .string()
+  .regex(
+    /^[a-z0-9][a-z0-9_-]{0,63}$/u,
+    "Expected a normalized chain integration slug.",
+  );
+export const chainIdSchema = z.number().int().positive();
 export const chainReceiptStatusSchema = z.enum([
   "submitted",
   "confirmed",
@@ -143,8 +149,8 @@ export const errorDataSchema = z.object({
 });
 
 export const chainTransactionDataSchema = z.object({
-  chain: z.literal("mantle"),
-  chain_id: mantleChainIdSchema,
+  chain: chainIntegrationSchema,
+  chain_id: chainIdSchema,
   tx_hash: evmTransactionHashSchema,
   action: z.string().min(1).max(160).optional(),
   status: chainReceiptStatusSchema.default("submitted"),
