@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  DEFAULT_OPENSTAT_ENDPOINT,
   OpenStatApiError,
   createOpenStatClient,
   createOpenTelemetryHttpConfig,
@@ -15,6 +16,24 @@ function createJsonResponse(body: unknown, init: ResponseInit = {}) {
 }
 
 describe("OpenStatClient", () => {
+  it("uses the hosted API endpoint by default", async () => {
+    const requests: Request[] = [];
+    const client = createOpenStatClient({
+      apiKey: "ostat_public_secret",
+      serviceName: "vitest-agent",
+      fetch: async (input, init) => {
+        requests.push(new Request(input, init));
+        return createJsonResponse({ accepted: true });
+      },
+    });
+
+    await client.sendHeartbeat();
+
+    expect(requests[0].url).toBe(
+      `${DEFAULT_OPENSTAT_ENDPOINT}/v1/ingest/events`,
+    );
+  });
+
   it("emits decision events with auth and service metadata", async () => {
     const requests: Request[] = [];
     const client = createOpenStatClient({
@@ -264,6 +283,17 @@ describe("OpenStatClient", () => {
 });
 
 describe("createOpenTelemetryHttpConfig", () => {
+  it("uses the hosted API endpoint by default", () => {
+    const config = createOpenTelemetryHttpConfig({
+      apiKey: "ostat_public_secret",
+      serviceName: "otel-agent",
+    });
+
+    expect(config.traces.url).toBe(`${DEFAULT_OPENSTAT_ENDPOINT}/v1/traces`);
+    expect(config.logs.url).toBe(`${DEFAULT_OPENSTAT_ENDPOINT}/v1/logs`);
+    expect(config.metrics.url).toBe(`${DEFAULT_OPENSTAT_ENDPOINT}/v1/metrics`);
+  });
+
   it("returns OTLP HTTP targets with authorization headers", () => {
     const config = createOpenTelemetryHttpConfig({
       apiKey: "ostat_public_secret",

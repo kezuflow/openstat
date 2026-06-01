@@ -19,6 +19,8 @@ product for autonomous agents.
 - `packages/schemas`: shared Zod contracts.
 - `packages/sdk-js`: public `openstat` JavaScript SDK and bundled
   `openstat-realclaw` wrapper.
+- `sdks/python`: Python SDK distribution (`openstat-sdk`) with `openstat`
+  import path for trading-agent telemetry.
 - `packages/ui`: shared React component package exported as `@repo/ui/*`.
 - `packages/contracts`: Hardhat workspace for optional onchain audit anchors.
 - `packages/eslint-config`: shared ESLint configs.
@@ -179,6 +181,8 @@ ignored.
 - The public JavaScript SDK remains the `openstat` package. Ship agent wrappers
   such as `openstat-realclaw` inside it instead of creating a competing SDK
   package identity.
+- The Python SDK is published as `openstat-sdk` because PyPI's `openstat` name
+  is owned by an unrelated package. Keep the import path as `openstat`.
 - Contract deployment commands default to dry-run behavior. Never broadcast a
   deployment or transaction without explicit user approval immediately before
   the broadcast command.

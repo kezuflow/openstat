@@ -3,7 +3,12 @@ from urllib.error import HTTPError
 
 import pytest
 
-from openstat import OpenStatApiError, OpenStatClient, create_opentelemetry_http_config
+from openstat import (
+    DEFAULT_OPENSTAT_ENDPOINT,
+    OpenStatApiError,
+    OpenStatClient,
+    create_opentelemetry_http_config,
+)
 
 
 class FakeResponse:
@@ -46,6 +51,22 @@ def test_record_decision_emits_native_event(monkeypatch):
     assert "Bearer ostat_public_secret" in captured["headers"]["Authorization"]
     assert '"type": "decision"' in captured["body"]
     assert '"service_name": "pytest-agent"' in captured["body"]
+
+
+def test_client_uses_hosted_endpoint_by_default(monkeypatch):
+    captured = {}
+
+    def fake_urlopen(req, timeout):
+        captured["url"] = req.full_url
+        captured["timeout"] = timeout
+        return FakeResponse()
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    client = OpenStatClient(api_key="ostat_public_secret", service_name="pytest-agent")
+
+    client.send_heartbeat()
+
+    assert captured["url"] == f"{DEFAULT_OPENSTAT_ENDPOINT}/v1/ingest/events"
 
 
 def test_record_tool_call_matches_completion_shape(monkeypatch):
@@ -106,6 +127,17 @@ def test_opentelemetry_config_returns_otlp_http_targets():
     assert config["traces"]["url"] == "https://api.example.com/v1/traces"
     assert config["logs"]["url"] == "https://api.example.com/v1/logs"
     assert config["metrics"]["headers"]["authorization"] == "Bearer ostat_public_secret"
+
+
+def test_opentelemetry_config_uses_hosted_endpoint_by_default():
+    config = create_opentelemetry_http_config(
+        api_key="ostat_public_secret",
+        service_name="pytest-agent",
+    )
+
+    assert config["traces"]["url"] == f"{DEFAULT_OPENSTAT_ENDPOINT}/v1/traces"
+    assert config["logs"]["url"] == f"{DEFAULT_OPENSTAT_ENDPOINT}/v1/logs"
+    assert config["metrics"]["url"] == f"{DEFAULT_OPENSTAT_ENDPOINT}/v1/metrics"
 
 
 def test_record_chain_transaction_emits_mantle_context(monkeypatch):

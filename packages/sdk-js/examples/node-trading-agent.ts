@@ -2,7 +2,7 @@ import { createOpenStatClient } from "../src/index.js";
 
 const openstat = createOpenStatClient({
   apiKey: process.env.OPENSTAT_API_KEY ?? "ostat_demo_secret",
-  endpoint: process.env.OPENSTAT_API_URL ?? "http://localhost:4000",
+  endpoint: process.env.OPENSTAT_ENDPOINT ?? process.env.OPENSTAT_API_URL,
   serviceName: "node-paper-trader",
   environment: "development",
 });

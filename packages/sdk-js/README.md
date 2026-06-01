@@ -2,12 +2,20 @@
 
 TypeScript helpers for sending native OpenStat telemetry from AI trading agents.
 
+```sh
+npm install openstat
+```
+
+Version `1.1.0` adds the expanded trading-agent event shape: shared run/trace
+context on helper calls, chain transaction telemetry, positions, structured
+errors, fill status, order decision links, and total token counts.
+
 ```ts
 import { createOpenStatClient } from "openstat";
 
 const openstat = createOpenStatClient({
   apiKey: process.env.OPENSTAT_API_KEY!,
-  endpoint: "https://api.example.com",
+  endpoint: process.env.OPENSTAT_ENDPOINT ?? "https://api.openstat.online",
   serviceName: "paper-trader",
   environment: "production",
 });
@@ -25,6 +33,9 @@ await openstat.recordDecision({
   rationaleSummary: "Momentum and risk budget aligned.",
 });
 ```
+
+`endpoint` defaults to `https://api.openstat.online`. Set `OPENSTAT_ENDPOINT`
+only when sending telemetry to a local or private OpenStat API.
 
 Native helpers are available for decisions, risk checks, orders, fills,
 positions, PnL snapshots, heartbeats, errors, model usage, and tool calls. Use

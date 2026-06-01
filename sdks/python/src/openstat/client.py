@@ -10,12 +10,13 @@ from urllib.error import HTTPError
 
 
 JsonObject = dict[str, Any]
+DEFAULT_OPENSTAT_ENDPOINT = "https://api.openstat.online"
 
 
 @dataclass(frozen=True)
 class OpenStatConfig:
     api_key: str
-    endpoint: str = "http://localhost:4000"
+    endpoint: str = DEFAULT_OPENSTAT_ENDPOINT
     service_name: str = "python-agent"
     environment: str | None = None
     default_redaction: bool = True
@@ -33,14 +34,14 @@ class OpenStatClient:
         self,
         *,
         api_key: str,
-        endpoint: str = "http://localhost:4000",
+        endpoint: str | None = None,
         service_name: str = "python-agent",
         environment: str | None = None,
         default_redaction: bool = True,
     ) -> None:
         self.config = OpenStatConfig(
             api_key=api_key,
-            endpoint=endpoint.rstrip("/"),
+            endpoint=(endpoint or DEFAULT_OPENSTAT_ENDPOINT).rstrip("/"),
             service_name=service_name,
             environment=environment,
             default_redaction=default_redaction,
@@ -372,11 +373,11 @@ class OpenStatClient:
 def create_opentelemetry_http_config(
     *,
     api_key: str,
-    endpoint: str = "http://localhost:4000",
+    endpoint: str | None = None,
     service_name: str,
     environment: str | None = None,
 ) -> JsonObject:
-    base_url = endpoint.rstrip("/")
+    base_url = (endpoint or DEFAULT_OPENSTAT_ENDPOINT).rstrip("/")
     headers = {"authorization": f"Bearer {api_key}"}
     return {
         "service_name": service_name,
