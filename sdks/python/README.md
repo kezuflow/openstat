@@ -6,6 +6,16 @@ Python helpers for sending native OpenStat telemetry from AI trading agents.
 pip install openstat-sdk
 ```
 
+Add editable starter files to an existing Python project:
+
+```sh
+openstat init
+```
+
+This creates `.env.openstat.example`, `openstat_integration.py`, and
+`OPENSTAT.md` in the current directory. Existing files are preserved unless
+you run `openstat init --force`.
+
 ```python
 from openstat import OpenStatClient
 

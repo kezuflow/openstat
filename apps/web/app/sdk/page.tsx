@@ -60,7 +60,8 @@ export default function SdkPage() {
             scripts.
           </p>
           <pre>
-            <code>{`pip install openstat-sdk`}</code>
+            <code>{`pip install openstat-sdk
+openstat init`}</code>
           </pre>
           <Link className="content-card-link" href="/quickstart">
             Use in quickstart
