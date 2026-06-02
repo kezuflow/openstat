@@ -69,6 +69,46 @@ class OpenStatClient:
             {"events": [self._prepare_event(event) for event in events]},
         )
 
+    def record_run_lifecycle(
+        self,
+        *,
+        agent: JsonObject | None = None,
+        run_id: str,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+        tags: list[str] | None = None,
+        metadata: JsonObject | None = None,
+        status: str,
+        strategy: str | None = None,
+        symbols: list[str] | None = None,
+        summary: str | None = None,
+    ) -> Any:
+        lifecycle_metadata = {
+            **(metadata or {}),
+            "kind": "run_lifecycle",
+            "run_status": status,
+            "strategy": strategy,
+            "symbols": symbols,
+        }
+
+        return self.send_event(
+            {
+                **self._event_context(
+                    agent=agent,
+                    run_id=run_id,
+                    trace_id=trace_id,
+                    span_id=span_id,
+                    tags=tags,
+                    metadata=lifecycle_metadata,
+                ),
+                "type": "completion",
+                "data": {
+                    "status": status,
+                    "summary": summary,
+                },
+            }
+        )
+
     def record_decision(
         self,
         *,

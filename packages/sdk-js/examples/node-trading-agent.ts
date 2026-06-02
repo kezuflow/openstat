@@ -10,6 +10,14 @@ const openstat = createOpenStatClient({
 const agent = { id: "node-paper-trader", name: "Node Paper Trader" };
 const run = openstat.startAgentRun({ strategy: "breakout" });
 
+await openstat.recordRunLifecycle({
+  agent,
+  runId: run.runId,
+  status: "running",
+  strategy: "breakout",
+  symbols: ["BTC-USD"],
+  summary: "Run started.",
+});
 await openstat.sendHeartbeat({ agent, status: "online" });
 await openstat.recordDecision({
   agent,
@@ -60,4 +68,12 @@ await openstat.recordPnlSnapshot({
   realizedPnl: "0",
   unrealizedPnl: "41.20",
   equity: "10041.20",
+});
+await openstat.recordRunLifecycle({
+  agent,
+  runId: run.runId,
+  status: "completed",
+  strategy: "breakout",
+  symbols: ["BTC-USD"],
+  summary: "Run completed.",
 });

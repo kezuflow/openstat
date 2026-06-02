@@ -61,6 +61,12 @@ export type StartAgentRunInput = {
   metadata?: Record<string, unknown>;
 };
 
+export type RunLifecycleStatus =
+  | "running"
+  | "completed"
+  | "completed_with_rejection"
+  | "failed";
+
 export function createOpenStatClient(config: OpenStatClientConfig) {
   return new OpenStatClient(config);
 }
@@ -83,6 +89,31 @@ export class OpenStatClient {
       strategy: input.strategy,
       metadata: this.createMetadata(input.metadata),
     };
+  }
+
+  recordRunLifecycle(
+    input: {
+      status: RunLifecycleStatus;
+      strategy?: string;
+      symbols?: string[];
+      summary?: string;
+    } & EventContext,
+  ) {
+    return this.sendEvent({
+      ...this.createEventContext(input),
+      type: "completion",
+      data: {
+        status: input.status,
+        summary: input.summary,
+      },
+      metadata: {
+        ...input.metadata,
+        kind: "run_lifecycle",
+        run_status: input.status,
+        strategy: input.strategy,
+        symbols: input.symbols,
+      },
+    });
   }
 
   async sendEvent(event: NativeEvent) {

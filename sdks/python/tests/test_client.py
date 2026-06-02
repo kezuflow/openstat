@@ -100,6 +100,39 @@ def test_record_tool_call_matches_completion_shape(monkeypatch):
     assert captured["body"]["metadata"]["service_name"] == "pytest-agent"
 
 
+def test_record_run_lifecycle_matches_completion_shape(monkeypatch):
+    captured = {}
+
+    def fake_urlopen(req, timeout):
+        captured["body"] = json.loads(req.data.decode("utf-8"))
+        captured["timeout"] = timeout
+        return FakeResponse()
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    client = OpenStatClient(api_key="ostat_public_secret", service_name="pytest-agent")
+
+    client.record_run_lifecycle(
+        agent={"id": "agent-test", "name": "Agent Test"},
+        run_id="run_123",
+        status="completed",
+        strategy="breakout",
+        symbols=["BTC-USD"],
+        summary="Run completed.",
+    )
+
+    assert captured["body"]["type"] == "completion"
+    assert captured["body"]["run_id"] == "run_123"
+    assert captured["body"]["data"] == {
+        "status": "completed",
+        "summary": "Run completed.",
+    }
+    assert captured["body"]["metadata"]["kind"] == "run_lifecycle"
+    assert captured["body"]["metadata"]["run_status"] == "completed"
+    assert captured["body"]["metadata"]["strategy"] == "breakout"
+    assert captured["body"]["metadata"]["symbols"] == ["BTC-USD"]
+    assert captured["body"]["metadata"]["service_name"] == "pytest-agent"
+
+
 def test_expanded_helpers_match_native_event_shape(monkeypatch):
     captured = []
 

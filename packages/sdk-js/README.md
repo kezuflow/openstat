@@ -6,9 +6,8 @@ TypeScript helpers for sending native OpenStat telemetry from AI trading agents.
 npm install openstat
 ```
 
-Version `1.1.0` adds the expanded trading-agent event shape: shared run/trace
-context on helper calls, chain transaction telemetry, positions, structured
-errors, fill status, order decision links, and total token counts.
+Version `1.2.0` adds first-class run lifecycle helpers so Runs dashboard rows
+can move from executing to settled or review without hand-written metadata.
 
 ```ts
 import { createOpenStatClient } from "openstat";
@@ -22,6 +21,15 @@ const openstat = createOpenStatClient({
 
 const run = openstat.startAgentRun({ strategy: "breakout" });
 
+await openstat.recordRunLifecycle({
+  runId: run.runId,
+  agent: { id: "agent-1", name: "Paper Trader" },
+  status: "running",
+  strategy: "breakout",
+  symbols: ["BTC-USD"],
+  summary: "Run started.",
+});
+
 await openstat.recordDecision({
   runId: run.runId,
   agent: { id: "agent-1", name: "Paper Trader" },
@@ -32,15 +40,25 @@ await openstat.recordDecision({
   confidence: 82,
   rationaleSummary: "Momentum and risk budget aligned.",
 });
+
+await openstat.recordRunLifecycle({
+  runId: run.runId,
+  agent: { id: "agent-1", name: "Paper Trader" },
+  status: "completed",
+  strategy: "breakout",
+  symbols: ["BTC-USD"],
+  summary: "Run completed.",
+});
 ```
 
 `endpoint` defaults to `https://api.openstat.online`. Set `OPENSTAT_ENDPOINT`
 only when sending telemetry to a local or private OpenStat API.
 
-Native helpers are available for decisions, risk checks, orders, fills,
-positions, PnL snapshots, heartbeats, errors, model usage, and tool calls. Use
-`sendEvent` or `sendBatch` when you need direct access to the normalized event
-model.
+Native helpers are available for run lifecycle markers, decisions, risk checks,
+orders, fills, positions, PnL snapshots, heartbeats, errors, model usage, and
+tool calls. Use `recordRunLifecycle({ status: "completed" })` or
+`recordRunLifecycle({ status: "failed" })` to settle the matching run on the
+OpenStat Runs dashboard.
 
 Mantle-aware agents can record a transaction without changing the core event
 model:

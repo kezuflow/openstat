@@ -41,8 +41,8 @@ export default function SdkPage() {
           <span>TypeScript</span>
           <h2>openstat</h2>
           <p>
-            Record agent runs, decisions, risk checks, orders, fills, PnL
-            snapshots, and heartbeats from Node-based agents.
+            Record run lifecycle markers, decisions, risk checks, orders,
+            fills, PnL snapshots, and heartbeats from Node-based agents.
           </p>
           <pre>
             <code>{`pnpm add openstat`}</code>
@@ -56,8 +56,8 @@ export default function SdkPage() {
           <span>Python</span>
           <h2>openstat</h2>
           <p>
-            Send the same decision-to-trade telemetry from Python agents and
-            scripts.
+            Send the same run lifecycle and decision-to-trade telemetry from
+            Python agents and scripts.
           </p>
           <pre>
             <code>{`pip install openstat-sdk

@@ -28,6 +28,15 @@ client = OpenStatClient(
 
 run = client.start_agent_run(strategy="breakout")
 
+client.record_run_lifecycle(
+    run_id=run["run_id"],
+    agent={"id": "agent-1", "name": "Paper Trader"},
+    status="running",
+    strategy="breakout",
+    symbols=["BTC-USD"],
+    summary="Run started.",
+)
+
 client.record_decision(
     run_id=run["run_id"],
     agent={"id": "agent-1", "name": "Paper Trader"},
@@ -38,11 +47,25 @@ client.record_decision(
     confidence=82,
     rationale_summary="Momentum and risk budget aligned.",
 )
+
+client.record_run_lifecycle(
+    run_id=run["run_id"],
+    agent={"id": "agent-1", "name": "Paper Trader"},
+    status="completed",
+    strategy="breakout",
+    symbols=["BTC-USD"],
+    summary="Run completed.",
+)
 ```
 
 `endpoint` defaults to `https://api.openstat.online`. Set
 `OPENSTAT_ENDPOINT=http://localhost:4000` only when sending telemetry to a local
 OpenStat API during development.
+
+Use `record_run_lifecycle(status="completed")` or
+`record_run_lifecycle(status="failed")` to settle the matching run on the
+OpenStat Runs dashboard. Lifecycle events share the same `run_id` as decisions,
+risk checks, orders, fills, positions, and PnL snapshots.
 
 Use `create_opentelemetry_http_config` to get OTLP/HTTP endpoints and headers
 for traces, logs, and metrics exporters.

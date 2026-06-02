@@ -110,6 +110,45 @@ describe("OpenStatClient", () => {
     });
   });
 
+  it("emits run lifecycle completion events", async () => {
+    const requests: Request[] = [];
+    const client = createOpenStatClient({
+      apiKey: "ostat_public_secret",
+      serviceName: "vitest-agent",
+      fetch: async (input, init) => {
+        requests.push(new Request(input, init));
+        return createJsonResponse({ accepted: true });
+      },
+    });
+
+    await client.recordRunLifecycle({
+      agent: { id: "agent-test", name: "Agent Test" },
+      runId: "run-test",
+      status: "completed",
+      strategy: "breakout",
+      symbols: ["BTC-USD"],
+      summary: "Run completed.",
+    });
+
+    const body = (await requests[0].json()) as NativeEvent;
+    expect(body).toMatchObject({
+      agent: { id: "agent-test", name: "Agent Test" },
+      run_id: "run-test",
+      type: "completion",
+      data: {
+        status: "completed",
+        summary: "Run completed.",
+      },
+      metadata: {
+        kind: "run_lifecycle",
+        run_status: "completed",
+        strategy: "breakout",
+        symbols: ["BTC-USD"],
+        service_name: "vitest-agent",
+      },
+    });
+  });
+
   it("throws OpenStatApiError for non-2xx responses", async () => {
     const client = createOpenStatClient({
       apiKey: "ostat_public_secret",

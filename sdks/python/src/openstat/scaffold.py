@@ -52,9 +52,23 @@ from openstat_integration import create_openstat_client
 client = create_openstat_client(service_name="my-agent")
 run = client.start_agent_run(strategy="breakout")
 
+client.record_run_lifecycle(
+    run_id=run["run_id"],
+    status="running",
+    strategy="breakout",
+    summary="Run started.",
+)
+
 client.send_heartbeat(
     run_id=run["run_id"],
     summary="Agent is online.",
+)
+
+client.record_run_lifecycle(
+    run_id=run["run_id"],
+    status="completed",
+    strategy="breakout",
+    summary="Run completed.",
 )
 ```
 """
