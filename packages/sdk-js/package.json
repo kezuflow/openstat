@@ -4,10 +4,15 @@
   "description": "OpenStat SDK for AI trading agent telemetry",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kezuflow/openstat.git",
+    "directory": "packages/sdk-js"
+  },
   "sideEffects": false,
   "types": "./dist/index.d.ts",
   "bin": {
-    "openstat-realclaw": "./dist/realclaw.js"
+    "openstat-realclaw": "dist/realclaw.js"
   },
   "exports": {
     ".": {
