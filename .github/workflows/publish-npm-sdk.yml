@@ -1,0 +1,55 @@
+name: Publish TypeScript SDK
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "npm-sdk-v*"
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish openstat
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check TypeScript SDK types
+        run: pnpm --filter openstat check-types
+
+      - name: Lint TypeScript SDK
+        run: pnpm --filter openstat lint
+
+      - name: Test TypeScript SDK
+        run: pnpm --filter openstat test
+
+      - name: Build TypeScript SDK
+        run: pnpm --filter openstat build
+
+      - name: Publish to npm
+        working-directory: packages/sdk-js
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
