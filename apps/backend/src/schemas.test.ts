@@ -22,6 +22,7 @@ describe("OpenStat ingestion schemas", () => {
       },
       type: "decision",
       data: {
+        decision_id: "decision_external_1",
         strategy: "breakout",
         symbol: "BTC-USD",
         venue: "coinbase",
@@ -40,6 +41,9 @@ describe("OpenStat ingestion schemas", () => {
 
     expect(parsed.schema_version).toBe(1);
     expect(parsed.type).toBe("decision");
+    expect(parsed.data).toEqual(
+      expect.objectContaining({ decision_id: "decision_external_1" }),
+    );
   });
 
   it("rejects invalid batches and malformed trading payloads", () => {

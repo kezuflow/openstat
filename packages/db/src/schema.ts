@@ -565,6 +565,7 @@ export const tradingDecisions = pgTable(
     agentId: uuid("agent_id").references(() => agents.id, {
       onDelete: "set null",
     }),
+    externalDecisionId: text("external_decision_id"),
     strategy: text("strategy"),
     symbol: text("symbol"),
     action: text("action").notNull(),
@@ -585,6 +586,9 @@ export const tradingDecisions = pgTable(
       table.projectId,
       table.symbol,
     ),
+    uniqueIndex("trading_decisions_project_external_idx")
+      .on(table.projectId, table.externalDecisionId)
+      .where(sql`${table.externalDecisionId} IS NOT NULL`),
     foreignKey({
       columns: [table.organizationId, table.projectId],
       foreignColumns: [projects.organizationId, projects.id],

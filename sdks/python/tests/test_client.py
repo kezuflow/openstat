@@ -40,6 +40,7 @@ def test_record_decision_emits_native_event(monkeypatch):
     )
 
     result = client.record_decision(
+        decision_id="decision-test-1",
         agent={"id": "agent-test"},
         strategy="breakout",
         symbol="BTC-USD",
@@ -49,6 +50,8 @@ def test_record_decision_emits_native_event(monkeypatch):
     assert result == {"accepted": True}
     assert captured["url"] == "http://localhost:4000/v1/ingest/events"
     assert "Bearer ostat_public_secret" in captured["headers"]["Authorization"]
+    assert '"id": "decision-test-1"' in captured["body"]
+    assert '"decision_id": "decision-test-1"' in captured["body"]
     assert '"type": "decision"' in captured["body"]
     assert '"service_name": "pytest-agent"' in captured["body"]
 

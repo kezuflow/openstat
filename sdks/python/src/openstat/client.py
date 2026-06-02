@@ -72,6 +72,7 @@ class OpenStatClient:
     def record_decision(
         self,
         *,
+        decision_id: str | None = None,
         agent: JsonObject | None = None,
         run_id: str | None = None,
         trace_id: str | None = None,
@@ -85,27 +86,28 @@ class OpenStatClient:
         confidence: int | None = None,
         rationale_summary: str | None = None,
     ) -> Any:
-        return self.send_event(
-            {
-                **self._event_context(
-                    agent=agent,
-                    run_id=run_id,
-                    trace_id=trace_id,
-                    span_id=span_id,
-                    tags=tags,
-                    metadata=metadata,
-                ),
-                "type": "decision",
-                "data": {
-                    "strategy": strategy,
-                    "symbol": symbol,
-                    "venue": venue,
-                    "action": action,
-                    "confidence": confidence,
-                    "rationale_summary": rationale_summary,
-                },
-            }
-        )
+        event = {
+            "id": decision_id,
+            **self._event_context(
+                agent=agent,
+                run_id=run_id,
+                trace_id=trace_id,
+                span_id=span_id,
+                tags=tags,
+                metadata=metadata,
+            ),
+            "type": "decision",
+            "data": {
+                "decision_id": decision_id,
+                "strategy": strategy,
+                "symbol": symbol,
+                "venue": venue,
+                "action": action,
+                "confidence": confidence,
+                "rationale_summary": rationale_summary,
+            },
+        }
+        return self.send_event(event)
 
     def record_chain_transaction(
         self,

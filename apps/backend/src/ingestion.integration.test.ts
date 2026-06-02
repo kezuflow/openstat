@@ -365,6 +365,7 @@ describeIntegration("ingestion outbox integration", () => {
             run_id: "run_trading_integration",
             timestamp,
             data: {
+              decision_id: "decision_integration_1",
               strategy: "breakout",
               symbol: "BTC-USD",
               venue: "paper",
@@ -374,6 +375,22 @@ describeIntegration("ingestion outbox integration", () => {
             },
             metadata: {
               market: "crypto",
+            },
+          },
+          {
+            id: `event_risk_${crypto.randomUUID()}`,
+            schema_version: 1,
+            agent: {
+              id: "agent-trader-integration",
+              name: "Risk Integration Agent",
+            },
+            type: "risk_check",
+            run_id: "run_trading_integration",
+            timestamp: timestamp + 500,
+            data: {
+              decision_id: "decision_integration_1",
+              result: "approved",
+              reason: "Paper risk limits passed.",
             },
           },
           {
@@ -388,6 +405,7 @@ describeIntegration("ingestion outbox integration", () => {
             timestamp: timestamp + 1_000,
             data: {
               order_id: "order_integration_1",
+              decision_id: "decision_integration_1",
               strategy: "breakout",
               symbol: "BTC-USD",
               venue: "paper",
@@ -454,6 +472,27 @@ describeIntegration("ingestion outbox integration", () => {
               equity: "10041.20",
             },
           },
+          {
+            id: `event_run_completed_${crypto.randomUUID()}`,
+            schema_version: 1,
+            agent: {
+              id: "agent-trader-integration",
+              name: "Trader Integration Agent",
+            },
+            type: "completion",
+            run_id: "run_trading_integration",
+            timestamp: timestamp + 5_000,
+            data: {
+              status: "completed",
+              summary: "Run completed.",
+            },
+            metadata: {
+              kind: "run_lifecycle",
+              run_status: "completed",
+              strategy: "breakout",
+              symbols: ["BTC-USD"],
+            },
+          },
         ],
       },
       source: "http",
@@ -475,7 +514,7 @@ describeIntegration("ingestion outbox integration", () => {
     });
 
     expect(processed).toEqual({
-      processed: 5,
+      processed: 7,
       retryable: 0,
       deadLettered: 0,
     });
@@ -494,6 +533,11 @@ describeIntegration("ingestion outbox integration", () => {
       .select()
       .from(schema.orders)
       .where(eq(schema.orders.projectId, fixture.projectId))
+      .limit(1);
+    const [riskCheck] = await database.db
+      .select()
+      .from(schema.riskChecks)
+      .where(eq(schema.riskChecks.projectId, fixture.projectId))
       .limit(1);
     const [fill] = await database.db
       .select()
@@ -515,10 +559,13 @@ describeIntegration("ingestion outbox integration", () => {
       expect.objectContaining({
         externalRunId: "run_trading_integration",
         strategy: "breakout",
+        status: "completed",
+        endedAt: new Date(timestamp + 5_000),
       }),
     );
     expect(decision).toEqual(
       expect.objectContaining({
+        externalDecisionId: "decision_integration_1",
         action: "enter_long",
         confidence: 84,
         symbol: "BTC-USD",
@@ -526,9 +573,16 @@ describeIntegration("ingestion outbox integration", () => {
     );
     expect(order).toEqual(
       expect.objectContaining({
+        decisionId: decision?.id,
         externalOrderId: "order_integration_1",
         side: "buy",
         status: "submitted",
+      }),
+    );
+    expect(riskCheck).toEqual(
+      expect.objectContaining({
+        decisionId: decision?.id,
+        result: "approved",
       }),
     );
     expect(fill).toEqual(
@@ -692,6 +746,7 @@ describeIntegration("ingestion outbox integration", () => {
             type: "heartbeat",
             data: {
               status: "online",
+              expected_check_in_seconds: 45,
             },
           },
         ],
@@ -725,7 +780,10 @@ describeIntegration("ingestion outbox integration", () => {
       (notification) => notification.agentId === staleAgent?.id,
     );
     const [recoveredAgent] = await database.db
-      .select({ status: schema.agents.status })
+      .select({
+        status: schema.agents.status,
+        expectedCheckInSeconds: schema.agents.expectedCheckInSeconds,
+      })
       .from(schema.agents)
       .where(eq(schema.agents.id, staleAgent?.id ?? ""))
       .limit(1);
@@ -733,6 +791,7 @@ describeIntegration("ingestion outbox integration", () => {
     expect(staleNotification?.status).toBe("read");
     expect(staleNotification?.readAt).toBeInstanceOf(Date);
     expect(recoveredAgent?.status).toBe("online");
+    expect(recoveredAgent?.expectedCheckInSeconds).toBe(45);
   });
 });
 

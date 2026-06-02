@@ -1449,6 +1449,7 @@ async function projectEvent(
         .update(schema.agents)
         .set({
           status: heartbeatStatus,
+          expectedCheckInSeconds: getNumber(event.data?.expected_check_in_seconds),
           lastSeenAt: timestamp,
           updatedAt: new Date(),
         })
@@ -1457,6 +1458,7 @@ async function projectEvent(
     }
   }
 
+  await projectRunLifecycle(db, row, agent?.id, event, timestamp);
   await projectTradingEvent(db, row, createdEvent, agent?.id, event, timestamp);
   await projectChainTransaction(
     db,
@@ -1635,6 +1637,52 @@ async function maybeProjectLlmUsage(
   });
 }
 
+async function projectRunLifecycle(
+  db: Database["db"],
+  row: typeof schema.ingestionOutbox.$inferSelect,
+  agentId: string | undefined,
+  event: IngestEventInput,
+  timestamp: Date,
+) {
+  const metadata = event.metadata ?? {};
+
+  if (getString(metadata.kind) !== "run_lifecycle" || !event.run_id) {
+    return;
+  }
+
+  const data = event.data ?? {};
+  const status = getRunLifecycleStatus(
+    getString(metadata.run_status) ?? getString(data.status),
+  );
+  const isTerminal = isTerminalRunStatus(status);
+  const endedAt = isTerminal ? timestamp : null;
+
+  await db
+    .insert(schema.agentRuns)
+    .values({
+      organizationId: row.organizationId,
+      projectId: row.projectId,
+      agentId,
+      externalRunId: event.run_id,
+      strategy: getString(metadata.strategy) ?? getString(data.strategy),
+      status,
+      startedAt: timestamp,
+      endedAt,
+      metadata,
+    })
+    .onConflictDoUpdate({
+      target: [schema.agentRuns.projectId, schema.agentRuns.externalRunId],
+      targetWhere: sql`${schema.agentRuns.externalRunId} IS NOT NULL`,
+      set: {
+        agentId,
+        strategy: getString(metadata.strategy) ?? getString(data.strategy),
+        ...(isTerminal ? { status, endedAt } : {}),
+        metadata,
+        updatedAt: new Date(),
+      },
+    });
+}
+
 async function projectTradingEvent(
   db: Database["db"],
   row: typeof schema.ingestionOutbox.$inferSelect,
@@ -1655,6 +1703,7 @@ async function projectTradingEvent(
         organizationId: row.organizationId,
         projectId: row.projectId,
         agentId,
+        externalDecisionId: getString(data.decision_id) ?? event.id,
         strategy: getString(data.strategy),
         symbol: getString(data.symbol),
         action: getRequiredString(data.action, "decision.action"),
@@ -1861,7 +1910,26 @@ async function resolveTradingDecisionId(
 ) {
   const id = getString(value);
 
-  if (!id || !isUuid(id)) {
+  if (!id) {
+    return undefined;
+  }
+
+  const [externalDecision] = await db
+    .select({ id: schema.tradingDecisions.id })
+    .from(schema.tradingDecisions)
+    .where(
+      and(
+        eq(schema.tradingDecisions.externalDecisionId, id),
+        eq(schema.tradingDecisions.projectId, projectId),
+      ),
+    )
+    .limit(1);
+
+  if (externalDecision) {
+    return externalDecision.id;
+  }
+
+  if (!isUuid(id)) {
     return undefined;
   }
 
@@ -2291,6 +2359,31 @@ function getChainReceiptStatus(value: unknown) {
         "Invalid chain receipt status.",
       );
   }
+}
+
+function getRunLifecycleStatus(value: unknown) {
+  const status = getString(value) ?? "running";
+
+  switch (status) {
+    case "running":
+    case "completed":
+    case "completed_with_rejection":
+    case "failed":
+      return status;
+    default:
+      throw new IngestionError(
+        "INVALID_OUTBOX_PAYLOAD",
+        "Invalid run lifecycle status.",
+      );
+  }
+}
+
+function isTerminalRunStatus(status: string) {
+  return (
+    status === "completed" ||
+    status === "completed_with_rejection" ||
+    status === "failed"
+  );
 }
 
 function advanceChainReceiptStatus(

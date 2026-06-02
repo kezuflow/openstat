@@ -196,6 +196,31 @@ Requests are authenticated with:
 Authorization: Bearer ostat_...
 ```
 
+Run lifecycle events settle rows on the Runs dashboard. Emit them as normalized
+`completion` events that share the same `run_id` as the trading events:
+
+```json
+{
+  "type": "completion",
+  "run_id": "run_123",
+  "agent": { "id": "paper-openrouter-dev-1", "name": "Paper Trader" },
+  "data": {
+    "status": "completed",
+    "summary": "Run completed."
+  },
+  "metadata": {
+    "kind": "run_lifecycle",
+    "run_status": "completed",
+    "strategy": "openstat-paper-v1",
+    "symbols": ["AAPL", "BTC-USD"]
+  }
+}
+```
+
+Supported lifecycle statuses are `running`, `completed`,
+`completed_with_rejection`, and `failed`. Terminal statuses set
+`agent_runs.ended_at`, which moves dashboard runs out of Executing.
+
 The TypeScript SDK lives in `packages/sdk-js`, and the Python SDK lives in
 `sdks/python`.
 
