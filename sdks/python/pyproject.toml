@@ -5,12 +5,23 @@ build-backend = "hatchling.build"
 [project]
 name = "openstat-sdk"
 version = "0.2.1"
-description = "OpenStat SDK for AI trading agent telemetry"
+description = "Native telemetry SDK for AI agents, trading bots, and on-chain workflows"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 dependencies = []
-keywords = ["agent", "ai", "monitoring", "observability", "telemetry", "trading"]
+keywords = [
+    "agent",
+    "ai",
+    "llm",
+    "monitoring",
+    "observability",
+    "openstat",
+    "telemetry",
+    "trading",
+    "trading-bots",
+    "onchain",
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -20,12 +31,17 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Monitoring",
     "Typing :: Typed",
 ]
 
 [project.urls]
 Homepage = "https://openstat.online"
 Documentation = "https://docs.openstat.online"
+Source = "https://github.com/kezuflow/openstat"
+Issues = "https://github.com/kezuflow/openstat/issues"
 
 [project.optional-dependencies]
 test = ["pytest>=8"]
