@@ -123,14 +123,27 @@ export type DashboardEventsData = {
   errors: string[];
   events: DashboardEvent[];
   fallbackRange?: DashboardRange;
-  pagination?: {
-    nextCursor?: string | null;
-  };
+  pagination?: DashboardPagination;
 };
 
 type DashboardEventsOptions = {
   cursor?: string;
   includeRange?: boolean;
+  limit?: number;
+};
+
+export type DashboardPagination = {
+  nextCursor?: string | null;
+};
+
+export type DashboardRunsData = {
+  errors: string[];
+  pagination?: DashboardPagination;
+  runs: DashboardRun[];
+};
+
+type DashboardRunsOptions = {
+  cursor?: string;
   limit?: number;
 };
 
@@ -196,9 +209,11 @@ export type DashboardChainTransaction = {
 
 export async function getDashboardData(
   range: DashboardRange = "7d",
+  options: { includeRuns?: boolean } = {},
 ): Promise<DashboardData> {
   await ensureWorkspaceInitialized();
 
+  const includeRuns = options.includeRuns ?? true;
   const [overview, analytics, agents, runs, trades, notifications, apiKeys] =
     await Promise.all([
       getJson<DashboardOverview>("/v1/overview"),
@@ -206,7 +221,9 @@ export async function getDashboardData(
       getJson<{ agents: DashboardAgent[] }>(
         `/v1/agents?limit=12&range=${range}`,
       ),
-      getJson<{ runs: DashboardRun[] }>("/v1/runs?limit=8"),
+      includeRuns
+        ? getJson<{ runs: DashboardRun[] }>("/v1/runs?limit=8")
+        : Promise.resolve({ ok: true as const, data: { runs: [] } }),
       getJson<{ trades: DashboardTrade[] }>("/v1/trades?limit=8"),
       getJson<{ notifications: DashboardNotification[] }>(
         "/v1/notifications?limit=8",
@@ -289,6 +306,31 @@ export async function getDashboardEvents(
     errors: events.ok ? [] : [events.error],
     events: events.ok ? events.data.events : [],
     pagination: events.ok ? events.data.pagination : undefined,
+  };
+}
+
+export async function getDashboardRuns(
+  options: DashboardRunsOptions = {},
+): Promise<DashboardRunsData> {
+  await ensureWorkspaceInitialized();
+
+  const query = new URLSearchParams({
+    limit: String(options.limit ?? 10),
+  });
+
+  if (options.cursor) {
+    query.set("cursor", options.cursor);
+  }
+
+  const runs = await getJson<{
+    pagination?: DashboardPagination;
+    runs: DashboardRun[];
+  }>(`/v1/runs?${query.toString()}`);
+
+  return {
+    errors: runs.ok ? [] : [runs.error],
+    pagination: runs.ok ? runs.data.pagination : undefined,
+    runs: runs.ok ? runs.data.runs : [],
   };
 }
 

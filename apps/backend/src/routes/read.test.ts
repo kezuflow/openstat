@@ -888,6 +888,31 @@ describe("read routes", () => {
     await app.close();
   });
 
+  it("passes the runs cursor through to the list query", async () => {
+    state.listAgentRuns.mockResolvedValue([run]);
+
+    const cursor = Buffer.from(
+      JSON.stringify({
+        createdAt: "2026-05-10T23:59:00.000Z",
+        id: "00000000-0000-4000-8000-000000000702",
+      }),
+    ).toString("base64url");
+    const app = await createApp();
+    const response = await app.inject({
+      method: "GET",
+      url: `/v1/runs?limit=1&cursor=${encodeURIComponent(cursor)}`,
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(state.listAgentRuns).toHaveBeenCalledWith({
+      db: state.db,
+      scope,
+      list: { cursor, limit: 2 },
+    });
+
+    await app.close();
+  });
+
   it("returns one run timeline for the resolved project scope", async () => {
     state.getAgentRunTimeline.mockResolvedValue({
       run,

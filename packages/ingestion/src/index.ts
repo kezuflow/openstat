@@ -16,6 +16,7 @@ import {
   inArray,
   isNull,
   lt,
+  lte,
   ne,
   or,
   sql,
@@ -745,15 +746,28 @@ export async function listAgentRuns(options: {
   scope: ReadScope;
   list?: WindowedList;
 }) {
+  const cursor = parseWindowCursor(options.list?.cursor);
+  const predicates = [
+    eq(schema.agentRuns.organizationId, options.scope.organizationId),
+    eq(schema.agentRuns.projectId, options.scope.projectId),
+  ];
+
+  if (cursor) {
+    predicates.push(
+      or(
+        lt(schema.agentRuns.startedAt, cursor.createdAt),
+        and(
+          eq(schema.agentRuns.startedAt, cursor.createdAt),
+          lte(schema.agentRuns.id, cursor.id),
+        ),
+      )!,
+    );
+  }
+
   return options.db
     .select()
     .from(schema.agentRuns)
-    .where(
-      and(
-        eq(schema.agentRuns.organizationId, options.scope.organizationId),
-        eq(schema.agentRuns.projectId, options.scope.projectId),
-      ),
-    )
+    .where(and(...predicates))
     .orderBy(desc(schema.agentRuns.startedAt), desc(schema.agentRuns.id))
     .limit(options.list?.limit ?? 50);
 }
@@ -1402,6 +1416,37 @@ type WindowedList = {
   cursor?: string;
   limit?: number;
 };
+
+type WindowCursor = {
+  createdAt: Date;
+  id: string;
+};
+
+function parseWindowCursor(cursor: string | undefined): WindowCursor | undefined {
+  if (!cursor) {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(
+      Buffer.from(cursor, "base64url").toString("utf8"),
+    ) as Partial<{ createdAt: unknown; id: unknown }>;
+
+    if (typeof parsed.createdAt !== "string" || typeof parsed.id !== "string") {
+      return undefined;
+    }
+
+    const createdAt = new Date(parsed.createdAt);
+
+    if (Number.isNaN(createdAt.valueOf())) {
+      return undefined;
+    }
+
+    return { createdAt, id: parsed.id };
+  } catch {
+    return undefined;
+  }
+}
 
 async function projectEvent(
   db: Database["db"],

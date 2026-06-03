@@ -2,7 +2,9 @@ import {
   type DashboardRun,
   getDashboardData,
   getDashboardInspectorData,
+  getDashboardRuns,
 } from "../../../lib/openstat-api";
+import { DashboardCursorPagination } from "../dashboard-cursor-pagination";
 import {
   DashboardDataTable,
   DashboardKpiCard,
@@ -24,15 +26,29 @@ type RunsPageProps = {
   searchParams?: Promise<DashboardSearchParams>;
 };
 
+const RUNS_PAGE_SIZE = 10;
+
 export default async function RunsPage(props: RunsPageProps) {
   const searchParams = await props.searchParams;
   const range = parseDashboardRange(getFirstParam(searchParams?.range));
+  const cursor = parseRunsCursor(getFirstParam(searchParams?.cursor));
+  const cursorStack = parseRunsCursorStack(
+    getFirstParam(searchParams?.cursorStack),
+  );
   const inspect = parseInspectorKind(getFirstParam(searchParams?.inspect));
   const inspectId = getFirstParam(searchParams?.id);
-  const data = await getDashboardData(range);
+  const [dashboardData, runData] = await Promise.all([
+    getDashboardData(range, { includeRuns: false }),
+    getDashboardRuns({ cursor, limit: RUNS_PAGE_SIZE }),
+  ]);
+  const data = {
+    ...dashboardData,
+    errors: [...dashboardData.errors, ...runData.errors],
+    runs: runData.runs,
+  };
   const totals = data.analytics?.totals ?? {};
   const series = data.analytics?.series ?? [];
-  const runs = data.runs;
+  const runs = runData.runs;
   const stageItems = getStageItems(runs);
   const strategyItems = getStrategyItems(runs);
   const activeRuns = runs.filter((run) => getRunStage(run).tone === "watch");
@@ -46,10 +62,30 @@ export default async function RunsPage(props: RunsPageProps) {
     inspect && inspectId
       ? await getDashboardInspectorData(inspect, inspectId)
       : undefined;
+  const currentHref = buildRunsHref({ cursor, cursorStack, range });
+  const currentPage = cursor ? cursorStack.length + 2 : 1;
+  const previousCursor = cursorStack[cursorStack.length - 1];
+  const previousHref = cursor
+    ? buildRunsHref({
+        cursor: previousCursor,
+        cursorStack: cursorStack.slice(0, -1),
+        range,
+      })
+    : undefined;
+  const nextCursor = runData.pagination?.nextCursor ?? undefined;
+  const nextHref = nextCursor
+    ? buildRunsHref({
+        cursor: nextCursor,
+        cursorStack: cursor ? [...cursorStack, cursor] : cursorStack,
+        range,
+      })
+    : undefined;
+  const pageStart = (currentPage - 1) * RUNS_PAGE_SIZE + 1;
+  const pageEnd = pageStart + Math.max(runs.length - 1, 0);
 
   return (
     <DashboardRouteShell
-      closeHref={`/dashboard/runs?range=${range}`}
+      closeHref={currentHref}
       data={data}
       inspector={inspector}
       range={range}
@@ -116,7 +152,13 @@ export default async function RunsPage(props: RunsPageProps) {
 
       <section className="runs-workbench">
         <DashboardPanel
-          actions={<span>{range} window</span>}
+          actions={
+            runData.pagination?.nextCursor ? (
+              <span>{formatRunCount(runs.length, true)}</span>
+            ) : (
+              <span>{range} window</span>
+            )
+          }
           className="dashboard-latest-panel runs-table-panel"
           title="Run queue"
           titleCount={runs.length}
@@ -132,7 +174,13 @@ export default async function RunsPage(props: RunsPageProps) {
                   <span className="runs-run-cell">
                     <a
                       className="dashboard-table-primary"
-                      href={`/dashboard/runs?range=${range}&inspect=run&id=${run.id}`}
+                      href={buildRunsHref({
+                        cursor,
+                        cursorStack,
+                        id: run.id,
+                        inspect: "run",
+                        range,
+                      })}
                     >
                       {run.strategy ?? run.externalRunId ?? run.id}
                     </a>
@@ -214,7 +262,7 @@ export default async function RunsPage(props: RunsPageProps) {
                 strategyItems.map((item) => (
                   <a
                     className="runs-breakdown-item"
-                    href={`/dashboard/runs?range=${range}`}
+                    href={buildRunsHref({ cursor, cursorStack, range })}
                     key={item.label}
                   >
                     <span>{item.label}</span>
@@ -235,7 +283,13 @@ export default async function RunsPage(props: RunsPageProps) {
               {failedRuns.length > 0 ? (
                 failedRuns.slice(0, 4).map((run) => (
                   <a
-                    href={`/dashboard/runs?range=${range}&inspect=run&id=${run.id}`}
+                    href={buildRunsHref({
+                      cursor,
+                      cursorStack,
+                      id: run.id,
+                      inspect: "run",
+                      range,
+                    })}
                     key={run.id}
                   >
                     <strong>
@@ -251,8 +305,71 @@ export default async function RunsPage(props: RunsPageProps) {
           </DashboardPanel>
         </aside>
       </section>
+      <DashboardCursorPagination
+        nextHref={nextHref}
+        page={currentPage}
+        previousHref={previousHref}
+        summary={
+          runs.length > 0
+            ? `Showing ${pageStart.toLocaleString()}-${pageEnd.toLocaleString()}`
+            : `Page ${currentPage.toLocaleString()}`
+        }
+      />
     </DashboardRouteShell>
   );
+}
+
+function parseRunsCursor(value: string | undefined) {
+  const cursor = value?.trim();
+
+  if (!cursor || cursor.length > 1024) {
+    return undefined;
+  }
+
+  return cursor;
+}
+
+function parseRunsCursorStack(value: string | undefined) {
+  if (!value) {
+    return [];
+  }
+
+  return value
+    .split(",")
+    .map((cursor) => parseRunsCursor(cursor))
+    .filter((cursor): cursor is string => Boolean(cursor))
+    .slice(-20);
+}
+
+function buildRunsHref(options: {
+  cursor?: string;
+  cursorStack?: string[];
+  id?: string;
+  inspect?: "run";
+  range: string;
+}) {
+  const params = new URLSearchParams({ range: options.range });
+
+  if (options.cursor) {
+    params.set("cursor", options.cursor);
+  }
+
+  if (options.cursorStack && options.cursorStack.length > 0) {
+    params.set("cursorStack", options.cursorStack.join(","));
+  }
+
+  if (options.inspect && options.id) {
+    params.set("inspect", options.inspect);
+    params.set("id", options.id);
+  }
+
+  return `/dashboard/runs?${params.toString()}`;
+}
+
+function formatRunCount(count: number, hasMore: boolean) {
+  return `${count.toLocaleString()}${hasMore ? "+" : ""} ${
+    count === 1 ? "run" : "runs"
+  }`;
 }
 
 function getRunStage(run: DashboardRun) {
