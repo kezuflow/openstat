@@ -4,10 +4,11 @@ build-backend = "hatchling.build"
 
 [project]
 name = "openstat-sdk"
-version = "0.2.1"
+version = "0.2.2"
 description = "Native telemetry SDK for AI agents, trading bots, and on-chain workflows"
 readme = "README.md"
 license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 dependencies = []
 keywords = [
