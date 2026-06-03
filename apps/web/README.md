@@ -55,6 +55,17 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Deploy this app from the `apps/web` root directory.
+
+`vercel.json` uses an ignored-build command:
+
+```bash
+node scripts/ignore-build.mjs
+```
+
+The script skips builds when a commit only changes unrelated workspace files. It
+allows builds when changes touch `apps/web`, backend/API contract code,
+ingestion code, shared UI/config packages, or root workspace files such as the
+lockfile and `turbo.json`.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
