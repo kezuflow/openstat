@@ -67,6 +67,46 @@ registered as opt-in EVM receipt reconciliation targets.
 Chain behavior lives under `packages/ingestion/src/integrations/*`; core
 ingestion remains chain-agnostic.
 
+### Mantle Hackathon Proof
+
+For The Turing Test Hackathon 2026, OpenStat targets the **AI Alpha & Data /
+Data & Analytics** path. The submission uses `OpenStatAuditAnchor` on Mantle
+Sepolia as the AI-powered on-chain function: OpenStat analyzes a redacted agent
+run, produces an Audit Copilot insight, and anchors only the run reference,
+telemetry digest, insight digest, and outcome on-chain.
+
+The public demo should show:
+
+```text
+agent run telemetry
+  -> redacted OpenStat audit input
+  -> Audit Copilot insight
+  -> OpenStatAuditAnchor.anchorAudit(...)
+  -> Mantle Sepolia receipt and explorer link
+  -> dashboard proof status
+```
+
+Contract commands live in `packages/contracts`:
+
+```sh
+pnpm --filter @openstat/contracts deploy:mantle-sepolia
+pnpm --filter @openstat/contracts deploy:mantle-sepolia -- --confirm
+pnpm --filter @openstat/contracts verify:mantle-sepolia -- 0x...
+pnpm --filter @openstat/contracts demo:anchor-mantle-sepolia -- --run-id mantle-demo-run
+```
+
+Backend deployments should enable anchor indexing only after the contract is
+deployed and the start block is known:
+
+```text
+MANTLE_SEPOLIA_ANCHOR_CONTRACT_ADDRESS=0x...
+MANTLE_ANCHOR_INDEXING_ENABLED=true
+MANTLE_ANCHOR_INDEX_START_BLOCK=<deployment-block>
+MANTLE_SEPOLIA_RPC_URL=https://rpc.sepolia.mantle.xyz
+```
+
+See `docs/hackathon/mantle-submission.md` for the submission checklist.
+
 ## Repository Layout
 
 ```text
