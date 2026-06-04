@@ -54,8 +54,8 @@ public chain data.
 
 ## The on-chain transaction
 
-For the hackathon deployment, OpenStat anchored a sample audit through
-`OpenStatAuditAnchor` on Mantle Sepolia.
+OpenStat anchors audit commitments through `OpenStatAuditAnchor` on Mantle
+Sepolia.
 
 - Contract:
   [`0x1f5a3354dc01beb89ba7de1a01d04295274a737a`](https://sepolia.mantlescan.xyz/address/0x1f5a3354dc01beb89ba7de1a01d04295274a737a)
@@ -82,7 +82,7 @@ execution and receipt verification happen off-chain through the agent workflow
 and Mantle RPC. Mantle stores the final audit commitment so the proof can be
 publicly checked later.
 
-## Dashboard demo
+## Dashboard proof view
 
 Open the dashboard proof view:
 
@@ -96,10 +96,9 @@ The Mantle dashboard shows:
 - whether the audit was anchored
 - direct Mantle Explorer links for the transaction and proof
 
-For the hackathon deployment, the dashboard uses a sample AI trading workflow
-with a real Mantle Sepolia audit proof transaction. In production, the same
-pipeline attaches to real agent-submitted Mantle transactions and verifies
-their receipts before anchoring the audit proof.
+The dashboard can show an AI trading workflow with a real Mantle Sepolia audit
+proof transaction. The same pipeline attaches to agent-submitted Mantle
+transactions and verifies their receipts before anchoring the audit proof.
 
 ## Step-by-step flow
 
