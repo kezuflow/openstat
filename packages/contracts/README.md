@@ -92,3 +92,23 @@ pnpm --filter @openstat/contracts read:audit -- 0xContract 0xSubmitter 0xRunRef
 
 Verify Solidity source through the Mantle Explorer verification surface before
 final DoraHacks submission.
+
+## Demo Mantle Sepolia Anchor
+
+- Run ID: `mantle-demo-run`
+- Run reference:
+  `0x0dd006e44375d9c8163d39202e4730ce18b432af568aa754ddd1c8e776be6baf`
+- Telemetry digest:
+  `0xb3e03d8e754f596c855ecf189b0f76b68258a5e52d8c817a9118251661fd142a`
+- Insight digest:
+  `0x6a498dde6460ed5335398cf64249a538faa29a97b4ee732aa64034c855b0e8a5`
+- Outcome: `1` (`Pass`)
+- Anchor transaction:
+  `0x22f6e966f1190404580228a2e71597f0beb17ddc269aab6e0b7325bfcdbaad4b`
+- Anchor block: `39496321`
+- Gas used: `137151`
+- Explorer transaction:
+  `https://sepolia.mantlescan.xyz/tx/0x22f6e966f1190404580228a2e71597f0beb17ddc269aab6e0b7325bfcdbaad4b`
+
+The stored audit was read back from `getAudit(...)` after broadcast and matched
+the expected telemetry digest, insight digest, outcome, and submitter.

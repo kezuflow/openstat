@@ -88,6 +88,15 @@ pnpm --filter @openstat/contracts demo:anchor-mantle-sepolia -- --run-id mantle-
 - **Video:** two-minute walkthrough of run telemetry, AI audit insight, on-chain
   anchor, and dashboard proof.
 
+Current Mantle Sepolia proof links:
+
+- Contract:
+  `https://sepolia.mantlescan.xyz/address/0x1f5a3354dc01beb89ba7de1a01d04295274a737a`
+- Deployment transaction:
+  `https://sepolia.mantlescan.xyz/tx/0x05218e9b32c615c0c616e88efd7efc9b5f7bbf84ff388e73dc4b7b14c2ddc956`
+- Demo anchor transaction:
+  `https://sepolia.mantlescan.xyz/tx/0x22f6e966f1190404580228a2e71597f0beb17ddc269aab6e0b7325bfcdbaad4b`
+
 ## Acceptance Checks
 
 Before submission, verify:
