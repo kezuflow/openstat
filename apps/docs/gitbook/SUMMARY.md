@@ -1,5 +1,7 @@
 # Summary
 
+- [OpenStat documentation](README.md)
+
 ## Getting Started
 
 - [Quick installation](getting-started/quick-installation.md)
