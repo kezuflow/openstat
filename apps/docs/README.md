@@ -54,6 +54,17 @@ The script calls GitBook's OpenAPI create-or-update endpoint and keeps the spec
 slug stable so GitBook API reference blocks can continue to update from the same
 source.
 
+## GitBook Content Pages
+
+Customer-facing GitBook page drafts live in `apps/docs/gitbook`. Keep these
+files free of secrets, private telemetry, wallet keys, and temporary seed-agent
+names before importing them into GitBook.
+
+Current public page drafts:
+
+- `apps/docs/gitbook/mantle-verification.md` explains the Mantle audit anchor
+  proof flow and live Mantle Sepolia proof links.
+
 ## Local OpenAPI Preview
 
 Start the backend on port `4000`, then visit:

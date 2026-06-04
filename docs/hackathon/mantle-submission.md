@@ -1,15 +1,74 @@
 # Mantle Turing Test Hackathon Submission
 
-OpenStat's submission path is **AI Alpha & Data / Data & Analytics**. The
-deployment-award proof is the `OpenStatAuditAnchor` contract on Mantle Sepolia:
-an AI-generated audit insight digest is anchored on-chain without publishing
-private telemetry.
+OpenStat's submission path is **AI Alpha & Data / Data & Analytics**. OpenStat
+is the analytics and verification layer for AI agents on Mantle: it records
+agent intent, verifies Mantle transaction receipts, generates a redacted AI
+audit insight, and anchors a privacy-safe proof on-chain.
+
+The deployment-award proof uses the `OpenStatAuditAnchor` contract on Mantle
+Sepolia. The contract stores cryptographic commitments to an audited agent run;
+it does not store raw prompts, wallet secrets, private account details, or raw
+tool payloads.
 
 One-line pitch:
 
 ```text
 OpenStat is the analytics and verification layer for AI agents on Mantle.
 ```
+
+## How The Mantle Proof Works
+
+OpenStat keeps verification logic off-chain and uses Mantle as the immutable
+proof layer.
+
+```text
+AI agent run
+  -> OpenStat telemetry
+  -> Mantle transaction receipt verification
+  -> redacted Audit Copilot insight
+  -> telemetryDigest + insightDigest
+  -> OpenStatAuditAnchor.anchorAudit(...)
+  -> public Mantle proof
+```
+
+For a Mantle transaction, OpenStat checks the chain receipt through Mantle RPC:
+
+- transaction hash exists
+- receipt status is confirmed, reverted, or pending
+- block number and gas usage are recorded
+- explorer links are attached to dashboard rows
+
+After that off-chain verification, OpenStat calls `anchorAudit(...)` with:
+
+- `runRef`: a bytes32 reference for the audited run
+- `telemetryDigest`: hash of the redacted run-audit input
+- `insightDigest`: hash of the structured AI audit insight
+- `outcome`: `0` unknown, `1` pass, `2` warning, or `3` fail
+
+The contract is therefore a proof registry for verified audits. It does not
+re-execute trades or inspect private telemetry on-chain.
+
+## Dashboard Demo
+
+The public dashboard demo is available at:
+
+```text
+https://openstat.online/dashboard/onchain/mantle
+```
+
+The demo row shows an AI trading-agent run correlated with a real Mantle Sepolia
+audit anchor:
+
+- run ID: `mantle-demo-run`
+- action: `anchor_audit`
+- receipt: `confirmed`
+- Audit Copilot: `pass - 0/100`
+- proof: `Anchored`
+
+This demo uses simulated agent telemetry with a real Mantle Sepolia proof
+transaction. In production, the same pipeline attaches to real agent-submitted
+transactions and verifies their receipts from Mantle RPC before anchoring the
+audit proof.
 
 ## Deployment Award Checklist
 
@@ -96,6 +155,29 @@ Current Mantle Sepolia proof links:
   `https://sepolia.mantlescan.xyz/tx/0x05218e9b32c615c0c616e88efd7efc9b5f7bbf84ff388e73dc4b7b14c2ddc956`
 - Demo anchor transaction:
   `https://sepolia.mantlescan.xyz/tx/0x22f6e966f1190404580228a2e71597f0beb17ddc269aab6e0b7325bfcdbaad4b`
+
+## GitBook Page Copy
+
+Use this concise version for the public GitBook page:
+
+```text
+OpenStat verifies AI-agent activity on Mantle without exposing private
+telemetry. An agent run emits OpenStat telemetry, OpenStat verifies the related
+Mantle transaction receipt through RPC, Audit Copilot produces a redacted
+structured verdict, and OpenStat anchors only cryptographic digests of that
+audit through OpenStatAuditAnchor on Mantle Sepolia.
+
+The smart contract is not a trading bot and does not re-execute the transaction.
+It acts as an immutable proof registry: every important audited agent run can
+produce a public proof that the displayed OpenStat audit matches an on-chain
+commitment.
+
+Live proof:
+- Contract: 0x1f5a3354dc01beb89ba7de1a01d04295274a737a
+- Sample proof transaction:
+  0x22f6e966f1190404580228a2e71597f0beb17ddc269aab6e0b7325bfcdbaad4b
+- Dashboard: https://openstat.online/dashboard/onchain/mantle
+```
 
 ## Acceptance Checks
 
