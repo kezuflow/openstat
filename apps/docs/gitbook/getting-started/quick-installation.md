@@ -32,9 +32,9 @@ const openstat = createOpenStatClient({
   environment: "production",
 });
 
-await openstat.recordHeartbeat({
+await openstat.sendHeartbeat({
   agent: { id: "agent-1", name: "My Agent" },
-  data: { status: "online" },
+  status: "online",
 });
 ```
 
@@ -53,20 +53,33 @@ The Python package is published as `openstat-sdk`, but the import path is
 `openstat`:
 
 ```python
+import os
+
 from openstat import OpenStatClient
 
 client = OpenStatClient(
-    api_key="ostat_...",
-    endpoint="https://api.openstat.online",
+    api_key=os.environ["OPENSTAT_API_KEY"],
+    endpoint=os.environ.get("OPENSTAT_ENDPOINT", "https://api.openstat.online"),
     service_name="my-agent",
     environment="production",
 )
 
-client.record_heartbeat(
+client.send_heartbeat(
     agent={"id": "agent-1", "name": "My Agent"},
-    data={"status": "online"},
+    status="online",
 )
 ```
+
+## Create an ingestion key
+
+Before running an SDK example:
+
+1. Open the OpenStat dashboard.
+2. Choose the workspace and project that should receive telemetry.
+3. Open the API Keys page.
+4. Create an ingestion key.
+5. Copy the key once and store it in your agent runtime as
+   `OPENSTAT_API_KEY`.
 
 ## Environment variables
 

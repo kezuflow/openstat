@@ -115,6 +115,45 @@ their receipts before anchoring the audit proof.
 7. The dashboard displays the correlated run, AI audit result, receipt status,
    proof status, and explorer links.
 
+## Add Mantle transaction telemetry
+
+After your agent submits a Mantle transaction, send the transaction hash to
+OpenStat with the same `runId` used for the agent run.
+
+JavaScript:
+
+```ts
+await openstat.recordChainTransaction({
+  agent: { id: "agent-1", name: "Mantle Agent" },
+  runId: run.runId,
+  chain: "mantle",
+  chainId: 5003,
+  txHash: "0x...",
+  action: "buy_token",
+  status: "submitted",
+});
+```
+
+Python:
+
+```python
+client.record_chain_transaction(
+    agent={"id": "agent-1", "name": "Mantle Agent"},
+    run_id=run_id,
+    chain="mantle",
+    chain_id=5003,
+    tx_hash="0x...",
+    action="buy_token",
+    status="submitted",
+)
+```
+
+Use Mantle Sepolia chain id `5003` for testnet workflows. Use Mantle mainnet
+chain id `5000` for approved production workflows.
+
+OpenStat uses this event to reconcile the transaction receipt through Mantle RPC
+and correlate receipt status with the run audit.
+
 ## When to use this
 
 Use AI Agent Proofs on Mantle when you need a public proof that an AI-agent

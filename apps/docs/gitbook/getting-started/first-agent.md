@@ -17,8 +17,22 @@ heartbeat
 ## JavaScript example
 
 ```ts
+import { createOpenStatClient } from "openstat";
+
+const openstat = createOpenStatClient({
+  apiKey: process.env.OPENSTAT_API_KEY!,
+  endpoint: process.env.OPENSTAT_ENDPOINT ?? "https://api.openstat.online",
+  serviceName: "paper-trader",
+  environment: "production",
+});
+
 const run = openstat.startAgentRun({ strategy: "breakout" });
 const agent = { id: "agent-1", name: "Paper Trader" };
+
+await openstat.sendHeartbeat({
+  agent,
+  status: "online",
+});
 
 await openstat.recordRunLifecycle({
   runId: run.runId,
@@ -53,9 +67,25 @@ await openstat.recordRunLifecycle({
 ## Python example
 
 ```python
+import os
+
+from openstat import OpenStatClient
+
+client = OpenStatClient(
+    api_key=os.environ["OPENSTAT_API_KEY"],
+    endpoint=os.environ.get("OPENSTAT_ENDPOINT", "https://api.openstat.online"),
+    service_name="paper-trader",
+    environment="production",
+)
+
 run = client.start_agent_run(strategy="breakout")
 run_id = run["run_id"]
 agent = {"id": "agent-1", "name": "Paper Trader"}
+
+client.send_heartbeat(
+    agent=agent,
+    status="online",
+)
 
 client.record_run_lifecycle(
     run_id=run_id,
