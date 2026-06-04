@@ -62,8 +62,11 @@ names before importing them into GitBook.
 
 Current public page drafts:
 
-- `apps/docs/gitbook/mantle-verification.md` explains the Mantle audit anchor
-  proof flow and live Mantle Sepolia proof links.
+- `apps/docs/gitbook/README.md` is the product docs homepage.
+- `apps/docs/gitbook/getting-started/quick-installation.md` introduces npm,
+  PyPI, and direct HTTP installation.
+- `apps/docs/gitbook/guides/ai-agent-proofs-on-mantle.md` explains the
+  Mantle-first audit proof flow and live Mantle Sepolia proof links.
 
 ## Local OpenAPI Preview
 

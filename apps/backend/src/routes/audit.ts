@@ -32,8 +32,15 @@ export async function registerAuditRoutes(app: FastifyInstance) {
     "/v1/audit/transactions",
     {
       schema: {
-        tags: ["Monitoring"],
+        tags: ["On-chain Audit"],
         summary: "List scoped chain transactions and receipt status",
+        description: [
+          "Returns chain transaction telemetry for the current project with reconciled receipt status when available.",
+          "",
+          "Mantle is OpenStat's first chain verification ecosystem. These records can include submitted transaction hashes, receipt status, explorer links, and any correlated redacted AI audit insight or on-chain audit anchor.",
+          "",
+          "This endpoint verifies receipt data through configured chain RPC integrations. It does not execute trades or publish raw telemetry on-chain.",
+        ].join("\n"),
         security: [...sessionCookieSecurity, ...bearerSecurity],
         response: {
           200: chainTransactionListResponseSchema,
@@ -139,8 +146,15 @@ export async function registerAuditRoutes(app: FastifyInstance) {
       path,
       {
         schema: {
-          tags: ["Monitoring"],
-          summary: "Get one correlated chain run audit",
+          tags: ["On-chain Audit"],
+          summary: "Get one correlated on-chain run audit",
+          description: [
+            "Returns the OpenStat audit view for one agent run, including run context, related events, reconciled chain transactions, the redacted AI audit insight, and the on-chain audit anchor when one exists.",
+            "",
+            "Use `/v1/chains/runs/{runId}/audit` for generic chain-aware clients. `/v1/mantle/runs/{runId}/audit` is a Mantle-first alias for the same audit model.",
+            "",
+            "The first proof integration anchors redacted audit commitments through `OpenStatAuditAnchor` on Mantle Sepolia. Additional chain integrations are planned soon.",
+          ].join("\n"),
           security: [...sessionCookieSecurity, ...bearerSecurity],
           response: {
             200: chainRunAuditResponseSchema,
@@ -162,8 +176,15 @@ export async function registerAuditRoutes(app: FastifyInstance) {
       path,
       {
         schema: {
-          tags: ["Monitoring"],
-          summary: "Generate one deterministic chain run audit insight",
+          tags: ["On-chain Audit"],
+          summary: "Generate one deterministic on-chain audit insight",
+          description: [
+            "Creates or returns a deterministic Audit Copilot insight for one chain-aware agent run.",
+            "",
+            "The insight summarizes redacted run context and reconciled chain receipt data, then produces the digests used by the on-chain proof flow. For Mantle, those digests can be anchored through `OpenStatAuditAnchor.anchorAudit(...)`.",
+            "",
+            "The response does not expose raw prompts, wallet secrets, private account details, or unredacted telemetry.",
+          ].join("\n"),
           security: [...sessionCookieSecurity, ...bearerSecurity],
           response: {
             200: auditInsightResponseSchema,

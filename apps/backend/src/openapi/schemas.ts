@@ -3,6 +3,8 @@ export const sessionCookieSecurity = [{ sessionCookie: [] }] as const;
 
 export const chainTransactionSchema = {
   type: "object",
+  description:
+    "Chain transaction telemetry reconciled by OpenStat. Mantle is the first supported receipt-verification ecosystem.",
   required: [
     "id",
     "organizationId",
@@ -18,12 +20,37 @@ export const chainTransactionSchema = {
   additionalProperties: true,
   properties: {
     id: { type: "string", format: "uuid" },
-    chain: { type: "string" },
-    chainId: { type: "integer", minimum: 1 },
-    transactionHash: { type: "string" },
-    action: { type: ["string", "null"] },
-    status: { type: "string", enum: ["submitted", "confirmed", "reverted"] },
-    explorerUrl: { type: ["string", "null"] },
+    chain: {
+      type: "string",
+      description:
+        "Chain family, for example `mantle`. Additional ecosystems are planned soon.",
+    },
+    chainId: {
+      type: "integer",
+      minimum: 1,
+      description: "EVM chain id. Mantle Sepolia is `5003`.",
+    },
+    transactionHash: {
+      type: "string",
+      description:
+        "Submitted transaction hash used for receipt reconciliation.",
+    },
+    action: {
+      type: ["string", "null"],
+      description:
+        "Optional action label from the agent, such as `anchor_audit`.",
+    },
+    status: {
+      type: "string",
+      enum: ["submitted", "confirmed", "reverted"],
+      description:
+        "Receipt status after OpenStat reconciliation. `submitted` means a final receipt has not been confirmed yet.",
+    },
+    explorerUrl: {
+      type: ["string", "null"],
+      description:
+        "Explorer link for the submitted transaction when the chain integration provides one.",
+    },
   },
 } as const;
 
@@ -40,6 +67,8 @@ export const chainTransactionListResponseSchema = {
 
 export const auditInsightResponseSchema = {
   type: "object",
+  description:
+    "Deterministic redacted AI audit insight for a chain-aware agent run.",
   required: ["insight"],
   properties: {
     insight: {
@@ -58,12 +87,39 @@ export const auditInsightResponseSchema = {
       properties: {
         id: { type: "string", format: "uuid" },
         externalRunId: { type: "string" },
-        verdict: { type: "string", enum: ["pass", "warning", "fail"] },
-        riskScore: { type: "integer", minimum: 0, maximum: 100 },
-        summary: { type: "string" },
-        anomalyFlags: { type: "array", items: { type: "string" } },
-        telemetryDigest: { type: "string" },
-        insightDigest: { type: "string" },
+        verdict: {
+          type: "string",
+          enum: ["pass", "warning", "fail"],
+          description:
+            "Audit Copilot verdict for the redacted run context and reconciled receipt data.",
+        },
+        riskScore: {
+          type: "integer",
+          minimum: 0,
+          maximum: 100,
+          description: "Risk score from 0 to 100.",
+        },
+        summary: {
+          type: "string",
+          description:
+            "Human-readable summary generated from redacted audit context.",
+        },
+        anomalyFlags: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Structured anomaly labels found during deterministic audit analysis.",
+        },
+        telemetryDigest: {
+          type: "string",
+          description:
+            "Hash of the redacted run-audit input. This can be committed on-chain without publishing raw telemetry.",
+        },
+        insightDigest: {
+          type: "string",
+          description:
+            "Hash of the structured AI audit insight. For Mantle, this can be anchored through `OpenStatAuditAnchor.anchorAudit(...)`.",
+        },
       },
     },
   },
@@ -71,6 +127,8 @@ export const auditInsightResponseSchema = {
 
 export const chainRunAuditResponseSchema = {
   type: "object",
+  description:
+    "Correlated run, events, chain transactions, redacted audit insight, and optional on-chain audit anchor.",
   required: ["audit"],
   properties: {
     audit: {
@@ -78,14 +136,34 @@ export const chainRunAuditResponseSchema = {
       additionalProperties: true,
       required: ["run", "events", "chainTransactions"],
       properties: {
-        run: { type: "object", additionalProperties: true },
-        events: { type: "array", items: { type: "object" } },
+        run: {
+          type: "object",
+          additionalProperties: true,
+          description: "Agent run record correlated by external run id.",
+        },
+        events: {
+          type: "array",
+          items: { type: "object" },
+          description:
+            "OpenStat events included in the redacted chain run audit context.",
+        },
         chainTransactions: {
           type: "array",
           items: { type: "object", additionalProperties: true },
+          description:
+            "Submitted chain transactions and reconciled receipt details for the run.",
         },
-        insight: { type: ["object", "null"], additionalProperties: true },
-        anchor: { type: ["object", "null"], additionalProperties: true },
+        insight: {
+          type: ["object", "null"],
+          additionalProperties: true,
+          description: "Redacted AI audit insight, if generated for the run.",
+        },
+        anchor: {
+          type: ["object", "null"],
+          additionalProperties: true,
+          description:
+            "On-chain audit proof record, if indexed from the anchor contract. Mantle Sepolia is the first supported proof target.",
+        },
       },
     },
   },

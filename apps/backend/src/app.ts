@@ -92,9 +92,11 @@ export async function buildApp() {
         title: "OpenStat API",
         version: "0.0.0",
         description: [
-          "API-first telemetry ingestion and monitoring for autonomous agents. SDKs are optional wrappers around this HTTP API.",
+          "API-first telemetry ingestion, monitoring, and verification for autonomous agents. SDKs are optional wrappers around this HTTP API.",
           "",
           "Agent and LLM usage: set `OPENSTAT_API_KEY` to an ingestion key from the OpenStat dashboard and send it on every ingestion request as `Authorization: Bearer ${OPENSTAT_API_KEY}`. Do not put the key in the JSON body and do not use `x-api-key`.",
+          "",
+          "OpenStat also supports chain transaction receipt reconciliation and redacted audit proof anchoring. The first on-chain proof integration is built for the Mantle ecosystem through `OpenStatAuditAnchor`; additional chain integrations are planned soon.",
         ].join("\n"),
       },
       servers: [{ url: env.apiPublicUrl }],
@@ -144,6 +146,16 @@ export async function buildApp() {
         {
           name: "Monitoring",
           description: "Dashboard-ready agent and event reads.",
+        },
+        {
+          name: "On-chain Audit",
+          description: [
+            "Chain transaction receipt reconciliation, redacted AI audit insights, and on-chain audit proof status.",
+            "",
+            "Mantle is the first supported proof ecosystem. Use the generic `/v1/chains/...` routes for chain-aware clients; `/v1/mantle/...` aliases remain available for Mantle-first integrations.",
+            "",
+            "`OpenStatAuditAnchor` stores privacy-safe commitments to redacted OpenStat audits. It does not execute trades, inspect private prompts, or publish raw telemetry on-chain.",
+          ].join("\n"),
         },
         {
           name: "Workspace",

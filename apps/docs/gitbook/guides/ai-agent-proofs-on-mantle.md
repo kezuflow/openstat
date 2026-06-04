@@ -1,9 +1,12 @@
-# Mantle verification
+# AI Agent Proofs on Mantle
 
-OpenStat is the analytics and verification layer for AI agents on Mantle. It
-records what an agent attempted, verifies related Mantle transaction receipts,
-produces a redacted AI audit verdict, and anchors a privacy-safe proof on
-Mantle Sepolia.
+OpenStat can turn an AI-agent run into a verifiable audit trail. The first
+on-chain proof integration is built for the Mantle ecosystem, with support for
+additional chains planned soon.
+
+The Mantle integration records what an agent attempted, verifies related Mantle
+transaction receipts, produces a redacted AI audit verdict, and anchors a
+privacy-safe proof on Mantle Sepolia.
 
 The on-chain component is `OpenStatAuditAnchor`. It is not a trading bot and it
 does not re-execute agent transactions. It acts as an immutable proof registry
@@ -112,28 +115,15 @@ their receipts before anchoring the audit proof.
 7. The dashboard displays the correlated run, AI audit result, receipt status,
    proof status, and explorer links.
 
-## Product docs section
+## When to use this
 
-Use Mantle verification when you need a public proof that an AI-agent audit was
-created without revealing the private details of the run. OpenStat keeps the
-agent's operational data and AI reasoning off-chain, then commits only hashed
-audit evidence to Mantle.
+Use AI Agent Proofs on Mantle when you need a public proof that an AI-agent
+audit was created without revealing the private details of the run. OpenStat
+keeps the agent's operational data and AI reasoning off-chain, then commits only
+hashed audit evidence to Mantle.
 
 This gives teams a verifiable trail for autonomous-agent activity while keeping
 sensitive telemetry, prompts, wallet secrets, and account data private.
-
-## Hackathon summary
-
-OpenStat uses Mantle as the public proof layer for AI-agent audits. The demo
-records an AI-agent workflow, reconciles Mantle receipt data, generates a
-redacted Audit Copilot verdict, and anchors the audit commitment through the
-verified `OpenStatAuditAnchor` contract on Mantle Sepolia.
-
-One-line pitch:
-
-```text
-OpenStat is the analytics and verification layer for AI agents on Mantle.
-```
 
 ## FAQ
 
@@ -160,8 +150,8 @@ Yes. The same pipeline can attach to real agent-submitted Mantle transactions,
 reconcile their receipts, create an AI audit verdict, and anchor the final
 audit commitment.
 
-### Why use Mantle?
+### Will this support other chains?
 
-Mantle gives OpenStat a public, low-cost settlement layer for audit
-commitments. OpenStat keeps high-volume telemetry and AI reasoning off-chain,
-while Mantle stores the final verification commitment that anyone can inspect.
+The first proof integration is Mantle-first. OpenStat's ingestion model stores
+generic chain transaction telemetry, so additional chain proof and receipt
+integrations can be added without changing the core agent event model.
