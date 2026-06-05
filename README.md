@@ -75,6 +75,10 @@ Sepolia as the AI-powered on-chain function: OpenStat analyzes a redacted agent
 run, produces an Audit Copilot insight, and anchors only the run reference,
 telemetry digest, insight digest, and outcome on-chain.
 
+Hackathon documentation checklist: this README includes local setup
+instructions, a repository architecture overview, and the deployed Mantle
+Sepolia `OpenStatAuditAnchor` contract address.
+
 The public demo should show:
 
 ```text
@@ -99,11 +103,24 @@ Backend deployments should enable anchor indexing only after the contract is
 deployed and the start block is known:
 
 ```text
-MANTLE_SEPOLIA_ANCHOR_CONTRACT_ADDRESS=0x...
+MANTLE_SEPOLIA_ANCHOR_CONTRACT_ADDRESS=0x1f5a3354dc01beb89ba7de1a01d04295274a737a
 MANTLE_ANCHOR_INDEXING_ENABLED=true
-MANTLE_ANCHOR_INDEX_START_BLOCK=<deployment-block>
+MANTLE_ANCHOR_INDEX_START_BLOCK=39493235
 MANTLE_SEPOLIA_RPC_URL=https://rpc.sepolia.mantle.xyz
 ```
+
+Deployed Mantle Sepolia proof:
+
+- Contract address:
+  `0x1f5a3354dc01beb89ba7de1a01d04295274a737a`
+- Contract explorer:
+  `https://sepolia.mantlescan.xyz/address/0x1f5a3354dc01beb89ba7de1a01d04295274a737a`
+- Deployment transaction:
+  `https://sepolia.mantlescan.xyz/tx/0x05218e9b32c615c0c616e88efd7efc9b5f7bbf84ff388e73dc4b7b14c2ddc956`
+- Audit proof transaction:
+  `https://sepolia.mantlescan.xyz/tx/0x22f6e966f1190404580228a2e71597f0beb17ddc269aab6e0b7325bfcdbaad4b`
+- Dashboard proof view:
+  `https://openstat.online/dashboard/onchain/mantle`
 
 See `docs/hackathon/mantle-submission.md` for the submission checklist.
 
