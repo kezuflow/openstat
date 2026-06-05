@@ -231,16 +231,6 @@ On Windows PowerShell:
 Copy-Item apps/backend/.env.example apps/backend/.env
 ```
 
-Default local services:
-
-```text
-API:      http://localhost:4000
-Web:      http://localhost:3000
-Docs:     http://localhost:3001
-Postgres: postgres://openstat:openstat@localhost:5432/openstat
-Redis:    redis://localhost:6379
-```
-
 Run everything:
 
 ```sh
