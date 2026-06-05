@@ -25,6 +25,69 @@ orders or chain transactions followed, and how the run settled.
 - Keeps private telemetry off-chain; only safe digests and summaries are used
   for verification flows.
 
+## Use OpenStat Cloud
+
+OpenStat users start from the hosted dashboard, not by running this repository.
+
+1. Sign in at `https://openstat.online`.
+2. Create or select a workspace.
+3. Create or select a project.
+4. Open the project's API Keys page and create an ingestion key.
+5. Store that key in your agent runtime as `OPENSTAT_API_KEY`.
+6. Install the SDK for your agent language.
+7. Send a heartbeat or run event and confirm it appears in the dashboard.
+
+JavaScript:
+
+```sh
+npm install openstat
+```
+
+```ts
+import { createOpenStatClient } from "openstat";
+
+const openstat = createOpenStatClient({
+  apiKey: process.env.OPENSTAT_API_KEY!,
+  endpoint: process.env.OPENSTAT_ENDPOINT ?? "https://api.openstat.online",
+  serviceName: "my-agent",
+  environment: "production",
+});
+
+await openstat.sendHeartbeat({
+  agent: { id: "agent-1", name: "My Agent" },
+  status: "online",
+});
+```
+
+Python:
+
+```sh
+pip install openstat-sdk
+```
+
+```python
+import os
+
+from openstat import OpenStatClient
+
+client = OpenStatClient(
+    api_key=os.environ["OPENSTAT_API_KEY"],
+    endpoint=os.environ.get("OPENSTAT_ENDPOINT", "https://api.openstat.online"),
+    service_name="my-agent",
+    environment="production",
+)
+
+client.send_heartbeat(
+    agent={"id": "agent-1", "name": "My Agent"},
+    status="online",
+)
+```
+
+Public packages:
+
+- `openstat` on npm: `https://www.npmjs.com/package/openstat`
+- `openstat-sdk` on PyPI: `https://pypi.org/project/openstat-sdk/`
+
 ## Current Product Surface
 
 ### Dashboard
@@ -67,62 +130,14 @@ registered as opt-in EVM receipt reconciliation targets.
 Chain behavior lives under `packages/ingestion/src/integrations/*`; core
 ingestion remains chain-agnostic.
 
-### Mantle Hackathon Proof
+### Deployed Audit Proof
 
-For The Turing Test Hackathon 2026, OpenStat targets the **AI Alpha & Data /
-Data & Analytics** path. The submission uses `OpenStatAuditAnchor` on Mantle
-Sepolia as the AI-powered on-chain function: OpenStat analyzes a redacted agent
-run, produces an Audit Copilot insight, and anchors only the run reference,
-telemetry digest, insight digest, and outcome on-chain.
-
-Hackathon documentation checklist: this README includes local setup
-instructions, a repository architecture overview, and the deployed Mantle
-Sepolia `OpenStatAuditAnchor` contract address.
-
-The public demo should show:
-
-```text
-agent run telemetry
-  -> redacted OpenStat audit input
-  -> Audit Copilot insight
-  -> OpenStatAuditAnchor.anchorAudit(...)
-  -> Mantle Sepolia receipt and explorer link
-  -> dashboard proof status
-```
-
-Contract commands live in `packages/contracts`:
-
-```sh
-pnpm --filter @openstat/contracts deploy:mantle-sepolia
-pnpm --filter @openstat/contracts deploy:mantle-sepolia -- --confirm
-pnpm --filter @openstat/contracts verify:mantle-sepolia -- 0x...
-pnpm --filter @openstat/contracts demo:anchor-mantle-sepolia -- --run-id mantle-demo-run
-```
-
-Backend deployments should enable anchor indexing only after the contract is
-deployed and the start block is known:
-
-```text
-MANTLE_SEPOLIA_ANCHOR_CONTRACT_ADDRESS=0x1f5a3354dc01beb89ba7de1a01d04295274a737a
-MANTLE_ANCHOR_INDEXING_ENABLED=true
-MANTLE_ANCHOR_INDEX_START_BLOCK=39493235
-MANTLE_SEPOLIA_RPC_URL=https://rpc.sepolia.mantle.xyz
-```
-
-Deployed Mantle Sepolia proof:
+The current public onchain audit proof deployment is:
 
 - Contract address:
   `0x1f5a3354dc01beb89ba7de1a01d04295274a737a`
-- Contract explorer:
+- Explorer:
   `https://sepolia.mantlescan.xyz/address/0x1f5a3354dc01beb89ba7de1a01d04295274a737a`
-- Deployment transaction:
-  `https://sepolia.mantlescan.xyz/tx/0x05218e9b32c615c0c616e88efd7efc9b5f7bbf84ff388e73dc4b7b14c2ddc956`
-- Audit proof transaction:
-  `https://sepolia.mantlescan.xyz/tx/0x22f6e966f1190404580228a2e71597f0beb17ddc269aab6e0b7325bfcdbaad4b`
-- Dashboard proof view:
-  `https://openstat.online/dashboard/onchain/mantle`
-
-See `docs/hackathon/mantle-submission.md` for the submission checklist.
 
 ## Repository Layout
 
@@ -186,7 +201,10 @@ Core projection tables include:
 The design direction lives in
 `docs/plans/openstat-system-design.md`.
 
-## Local Development
+## Repository Development
+
+This section is for contributors running the OpenStat monorepo locally. Users
+integrating agents should start with `Use OpenStat Cloud` above.
 
 Prerequisites:
 
