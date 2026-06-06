@@ -1,0 +1,329 @@
+.dashboard-loading-page {
+  --dashboard-loading-fill: color-mix(
+    in oklab,
+    var(--surface-secondary) 84%,
+    var(--foreground)
+  );
+}
+
+.dashboard-loading-page .skeleton {
+  background: var(--dashboard-loading-fill);
+}
+
+.dashboard-loading-topbar {
+  pointer-events: none;
+}
+
+.dashboard-loading-icon,
+.dashboard-loading-search,
+.dashboard-loading-range,
+.dashboard-loading-title,
+.dashboard-loading-label,
+.dashboard-loading-panel-eyebrow,
+.dashboard-loading-panel-title,
+.dashboard-loading-panel-count,
+.dashboard-loading-panel-action,
+.dashboard-loading-kpi-label,
+.dashboard-loading-kpi-value,
+.dashboard-loading-kpi-badge,
+.dashboard-loading-list-icon,
+.dashboard-loading-list-primary,
+.dashboard-loading-list-secondary,
+.dashboard-loading-definition-label,
+.dashboard-loading-definition-value,
+.dashboard-loading-table-line,
+.dashboard-loading-table-action,
+.dashboard-loading-pagination,
+.dashboard-loading-uptime-summary,
+.dashboard-loading-uptime-state,
+.dashboard-loading-agent-name,
+.dashboard-loading-agent-percent,
+.dashboard-loading-graph-surface,
+.dashboard-loading-api-keys-count,
+.dashboard-loading-api-keys-description,
+.dashboard-loading-api-keys-button {
+  border-radius: var(--radius-3xl);
+}
+
+.dashboard-loading-icon {
+  width: 40px;
+  height: 40px;
+}
+
+.dashboard-loading-search {
+  width: min(280px, 42vw);
+  height: 40px;
+}
+
+.dashboard-loading-title {
+  width: min(360px, 58vw);
+  height: 28px;
+}
+
+.dashboard-loading-label {
+  width: 72px;
+  height: 16px;
+}
+
+.dashboard-loading-range {
+  width: 132px;
+  height: 40px;
+}
+
+.dashboard-loading-kpi {
+  pointer-events: none;
+}
+
+.dashboard-loading-kpi-label {
+  width: 62%;
+  height: 14px;
+}
+
+.dashboard-loading-kpi-value {
+  width: 44%;
+  height: 30px;
+  margin-top: 6px;
+}
+
+.dashboard-loading-kpi-badge {
+  width: 70px;
+  height: 20px;
+}
+
+.dashboard-loading-uptime {
+  pointer-events: none;
+}
+
+.dashboard-loading-uptime-summary {
+  width: 210px;
+  max-width: 100%;
+  height: 20px;
+}
+
+.dashboard-loading-uptime-state {
+  width: 112px;
+  height: 20px;
+}
+
+.dashboard-loading-agent-name {
+  width: 72%;
+  height: 14px;
+}
+
+.dashboard-loading-agent-percent {
+  width: 34px;
+  height: 14px;
+}
+
+.dashboard-loading-graph-surface {
+  border: 1px solid color-mix(in oklab, var(--line) 72%, transparent);
+  background: color-mix(in oklab, var(--surface-secondary) 42%, transparent);
+}
+
+.dashboard-loading-chart {
+  min-height: 260px;
+  margin-top: 34px;
+}
+
+.dashboard-loading-list-panel {
+  min-height: 360px;
+}
+
+.dashboard-loading-list {
+  display: grid;
+  gap: 10px;
+}
+
+.dashboard-loading-list-item {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: color-mix(in oklab, var(--surface-secondary) 58%, transparent);
+}
+
+.dashboard-loading-list-item span {
+  display: grid;
+  gap: 7px;
+}
+
+.dashboard-loading-list-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+}
+
+.dashboard-loading-list-primary {
+  width: 76%;
+  height: 14px;
+}
+
+.dashboard-loading-list-secondary {
+  width: 52%;
+  height: 11px;
+}
+
+.dashboard-loading-panel-title-stack {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  width: min(280px, 70%);
+}
+
+.dashboard-loading-panel-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dashboard-loading-panel-eyebrow {
+  width: 45%;
+  height: 12px;
+}
+
+.dashboard-loading-panel-title {
+  width: 70%;
+  height: 22px;
+}
+
+.dashboard-loading-panel-count {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 22px;
+}
+
+.dashboard-loading-panel-action {
+  width: 76px;
+  height: 24px;
+}
+
+.dashboard-loading-definitions {
+  display: grid;
+  gap: 10px;
+}
+
+.dashboard-loading-definition {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 42px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-3xl);
+  background: color-mix(in oklab, var(--surface-secondary) 58%, transparent);
+}
+
+.dashboard-loading-definition-label {
+  width: 34%;
+  height: 13px;
+}
+
+.dashboard-loading-definition-value {
+  width: 28%;
+  height: 18px;
+}
+
+.dashboard-loading-table-panel {
+  min-width: 0;
+  margin-bottom: 16px;
+}
+
+.dashboard-loading-table-panel:not(.dashboard-latest-panel) {
+  margin-bottom: 0;
+}
+
+.dashboard-loading-table-line {
+  display: block;
+  width: 112px;
+  max-width: 100%;
+  height: 18px;
+}
+
+.dashboard-loading-table-line-primary {
+  width: 170px;
+  height: 20px;
+}
+
+.dashboard-loading-table-line-wide {
+  width: 260px;
+  height: 20px;
+}
+
+.dashboard-loading-table-line-status {
+  width: 68px;
+  height: 22px;
+}
+
+.dashboard-loading-table-line-date {
+  width: 96px;
+}
+
+.dashboard-loading-table-line-compact {
+  width: 78px;
+}
+
+.dashboard-loading-table-actions {
+  display: inline-flex;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 80px;
+}
+
+.dashboard-loading-table-action {
+  width: 32px;
+  height: 32px;
+}
+
+.dashboard-loading-pagination {
+  width: min(360px, 100%);
+  height: 36px;
+  margin-top: 12px;
+}
+
+.dashboard-loading-api-keys-copy {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  width: min(620px, 100%);
+}
+
+.dashboard-loading-api-keys-count {
+  width: 68px;
+  height: 22px;
+}
+
+.dashboard-loading-api-keys-description {
+  width: min(520px, 78vw);
+  height: 18px;
+}
+
+.dashboard-loading-api-keys-button {
+  width: 118px;
+  height: 40px;
+}
+
+@media (max-width: 980px) {
+  .dashboard-loading-search {
+    width: 48px;
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard-loading-title {
+    width: min(280px, 72vw);
+  }
+
+  .dashboard-loading-range {
+    width: 112px;
+  }
+
+  .dashboard-loading-api-keys-button {
+    width: 44px;
+  }
+}

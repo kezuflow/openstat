@@ -5,7 +5,6 @@ import {
   dashboardThemeCookieName,
   getDashboardThemeMode,
 } from "../../lib/dashboard-theme";
-import { getDashboardUser } from "../../lib/openstat-api";
 import { DashboardSidebar } from "./dashboard-sidebar";
 import { DashboardThemeProvider } from "./dashboard-theme-provider";
 
@@ -14,7 +13,6 @@ export default async function DashboardLayout(props: { children: ReactNode }) {
   const theme = getDashboardThemeMode(
     cookieStore.get(dashboardThemeCookieName)?.value,
   );
-  const user = await getDashboardUser();
 
   return (
     <DashboardThemeProvider initialMode={theme}>
@@ -23,7 +21,7 @@ export default async function DashboardLayout(props: { children: ReactNode }) {
         data-dashboard-theme={theme}
         data-dashboard-theme-mode={theme}
       >
-        <DashboardSidebar initialUser={user} />
+        <DashboardSidebar />
         {props.children}
       </div>
     </DashboardThemeProvider>
