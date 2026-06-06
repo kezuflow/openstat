@@ -6,6 +6,11 @@
   width: min(460px, calc(100vw - 24px));
 }
 
+.dashboard-inspector-content[data-entering="true"] .dashboard-inspector,
+.dashboard-inspector-content[data-exiting="true"] .dashboard-inspector {
+  translate: -100% 0;
+}
+
 .dashboard-inspector {
   --foreground: #f6f8ef;
   --muted: #aab3a2;

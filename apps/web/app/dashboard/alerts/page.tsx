@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import {
   getDashboardData,
   getDashboardInspectorData,
@@ -48,12 +50,13 @@ export default async function AlertsPage(props: AlertsPageProps) {
               key: "alert",
               label: "Alert",
               render: (notification) => (
-                <a
+                <Link
                   className="dashboard-table-primary"
                   href={`/dashboard/alerts?range=${range}&inspect=notification&id=${notification.id}`}
+                  scroll={false}
                 >
                   {notification.title}
-                </a>
+                </Link>
               ),
             },
             {

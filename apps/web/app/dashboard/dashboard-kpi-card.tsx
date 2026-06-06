@@ -1,5 +1,6 @@
 import { useId } from "react";
 import type { ReactNode } from "react";
+import Link from "next/link";
 
 import type { DashboardAnalyticsSeriesPoint } from "../../lib/openstat-api";
 
@@ -57,7 +58,11 @@ export function DashboardKpiCard(props: {
     });
 
   return (
-    <a className={`dashboard-kpi dashboard-kpi-${tone}`} href={props.href}>
+    <Link
+      className={`dashboard-kpi dashboard-kpi-${tone}`}
+      href={props.href}
+      scroll={false}
+    >
       <span className="dashboard-kpi-label">{props.label}</span>
       <span className="dashboard-kpi-value-row">
         <strong>{props.value}</strong>
@@ -77,7 +82,7 @@ export function DashboardKpiCard(props: {
       ) : sparklineSeries ? (
         <DashboardKpiSparkline series={sparklineSeries} tone={tone} />
       ) : null}
-    </a>
+    </Link>
   );
 }
 

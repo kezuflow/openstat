@@ -21,7 +21,7 @@ export function DashboardCursorPagination(
 
   function navigate(href: string | undefined) {
     if (href) {
-      router.push(href);
+      router.push(href, { scroll: false });
     }
   }
 

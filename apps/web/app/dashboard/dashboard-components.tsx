@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 
 import { Chip, SearchField } from "@heroui/react";
 import { AlertTriangle, Bell, Clock3, RefreshCw, Search } from "lucide-react";
@@ -66,29 +67,31 @@ export function DashboardTopToolbar(props: {
           <span className="dashboard-timeframe-label">Timeframe</span>
           <nav className="dashboard-range-control" aria-label="Dashboard range">
             {(["24h", "7d", "30d"] as const).map((range) => (
-              <a
+              <Link
                 aria-current={props.range === range ? "page" : undefined}
                 className="dashboard-range-link"
                 href={`${rangeBasePath}?range=${range}`}
                 key={range}
+                scroll={false}
               >
                 {range}
-              </a>
+              </Link>
             ))}
           </nav>
 
-          <a
+          <Link
             aria-label="Refresh dashboard"
             className="dashboard-icon-link"
             href={`${rangeBasePath}?range=${props.range}`}
+            scroll={false}
           >
             <RefreshCw aria-hidden="true" size={16} />
-          </a>
+          </Link>
 
           {props.showSignIn ? (
-            <a className="dashboard-signin-button" href="/sign-in">
+            <Link className="dashboard-signin-button" href="/sign-in">
               Sign in
-            </a>
+            </Link>
           ) : null}
         </div>
       </div>
@@ -170,9 +173,10 @@ export function DashboardAttentionItem(props: {
   const Icon = props.tone === "danger" ? AlertTriangle : Clock3;
 
   return (
-    <a
+    <Link
       className={`dashboard-attention-item dashboard-attention-${props.tone ?? "neutral"}`}
       href={props.href}
+      scroll={false}
     >
       <span className="dashboard-attention-icon">
         <Icon aria-hidden="true" size={15} />
@@ -181,7 +185,7 @@ export function DashboardAttentionItem(props: {
         <strong>{props.title}</strong>
         <small>{props.meta}</small>
       </span>
-    </a>
+    </Link>
   );
 }
 

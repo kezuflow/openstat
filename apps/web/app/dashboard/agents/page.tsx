@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import {
   type DashboardAgent,
   getDashboardData,
@@ -160,12 +162,13 @@ export default async function AgentsPage(props: AgentsPageProps) {
               key: "agent",
               label: "Agent",
               render: (agent) => (
-                <a
+                <Link
                   className="dashboard-table-primary"
                   href={`/dashboard/agents?range=${range}&inspect=agent&id=${agent.id}`}
+                  scroll={false}
                 >
                   {agent.name}
-                </a>
+                </Link>
               ),
             },
             {
@@ -251,10 +254,11 @@ function AgentsUptimeMonitor(props: {
           const agentBars = buildUptimeBars(agentUptime, 18, agentTone);
 
           return (
-            <a
+            <Link
               className="agent-uptime-agent"
               href={`/dashboard/agents?range=${props.range}&inspect=agent&id=${agent.id}`}
               key={agent.id}
+              scroll={false}
             >
               <span className="agent-uptime-agent-header">
                 <span>{agent.name}</span>
@@ -272,7 +276,7 @@ function AgentsUptimeMonitor(props: {
                   />
                 ))}
               </span>
-            </a>
+            </Link>
           );
         })}
       </div>

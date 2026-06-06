@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import {
   getDashboardData,
   getDashboardInspectorData,
@@ -94,12 +96,13 @@ export default async function TradesPage(props: TradesPageProps) {
               key: "trade",
               label: "Trade",
               render: (trade) => (
-                <a
+                <Link
                   className="dashboard-table-primary"
                   href={`/dashboard/trades?range=${range}&inspect=trade&id=${trade.id}`}
+                  scroll={false}
                 >
                   {trade.side.toUpperCase()} {trade.symbol}
-                </a>
+                </Link>
               ),
             },
             {

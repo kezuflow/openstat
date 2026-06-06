@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import {
   DashboardDataTable,
   DashboardPanel,
@@ -28,7 +30,11 @@ export function DashboardLatestTables(props: {
   return (
     <section className="dashboard-table-grid">
       <DashboardPanel
-        actions={<a href="/dashboard/runs">View all</a>}
+        actions={
+          <Link href="/dashboard/runs" scroll={false}>
+            View all
+          </Link>
+        }
         className="dashboard-latest-panel"
         id="runs"
         title="Latest runs"
@@ -42,12 +48,13 @@ export function DashboardLatestTables(props: {
               key: "run",
               label: "Run",
               render: (run) => (
-                <a
+                <Link
                   className="dashboard-table-primary"
                   href={`/dashboard?range=${props.range}&inspect=run&id=${run.id}`}
+                  scroll={false}
                 >
                   {run.strategy ?? run.externalRunId ?? run.id}
-                </a>
+                </Link>
               ),
             },
             {
@@ -65,7 +72,11 @@ export function DashboardLatestTables(props: {
       </DashboardPanel>
 
       <DashboardPanel
-        actions={<a href="/dashboard/trades">View all</a>}
+        actions={
+          <Link href="/dashboard/trades" scroll={false}>
+            View all
+          </Link>
+        }
         className="dashboard-latest-panel"
         id="trades"
         title="Latest trades"
@@ -79,12 +90,13 @@ export function DashboardLatestTables(props: {
               key: "trade",
               label: "Trade",
               render: (trade) => (
-                <a
+                <Link
                   className="dashboard-table-primary"
                   href={`/dashboard?range=${props.range}&inspect=trade&id=${trade.id}`}
+                  scroll={false}
                 >
                   {trade.side.toUpperCase()} {trade.symbol}
-                </a>
+                </Link>
               ),
             },
             {
@@ -103,7 +115,11 @@ export function DashboardLatestTables(props: {
       </DashboardPanel>
 
       <DashboardPanel
-        actions={<a href={`/dashboard/events?range=${props.range}`}>Explore</a>}
+        actions={
+          <Link href={`/dashboard/events?range=${props.range}`} scroll={false}>
+            Explore
+          </Link>
+        }
         className="dashboard-events-panel dashboard-latest-panel"
         title="Latest events"
         titleCount={props.data.overview?.events.latest.length ?? 0}
@@ -117,20 +133,22 @@ export function DashboardLatestTables(props: {
               label: "Summary",
               render: (event) => (
                 <span className="dashboard-event-summary">
-                  <a
+                  <Link
                     className="dashboard-table-primary dashboard-event-summary-link"
                     href={`/dashboard?range=${props.range}&inspect=event&id=${event.id}`}
+                    scroll={false}
                   >
                     {summarizeEvent(event)}
-                  </a>
+                  </Link>
                   <span className="dashboard-event-links">
                     <span>{formatEventType(event.eventType)}</span>
                     {event.traceId ? (
-                      <a
+                      <Link
                         href={`/dashboard?range=${props.range}&inspect=trace&id=${event.traceId}`}
+                        scroll={false}
                       >
                         trace
-                      </a>
+                      </Link>
                     ) : null}
                     {event.runId ? (
                       <span title={event.runId}>

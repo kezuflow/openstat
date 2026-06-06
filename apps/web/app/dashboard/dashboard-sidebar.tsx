@@ -270,7 +270,10 @@ function getInitials(name: string) {
     .filter(Boolean)
     .slice(0, 2);
 
-  return parts.map((part) => part[0]).join("").toUpperCase();
+  return parts
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
 }
 
 function SidebarNavButton(props: {
@@ -311,7 +314,7 @@ function SidebarNavButton(props: {
       return;
     }
 
-    router.push(props.item.href);
+    router.push(props.item.href, { scroll: false });
   }
 
   return (

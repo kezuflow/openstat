@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import {
   getDashboardData,
   getDashboardEvents,
@@ -125,7 +127,7 @@ export default async function EventsPage(props: EventsPageProps) {
               label: "Summary",
               render: (event) => (
                 <span className="dashboard-event-summary dashboard-event-summary-expanded">
-                  <a
+                  <Link
                     className="dashboard-table-primary dashboard-event-summary-link"
                     href={buildEventsHref({
                       cursor,
@@ -135,9 +137,10 @@ export default async function EventsPage(props: EventsPageProps) {
                       inspect: "event",
                       range,
                     })}
+                    scroll={false}
                   >
                     {summarizeEvent(event)}
-                  </a>
+                  </Link>
                   {event.tags && event.tags.length > 0 ? (
                     <span className="dashboard-event-links">
                       {event.tags.slice(0, 3).map((tag) => (
@@ -233,7 +236,7 @@ function EventTraceRun(props: {
   return (
     <span className="dashboard-event-links dashboard-event-trace-run">
       {props.event.traceId ? (
-        <a
+        <Link
           href={buildEventsHref({
             cursor: props.cursor,
             cursorStack: props.cursorStack,
@@ -242,14 +245,15 @@ function EventTraceRun(props: {
             inspect: "trace",
             range: props.range,
           })}
+          scroll={false}
           title={props.event.traceId}
         >
           trace{" "}
           {formatReferenceLabel(props.event.traceId, { dropPrefix: "trace" })}
-        </a>
+        </Link>
       ) : null}
       {props.event.runId ? (
-        <a
+        <Link
           href={buildEventsHref({
             cursor: props.cursor,
             cursorStack: props.cursorStack,
@@ -258,10 +262,11 @@ function EventTraceRun(props: {
             inspect: "run",
             range: props.range,
           })}
+          scroll={false}
           title={props.event.runId}
         >
           run {formatReferenceLabel(props.event.runId, { dropPrefix: "run" })}
-        </a>
+        </Link>
       ) : null}
     </span>
   );

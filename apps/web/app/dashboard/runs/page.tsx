@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import {
   type DashboardRun,
   getDashboardData,
@@ -172,7 +174,7 @@ export default async function RunsPage(props: RunsPageProps) {
                 label: "Run",
                 render: (run) => (
                   <span className="runs-run-cell">
-                    <a
+                    <Link
                       className="dashboard-table-primary"
                       href={buildRunsHref({
                         cursor,
@@ -181,9 +183,10 @@ export default async function RunsPage(props: RunsPageProps) {
                         inspect: "run",
                         range,
                       })}
+                      scroll={false}
                     >
                       {run.strategy ?? run.externalRunId ?? run.id}
-                    </a>
+                    </Link>
                     <small>{run.externalRunId ?? run.id}</small>
                   </span>
                 ),
@@ -260,14 +263,15 @@ export default async function RunsPage(props: RunsPageProps) {
             <div className="runs-breakdown-list">
               {strategyItems.length > 0 ? (
                 strategyItems.map((item) => (
-                  <a
+                  <Link
                     className="runs-breakdown-item"
                     href={buildRunsHref({ cursor, cursorStack, range })}
                     key={item.label}
+                    scroll={false}
                   >
                     <span>{item.label}</span>
                     <strong>{formatNumber(item.count)}</strong>
-                  </a>
+                  </Link>
                 ))
               ) : (
                 <p className="runs-empty-note">No strategies yet.</p>
@@ -282,7 +286,7 @@ export default async function RunsPage(props: RunsPageProps) {
             <div className="runs-attention-list">
               {failedRuns.length > 0 ? (
                 failedRuns.slice(0, 4).map((run) => (
-                  <a
+                  <Link
                     href={buildRunsHref({
                       cursor,
                       cursorStack,
@@ -291,12 +295,13 @@ export default async function RunsPage(props: RunsPageProps) {
                       range,
                     })}
                     key={run.id}
+                    scroll={false}
                   >
                     <strong>
                       {run.strategy ?? run.externalRunId ?? "Run"}
                     </strong>
                     <span>{run.status}</span>
-                  </a>
+                  </Link>
                 ))
               ) : (
                 <p className="runs-empty-note">No failing runs.</p>

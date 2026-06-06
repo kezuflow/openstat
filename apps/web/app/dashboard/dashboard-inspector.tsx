@@ -18,7 +18,7 @@ export function DashboardInspector(props: {
   }
 
   function closeInspector() {
-    router.push(props.closeHref);
+    router.push(props.closeHref, { scroll: false });
   }
 
   return (

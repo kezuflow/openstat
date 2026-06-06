@@ -22,6 +22,7 @@ export function OnchainChainFilter(props: OnchainChainFilterProps) {
         onChange={(event) => {
           router.push(
             props.hrefByChain[event.target.value as DashboardChainFilter],
+            { scroll: false },
           );
         }}
         value={props.chain}
