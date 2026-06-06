@@ -416,7 +416,9 @@ function InspectorTimeline(props: { data: unknown }) {
           const offsetPercent = Math.min((offsetMs / timelineSpan) * 100, 96);
           const durationPercent =
             durationMs > 0 ? Math.max((durationMs / timelineSpan) * 100, 2) : 0;
+          const isCompletionStep = item.label.toLowerCase() === "completion";
           const waterfallStyle = {
+            "--timeline-completed": `${offsetPercent}%`,
             "--timeline-duration": `${durationPercent}%`,
             "--timeline-offset": `${offsetPercent}%`,
           } as CSSProperties;
@@ -433,6 +435,7 @@ function InspectorTimeline(props: { data: unknown }) {
               </div>
               <div
                 className="dashboard-inspector-waterfall"
+                data-completion={isCompletionStep ? "true" : undefined}
                 style={waterfallStyle}
               >
                 {durationMs > 0 ? (

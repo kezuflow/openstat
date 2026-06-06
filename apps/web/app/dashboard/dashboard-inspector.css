@@ -247,6 +247,16 @@
   overflow: hidden;
 }
 
+.dashboard-inspector-waterfall[data-completion="true"]::before {
+  position: absolute;
+  inset-block: 4px;
+  left: 0;
+  width: var(--timeline-completed);
+  border-radius: 999px;
+  background: rgba(89, 230, 122, 0.34);
+  content: "";
+}
+
 .dashboard-inspector-waterfall-meter,
 .dashboard-inspector-waterfall i {
   position: absolute;
