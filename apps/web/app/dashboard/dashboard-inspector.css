@@ -37,6 +37,15 @@
   border-bottom: 1px solid var(--line);
 }
 
+.dashboard-inspector-header > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.dashboard-inspector-close {
+  flex: 0 0 auto;
+}
+
 .dashboard-inspector-header p {
   margin-bottom: 5px;
   color: var(--muted);
@@ -47,7 +56,7 @@
 }
 
 .dashboard-inspector-header h2 {
-  max-width: 340px;
+  max-width: 100%;
   overflow-wrap: anywhere;
   font-size: 16px;
   font-weight: 500;
@@ -271,6 +280,7 @@
 .dashboard-inspector-waterfall-meter {
   top: 4px;
   width: var(--timeline-duration);
+  max-width: calc(100% - var(--timeline-offset));
   min-width: 6px;
 }
 

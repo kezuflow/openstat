@@ -44,6 +44,7 @@ export function DashboardInspector(props: {
             </div>
             <Button
               aria-label="Close inspector"
+              className="dashboard-inspector-close"
               isIconOnly
               size="sm"
               variant="tertiary"
@@ -414,8 +415,14 @@ function InspectorTimeline(props: { data: unknown }) {
           const offsetMs = getTimelineOffset(item.sortTime, timelineStart);
           const durationMs = item.durationMs ?? 0;
           const offsetPercent = Math.min((offsetMs / timelineSpan) * 100, 96);
+          const remainingPercent = Math.max(0, 100 - offsetPercent);
           const durationPercent =
-            durationMs > 0 ? Math.max((durationMs / timelineSpan) * 100, 2) : 0;
+            durationMs > 0
+              ? Math.min(
+                  Math.max((durationMs / timelineSpan) * 100, 2),
+                  remainingPercent,
+                )
+              : 0;
           const isCompletionStep = item.label.toLowerCase() === "completion";
           const waterfallStyle = {
             "--timeline-completed": `${offsetPercent}%`,
