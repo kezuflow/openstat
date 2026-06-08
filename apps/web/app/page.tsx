@@ -30,7 +30,7 @@ export default function Home() {
           <h1 id="landing-title">Know what your trading agents did and why.</h1>
           <p className="landing-hero-text">
             OpenStat turns decision-to-trade telemetry into timelines your team
-            can inspect: model reasoning, risk checks, orders, fills, PnL, and
+            can inspect model reasoning, risk checks, orders, fills, PnL, and
             alerts in one product view.
           </p>
           <div className="landing-actions">
