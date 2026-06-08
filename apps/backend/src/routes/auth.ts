@@ -1,89 +1,10 @@
 import { fromNodeHeaders } from "better-auth/node";
-import { hashPassword } from "better-auth/crypto";
-import { schema } from "@openstat/db";
 import type { FastifyInstance } from "fastify";
-import { and, eq } from "drizzle-orm";
-import { randomUUID } from "node:crypto";
 
-import { auth, database } from "../context.js";
+import { auth } from "../context.js";
 import { env } from "../config/env.js";
 
 export async function registerAuthRoutes(app: FastifyInstance) {
-  app.post("/api/auth/demo-login", async (request, reply) => {
-    if (env.nodeEnv === "production") {
-      return reply.status(404).send({
-        error: {
-          code: "NOT_FOUND",
-          message: "Route not found.",
-          requestId: request.id,
-        },
-      });
-    }
-
-    const [demoUser] = await database.db
-      .select()
-      .from(schema.user)
-      .where(eq(schema.user.email, env.demoEmail))
-      .limit(1);
-
-    if (!demoUser) {
-      return reply.status(404).send({
-        error: {
-          code: "DEMO_ACCOUNT_NOT_FOUND",
-          message: "Run the local demo seed before using demo login.",
-          requestId: request.id,
-        },
-      });
-    }
-
-    const [credentialAccount] = await database.db
-      .select()
-      .from(schema.account)
-      .where(
-        and(
-          eq(schema.account.userId, demoUser.id),
-          eq(schema.account.providerId, "credential"),
-        ),
-      )
-      .limit(1);
-    const passwordHash = await hashPassword(env.demoPassword);
-
-    if (credentialAccount) {
-      await database.db
-        .update(schema.account)
-        .set({
-          password: passwordHash,
-          providerId: "credential",
-          updatedAt: new Date(),
-        })
-        .where(eq(schema.account.id, credentialAccount.id));
-    } else {
-      await database.db.insert(schema.account).values({
-        id: `account_${randomUUID()}`,
-        accountId: demoUser.id,
-        providerId: "credential",
-        userId: demoUser.id,
-        password: passwordHash,
-      });
-    }
-
-    const result = await auth.api.signInEmail({
-      body: {
-        email: env.demoEmail,
-        password: env.demoPassword,
-        rememberMe: true,
-      },
-      headers: fromNodeHeaders(request.headers),
-      returnHeaders: true,
-      returnStatus: true,
-    });
-
-    result.headers?.forEach((value, key) => reply.header(key, value));
-    reply.status(result.status ?? 200);
-
-    return reply.send(result.response);
-  });
-
   app.route({
     method: ["GET", "POST"],
     url: "/api/auth/*",

@@ -132,12 +132,6 @@ export function AuthForm({ mode }: AuthFormProps) {
     }
   }
 
-  function signInDemo() {
-    setError(undefined);
-    setIsPending(true);
-    window.location.href = getDashboardUrl();
-  }
-
   return (
     <main className="signin-page">
       <div className="signin-layout">
@@ -298,15 +292,6 @@ export function AuthForm({ mode }: AuthFormProps) {
             <Button fullWidth isDisabled type="button" variant="tertiary">
               <GitHubMark />
               Sign in with GitHub
-            </Button>
-            <Button
-              fullWidth
-              isPending={isPending}
-              onPress={signInDemo}
-              type="button"
-              variant="primary"
-            >
-              Use demo account
             </Button>
           </Form>
         </section>
