@@ -149,6 +149,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             priority
             sizes="(max-width: 980px) 0px, 52vw"
             src={showcaseImage}
+            unoptimized
           />
           <div className="signin-showcase-content">
             <Link className="signin-showcase-brand" href="/">
