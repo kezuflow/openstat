@@ -15,6 +15,7 @@ import {
   PanelLeftOpen,
   Settings,
   ShieldCheck,
+  Target,
   TrendingUp,
   type LucideIcon,
 } from "lucide-react";
@@ -41,6 +42,7 @@ const primaryNav: NavItem[] = [
   { label: "Events", href: "/dashboard/events", icon: ListTree },
   { label: "Runs", href: "/dashboard/runs", icon: Activity },
   { label: "Trades", href: "/dashboard/trades", icon: TrendingUp },
+  { label: "DeepBook", href: "/dashboard/deepbook", icon: Target },
   { label: "Onchain", href: "/dashboard/onchain", icon: ShieldCheck },
   { label: "Alerts", href: "/dashboard/alerts", icon: Bell, meta: "New" },
   { label: "API Keys", href: "/dashboard/api-keys", icon: KeyRound },

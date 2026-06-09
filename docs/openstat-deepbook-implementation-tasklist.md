@@ -193,27 +193,27 @@ Dashboard route:
 - [x] Add public DeepBook Predict page CTA to sign in or open dashboard.
 - [x] Add public DeepBook Predict page fallback demo summary if live data is
       unavailable.
-- [ ] Add `/dashboard/deepbook` route.
-- [ ] Add DeepBook to dashboard sidebar between Trades and Onchain.
-- [ ] Pick a lucide icon for DeepBook, likely a chart, activity, or target icon.
-- [ ] Add DeepBook Predict loading state.
-- [ ] Add DeepBook Predict empty state.
-- [ ] Add DeepBook Predict backend-error state.
-- [ ] Add DeepBook Predict overview KPIs: active agent, selected market,
+- [x] Add `/dashboard/deepbook` route.
+- [x] Add DeepBook to dashboard sidebar between Trades and Onchain.
+- [x] Pick a lucide icon for DeepBook, likely a chart, activity, or target icon.
+- [x] Add DeepBook Predict loading state.
+- [x] Add DeepBook Predict empty state.
+- [x] Add DeepBook Predict backend-error state.
+- [x] Add DeepBook Predict overview KPIs: active agent, selected market,
       execution mode, exposure, PnL, risk state, settlement state, audit
       verdict.
-- [ ] Add DeepBook Predict run timeline panel.
-- [ ] Add DeepBook Predict market snapshot panel.
-- [ ] Add DeepBook Predict strategy selector/evaluator panel.
-- [ ] Add DeepBook Predict risk gate panel.
-- [ ] Add DeepBook Predict positions/executions table.
-- [ ] Add DeepBook Predict settlement/outcome panel.
-- [ ] Add DeepBook Predict audit summary panel.
-- [ ] Add links from DeepBook Predict rows to generic run/trade/onchain
+- [x] Add DeepBook Predict run timeline panel.
+- [x] Add DeepBook Predict market snapshot panel.
+- [x] Add DeepBook Predict strategy selector/evaluator panel.
+- [x] Add DeepBook Predict risk gate panel.
+- [x] Add DeepBook Predict positions/executions table.
+- [x] Add DeepBook Predict settlement/outcome panel.
+- [x] Add DeepBook Predict audit summary panel.
+- [x] Add links from DeepBook Predict rows to generic run/trade/onchain
       inspectors where the existing data model applies.
-- [ ] Reuse existing dashboard data components where practical.
-- [ ] Keep DeepBook-specific CSS prefixed with `deepbook-`.
-- [ ] Avoid styling collisions with HeroUI BEM classes.
+- [x] Reuse existing dashboard data components where practical.
+- [x] Keep DeepBook-specific CSS prefixed with `deepbook-`.
+- [x] Avoid styling collisions with HeroUI BEM classes.
 - [ ] Verify `/deepbook` in browser at desktop width.
 - [ ] Verify `/deepbook` in browser at mobile width.
 - [ ] Verify `/dashboard/deepbook` in browser at desktop width.
@@ -223,16 +223,16 @@ Acceptance checks:
 
 - [x] The public page explains the DeepBook Predict Agent Desk in under one
       viewport.
-- [ ] The sidebar link is visible and active on `/dashboard/deepbook`.
-- [ ] The dashboard page works with no data, demo data, and backend errors.
-- [ ] The page feels like an operations desk, not a landing-page hero pasted
+- [x] The sidebar link is visible and active on `/dashboard/deepbook`.
+- [x] The dashboard page works with no data, demo data, and backend errors.
+- [x] The page feels like an operations desk, not a landing-page hero pasted
       into the dashboard.
 
 Suggested commit slices:
 
 - [x] `feat(web): add deepbook public page`
-- [ ] `feat(web): add deepbook dashboard route`
-- [ ] `feat(web): add deepbook sidebar navigation`
+- [x] `feat(web): add deepbook dashboard route`
+- [x] `feat(web): add deepbook sidebar navigation`
 
 ## Phase 5: Add Sui And DeepBook Predict Telemetry Support
 

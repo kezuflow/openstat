@@ -471,6 +471,116 @@
   line-height: 16px;
 }
 
+.deepbook-dashboard-kpis {
+  margin-bottom: 18px;
+}
+
+.deepbook-dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.deepbook-dashboard-panel,
+.deepbook-dashboard-empty,
+.deepbook-dashboard-error {
+  min-width: 0;
+}
+
+.deepbook-dashboard-error p,
+.deepbook-dashboard-empty p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.deepbook-dashboard-empty a {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.deepbook-dashboard-error {
+  margin-bottom: 16px;
+  border-color: color-mix(in oklab, var(--danger) 34%, var(--line));
+}
+
+.deepbook-dashboard-timeline,
+.deepbook-dashboard-facts {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.deepbook-dashboard-timeline a {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: 58px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #111311;
+}
+
+.deepbook-dashboard-timeline a:hover {
+  background: color-mix(in oklab, #111311 84%, var(--accent));
+}
+
+.deepbook-dashboard-timeline span,
+.deepbook-dashboard-timeline small,
+.deepbook-dashboard-facts dt {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.deepbook-dashboard-timeline span {
+  text-transform: capitalize;
+}
+
+.deepbook-dashboard-timeline strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deepbook-dashboard-timeline small {
+  font-variant-numeric: tabular-nums;
+}
+
+.deepbook-dashboard-facts {
+  padding: 0;
+}
+
+.deepbook-dashboard-facts div {
+  display: grid;
+  grid-template-columns: minmax(92px, 0.34fr) minmax(0, 1fr);
+  gap: 10px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #111311;
+}
+
+.deepbook-dashboard-facts dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--foreground);
+  font-size: 13px;
+  line-height: 18px;
+}
+
 @media (max-width: 920px) {
   .api-keys-setup,
   .api-keys-snippets {
@@ -479,7 +589,19 @@
 }
 
 @media (max-width: 1100px) {
-  .runs-workbench {
+  .runs-workbench,
+  .deepbook-dashboard-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .deepbook-dashboard-timeline a,
+  .deepbook-dashboard-facts div {
+    grid-template-columns: 1fr;
+  }
+
+  .deepbook-dashboard-timeline strong {
+    white-space: normal;
   }
 }
