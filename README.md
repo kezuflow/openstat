@@ -161,8 +161,11 @@ sdks/
 deploy/
   hetzner/        Docker Compose deployment, Caddy config, operations scripts
 docs/
-  architecture/   Architecture notes
-  plans/          System design, tasklists, and launch planning
+  architecture/   Architecture notes, system design, and production design
+  openstat-deepbook-implementation-plan.md
+                  Current product and implementation plan
+  openstat-deepbook-implementation-tasklist.md
+                  Current implementation checklist
 ```
 
 ## Architecture
@@ -198,8 +201,13 @@ Core projection tables include:
 - `audit_insights`
 - `audit_anchors`
 
-The design direction lives in
-`docs/plans/openstat-system-design.md`.
+The stable product/system architecture lives in
+`docs/architecture/openstat-system-design.md`. Production architecture and
+operational readiness direction lives in
+`docs/architecture/openstat-production-system-design.md`. The current DeepBook
+product and implementation direction lives in
+`docs/openstat-deepbook-implementation-plan.md`, with commit-sized work tracked
+in `docs/openstat-deepbook-implementation-tasklist.md`.
 
 ## Repository Development
 

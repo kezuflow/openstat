@@ -26,13 +26,21 @@ product for autonomous agents.
 - `packages/eslint-config`: shared ESLint configs.
 - `packages/typescript-config`: shared TypeScript configs.
 
-The product/system design direction lives in
-`docs/plans/openstat-system-design.md`. Read it before making architecture,
-ingestion, SDK, analytics, or trading-domain changes.
+The stable product/system architecture lives in
+`docs/architecture/openstat-system-design.md`. Read it before making
+architecture, ingestion, SDK, analytics, or trading-domain changes.
 
-The implementation checklist lives in
-`docs/plans/openstat-implementation-tasklist.md`. Use it to keep work atomic and
-commit-sized.
+The production architecture and operational readiness direction lives in
+`docs/architecture/openstat-production-system-design.md`. Read it before making
+deployment, security, retention, billing, quota, scaling, or operations changes.
+
+The current product and implementation direction lives in
+`docs/openstat-deepbook-implementation-plan.md`. Read it before making
+dashboard, operations, or DeepBook-specific changes.
+
+The active implementation checklist lives in
+`docs/openstat-deepbook-implementation-tasklist.md`. Use it to keep work atomic
+and commit-sized.
 
 ## Tooling
 
