@@ -110,6 +110,79 @@ describe("OpenStatClient", () => {
     });
   });
 
+  it("sends DeepBook Predict telemetry through native batches", async () => {
+    const requests: Request[] = [];
+    const client = createOpenStatClient({
+      apiKey: "ostat_public_secret",
+      endpoint: "https://api.example.com",
+      serviceName: "deepbook-agent",
+      fetch: async (input, init) => {
+        requests.push(new Request(input, init));
+        return createJsonResponse({ accepted: true, acceptedCount: 3 });
+      },
+    });
+    const metadata = {
+      chain: "sui",
+      execution_mode: "paper",
+      market: "SUI/USDC",
+      network: "testnet",
+      product: "deepbook-predict-agent-desk",
+      venue: "deepbook-predict",
+    };
+
+    await client.sendBatch([
+      {
+        type: "market_snapshot",
+        run_id: "run-deepbook",
+        data: {
+          best_ask: "3.84",
+          best_bid: "3.80",
+          market: "SUI/USDC",
+        },
+        metadata,
+        tags: ["deepbook"],
+      },
+      {
+        type: "strategy_evaluation",
+        run_id: "run-deepbook",
+        data: {
+          candidate_strategies: [{ name: "range-mean-reversion", score: 88 }],
+          selected_strategy: "range-mean-reversion",
+        },
+        metadata,
+        tags: ["deepbook"],
+      },
+      {
+        type: "chain_transaction",
+        run_id: "run-deepbook",
+        data: {
+          chain: "sui",
+          digest_reference: "demo-sui-digest",
+          execution_mode: "paper",
+          network: "testnet",
+          status: "paper_not_broadcast",
+        },
+        metadata,
+        tags: ["deepbook"],
+      },
+    ]);
+
+    const body = (await requests[0].json()) as { events: NativeEvent[] };
+    expect(body.events.map((event) => event.type)).toEqual([
+      "market_snapshot",
+      "strategy_evaluation",
+      "chain_transaction",
+    ]);
+    expect(body.events[0]?.metadata).toMatchObject({
+      product: "deepbook-predict-agent-desk",
+      service_name: "deepbook-agent",
+    });
+    expect(body.events[2]?.data).toMatchObject({
+      chain: "sui",
+      digest_reference: "demo-sui-digest",
+    });
+  });
+
   it("emits run lifecycle completion events", async () => {
     const requests: Request[] = [];
     const client = createOpenStatClient({

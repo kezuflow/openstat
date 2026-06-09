@@ -21,11 +21,18 @@ export type NativeEvent = {
   agent?: AgentInput;
   project_id?: string;
   type:
+    | "audit_anchor"
+    | "audit_insight"
     | "chain_transaction"
     | "decision"
+    | "market_snapshot"
+    | "strategy_evaluation"
+    | "strategy_selected"
     | "risk_check"
+    | "position_proposal"
     | "order"
     | "fill"
+    | "settlement"
     | "position"
     | "pnl_snapshot"
     | "heartbeat"
