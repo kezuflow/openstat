@@ -72,9 +72,11 @@ deploy/hetzner/scripts/restore-postgres.sh /backups/openstat/openstat-latest.dum
 ## Health Checks
 
 - API: `GET /ready`
-- Worker: check logs for fresh `Processed ingestion outbox rows` messages.
+- Worker: Docker checks `/tmp/openstat-worker-health.json` inside the worker
+  container and fails health if the heartbeat is older than 5 minutes.
 - Postgres: `pg_isready`
 - Redis: `redis-cli ping`
+- Caddy: Docker validates `/etc/caddy/Caddyfile`.
 - Disk: alert before 80% usage and page before 90%.
 - Backups: alert if no dump file was written in the last 26 hours.
 

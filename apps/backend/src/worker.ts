@@ -15,6 +15,9 @@ import {
   sweepAgentHealth,
   type IngestionSignalSubscription,
 } from "@openstat/ingestion";
+import { writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import { env } from "./config/env.js";
 import { database, ingestionSignalClient } from "./context.js";
@@ -35,6 +38,7 @@ let wakeupResolver: (() => void) | undefined;
 let lastRetentionSweepAt = 0;
 let lastChainReconciliationAt = 0;
 let lastMantleAnchorIndexAt = 0;
+const workerHealthFile = join(tmpdir(), "openstat-worker-health.json");
 
 process.on("SIGINT", () => {
   shuttingDown = true;
@@ -64,6 +68,7 @@ process.on("unhandledRejection", (error) => {
 });
 
 console.info({ workerId }, "OpenStat ingestion worker started");
+await writeWorkerHealth("starting");
 
 const signalSubscription = await subscribeToRedisWakeups();
 
@@ -112,6 +117,18 @@ async function runWorkerPass() {
   await runChainReconciliationIfDue();
   await runMantleAnchorIndexIfDue();
   await runRetentionSweepIfDue();
+  await writeWorkerHealth("ok");
+}
+
+async function writeWorkerHealth(status: "ok" | "starting") {
+  await writeFile(
+    workerHealthFile,
+    JSON.stringify({
+      checkedAt: new Date().toISOString(),
+      status,
+      workerId,
+    }),
+  );
 }
 
 async function runMantleAnchorIndexIfDue() {

@@ -138,7 +138,7 @@ Caddy
 
 - [x] Audit `deploy/hetzner` compose, env examples, and runbooks.
 - [x] Document the target VPS size in deployment docs.
-- [ ] Add or verify container health checks for API and worker.
+- [x] Add or verify container health checks for API and worker.
 - [x] Add or verify Postgres health check.
 - [x] Add or verify Redis health check.
 - [x] Add or verify Caddy health or readiness guidance.
@@ -166,7 +166,7 @@ Acceptance checks:
 Suggested commit slices:
 
 - [x] `docs(infra): document vps deployment target`
-- [ ] `chore(infra): add service health checks`
+- [x] `chore(infra): add service health checks`
 - [ ] `docs(infra): add backup and restore runbook`
 
 ## Phase 4: Add DeepBook Predict Product Surfaces

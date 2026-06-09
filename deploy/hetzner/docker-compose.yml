@@ -43,6 +43,18 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "const fs=require('node:fs');const path='/tmp/openstat-worker-health.json';try{const stat=fs.statSync(path);process.exit(Date.now()-stat.mtimeMs<300000?0:1)}catch{process.exit(1)}",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
     logging: *common-logging
     restart: unless-stopped
 
@@ -99,6 +111,11 @@ services:
       API_DOMAIN: ${API_DOMAIN}
       ACME_EMAIL: ${ACME_EMAIL}
       APP_WEB_URL: ${APP_WEB_URL}
+    healthcheck:
+      test: ["CMD", "caddy", "validate", "--config", "/etc/caddy/Caddyfile"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     logging: *common-logging
     restart: unless-stopped
 
