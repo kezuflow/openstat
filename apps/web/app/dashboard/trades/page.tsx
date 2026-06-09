@@ -89,7 +89,13 @@ export default async function TradesPage(props: TradesPageProps) {
 
       <DashboardPanel title="Trade outcomes">
         <DashboardDataTable
-          empty="No trades yet."
+          empty={
+            <span>
+              No trades yet. Send order, fill, or PnL events from an
+              instrumented trading agent after creating an{" "}
+              <Link href="/dashboard/api-keys">API key</Link>.
+            </span>
+          }
           items={data.trades}
           columns={[
             {

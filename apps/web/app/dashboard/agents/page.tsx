@@ -155,7 +155,13 @@ export default async function AgentsPage(props: AgentsPageProps) {
         titleCount={data.agents.length}
       >
         <DashboardDataTable
-          empty="No agents yet."
+          empty={
+            <span>
+              No agents yet. Create an API key, add it to your agent runtime,
+              then send a heartbeat from the{" "}
+              <Link href="/dashboard/api-keys">API Keys</Link> page.
+            </span>
+          }
           items={data.agents}
           columns={[
             {

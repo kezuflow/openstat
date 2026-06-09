@@ -10,7 +10,7 @@ type DataTableColumn<T> = {
 
 export function DashboardDataTable<T extends { id: string }>(props: {
   columns: Array<DataTableColumn<T>>;
-  empty: string;
+  empty: ReactNode;
   items: Array<T>;
 }) {
   if (props.items.length === 0) {

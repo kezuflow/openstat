@@ -10,6 +10,19 @@
   background: var(--surface-secondary);
 }
 
+.dashboard-empty p {
+  margin: 0;
+}
+
+.dashboard-empty a {
+  color: var(--accent-strong);
+  font-weight: 500;
+}
+
+.dashboard-empty a:hover {
+  color: var(--foreground);
+}
+
 .dashboard-table-wrap {
   overflow-x: auto;
   scrollbar-color: #4b5048 transparent;

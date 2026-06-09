@@ -166,7 +166,13 @@ export default async function RunsPage(props: RunsPageProps) {
           titleCount={runs.length}
         >
           <DashboardDataTable
-            empty="No runs yet."
+            empty={
+              <span>
+                No runs yet. Emit a decision event with a stable run ID after
+                connecting an agent from the{" "}
+                <Link href="/dashboard/api-keys">API Keys</Link> page.
+              </span>
+            }
             items={runs}
             columns={[
               {

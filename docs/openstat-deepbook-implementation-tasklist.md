@@ -36,25 +36,25 @@ shape.
 Goal: a new user can understand how to connect an agent without reading source
 code.
 
-- [ ] Audit the current signed-in first-run dashboard flow.
-- [ ] Audit the current workspace/project bootstrap flow.
-- [ ] Audit the current API key create, display, copy, revoke, and empty states.
-- [ ] Define the preferred first-run path in copy:
+- [x] Audit the current signed-in first-run dashboard flow.
+- [x] Audit the current workspace/project bootstrap flow.
+- [x] Audit the current API key create, display, copy, revoke, and empty states.
+- [x] Define the preferred first-run path in copy:
       `Create workspace -> Create project -> Create API key -> Install SDK -> Send first event`.
 - [ ] Add or improve the no-workspace state.
 - [ ] Add or improve the no-project state.
-- [ ] Add or improve the no-API-key state.
-- [ ] Add or improve the no-agent state.
-- [ ] Add or improve the no-event state.
-- [ ] Add or improve the no-run state.
-- [ ] Add or improve the no-trade state.
-- [ ] Add JS install and heartbeat snippets near API key creation.
-- [ ] Add Python install and heartbeat snippets near API key creation.
-- [ ] Ensure the API key secret is shown only once after creation.
-- [ ] Ensure copy-to-clipboard success and failure states are clear.
-- [ ] Ensure revoke confirmation copy is clear and difficult to misread.
-- [ ] Show API key prefix, created date, last-used date, and revoked state.
-- [ ] Confirm API key create/revoke behavior remains project-scoped.
+- [x] Add or improve the no-API-key state.
+- [x] Add or improve the no-agent state.
+- [x] Add or improve the no-event state.
+- [x] Add or improve the no-run state.
+- [x] Add or improve the no-trade state.
+- [x] Add JS install and heartbeat snippets near API key creation.
+- [x] Add Python install and heartbeat snippets near API key creation.
+- [x] Ensure the API key secret is shown only once after creation.
+- [x] Ensure copy-to-clipboard success and failure states are clear.
+- [x] Ensure revoke confirmation copy is clear and difficult to misread.
+- [x] Show API key prefix, created date, last-used date, and revoked state.
+- [x] Confirm API key create/revoke behavior remains project-scoped.
 - [ ] Add or update API key route tests if response behavior changes.
 - [ ] Add or update dashboard smoke coverage if the repo already has a pattern
       for it.
@@ -64,14 +64,14 @@ code.
 Acceptance checks:
 
 - [ ] A new user can create an API key from the dashboard.
-- [ ] A new user sees exact JS and Python next steps after creating a key.
-- [ ] Empty states point to the next useful action.
+- [x] A new user sees exact JS and Python next steps after creating a key.
+- [x] Empty states point to the next useful action.
 - [ ] API key auth error codes remain stable.
 
 Suggested commit slices:
 
-- [ ] `fix(web): clarify dashboard empty states`
-- [ ] `feat(web): add api key setup snippets`
+- [x] `fix(web): clarify dashboard empty states`
+- [x] `feat(web): add api key setup snippets`
 - [ ] `test(backend): preserve api key lifecycle behavior`
 
 ## Phase 2: Polish Run Timeline And Demo Data

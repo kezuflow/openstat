@@ -41,7 +41,13 @@ export function DashboardLatestTables(props: {
         titleCount={props.data.runs.length}
       >
         <DashboardDataTable
-          empty="No runs yet."
+          empty={
+            <span>
+              No runs yet. Connect an agent from the{" "}
+              <Link href="/dashboard/api-keys">API Keys</Link> page, then emit a
+              decision event with a run ID.
+            </span>
+          }
           items={props.data.runs}
           columns={[
             {
@@ -83,7 +89,12 @@ export function DashboardLatestTables(props: {
         titleCount={props.data.trades.length}
       >
         <DashboardDataTable
-          empty="No trades yet."
+          empty={
+            <span>
+              No trades yet. Send order, fill, or PnL events after creating an{" "}
+              <Link href="/dashboard/api-keys">API key</Link>.
+            </span>
+          }
           items={props.data.trades}
           columns={[
             {
@@ -125,7 +136,13 @@ export function DashboardLatestTables(props: {
         titleCount={props.data.overview?.events.latest.length ?? 0}
       >
         <DashboardDataTable
-          empty="No events ingested yet."
+          empty={
+            <span>
+              No events ingested yet. Create a project key and send your first
+              heartbeat from the{" "}
+              <Link href="/dashboard/api-keys">API Keys</Link> page.
+            </span>
+          }
           items={props.data.overview?.events.latest ?? []}
           columns={[
             {

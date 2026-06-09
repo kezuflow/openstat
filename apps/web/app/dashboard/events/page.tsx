@@ -119,7 +119,13 @@ export default async function EventsPage(props: EventsPageProps) {
         titleCount={eventData.events.length}
       >
         <DashboardDataTable
-          empty="No events ingested yet."
+          empty={
+            <span>
+              No events ingested yet. Create a project key and send a heartbeat
+              or batch event from the{" "}
+              <Link href="/dashboard/api-keys">API Keys</Link> page.
+            </span>
+          }
           items={eventData.events}
           columns={[
             {

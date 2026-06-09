@@ -18,6 +18,7 @@ import {
   KeyRound,
   Plus,
   RefreshCw,
+  Terminal,
   Trash2,
 } from "lucide-react";
 
@@ -44,6 +45,7 @@ export function ApiKeysManager(props: {
 }) {
   const [apiKeys, setApiKeys] = useState(props.initialApiKeys);
   const [copiedSecret, setCopiedSecret] = useState(false);
+  const [copiedSnippet, setCopiedSnippet] = useState<string | undefined>();
   const [error, setError] = useState<string | undefined>();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
@@ -173,8 +175,23 @@ export function ApiKeysManager(props: {
       return;
     }
 
-    await navigator.clipboard.writeText(secret.key);
-    setCopiedSecret(true);
+    try {
+      await navigator.clipboard.writeText(secret.key);
+      setCopiedSecret(true);
+    } catch {
+      setError("Clipboard access failed. Select and copy the key manually.");
+    }
+  }
+
+  async function copySnippet(id: string, value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedSnippet(id);
+    } catch {
+      setError(
+        "Clipboard access failed. Select and copy the snippet manually.",
+      );
+    }
   }
 
   return (
@@ -203,9 +220,19 @@ export function ApiKeysManager(props: {
         {error ? <p className="api-keys-error">{error}</p> : null}
 
         {apiKeys.length === 0 ? (
-          <div className="dashboard-empty">
-            <Check aria-hidden="true" size={18} />
-            <p>No project API keys yet. Create one to start sending telemetry.</p>
+          <div className="api-keys-empty-state">
+            <div className="dashboard-empty">
+              <KeyRound aria-hidden="true" size={18} />
+              <p>
+                No project API keys yet. Create one to connect a JavaScript or
+                Python agent.
+              </p>
+            </div>
+            <ApiKeySetupSteps />
+            <IntegrationSnippets
+              copiedSnippet={copiedSnippet}
+              onCopy={copySnippet}
+            />
           </div>
         ) : (
           <div className="dashboard-table-wrap api-keys-table-wrap">
@@ -232,9 +259,7 @@ export function ApiKeysManager(props: {
                         </span>
                       </td>
                       <td>
-                        <code className="api-keys-prefix">
-                          {apiKey.prefix}
-                        </code>
+                        <code className="api-keys-prefix">{apiKey.prefix}</code>
                       </td>
                       <td>
                         <ApiKeyStatusChip isRevoked={isRevoked} />
@@ -349,7 +374,9 @@ export function ApiKeysManager(props: {
                 <div className="api-keys-secret-row">
                   <code>{secret?.key}</code>
                   <Button
-                    aria-label={copiedSecret ? "API key copied" : "Copy API key"}
+                    aria-label={
+                      copiedSecret ? "API key copied" : "Copy API key"
+                    }
                     isIconOnly
                     onPress={() => {
                       void copySecret();
@@ -365,6 +392,13 @@ export function ApiKeysManager(props: {
                   </Button>
                 </div>
               </div>
+              {secret ? (
+                <IntegrationSnippets
+                  apiKey={secret.key}
+                  copiedSnippet={copiedSnippet}
+                  onCopy={copySnippet}
+                />
+              ) : null}
             </Modal.Body>
             <Modal.Footer>
               <Button
@@ -437,7 +471,9 @@ export function ApiKeysManager(props: {
                   void confirmPendingAction();
                 }}
                 type="button"
-                variant={pendingAction?.kind === "rotate" ? "primary" : "danger"}
+                variant={
+                  pendingAction?.kind === "rotate" ? "primary" : "danger"
+                }
               >
                 {pendingAction?.kind === "rotate" ? (
                   <RefreshCw aria-hidden="true" size={16} />
@@ -452,6 +488,115 @@ export function ApiKeysManager(props: {
       </AlertDialog.Backdrop>
     </>
   );
+}
+
+function ApiKeySetupSteps() {
+  return (
+    <div className="api-keys-setup">
+      <div>
+        <span>1</span>
+        <p>Create a project key.</p>
+      </div>
+      <div>
+        <span>2</span>
+        <p>Store it as `OPENSTAT_API_KEY` in your agent runtime.</p>
+      </div>
+      <div>
+        <span>3</span>
+        <p>Send a heartbeat and confirm the agent appears in OpenStat.</p>
+      </div>
+    </div>
+  );
+}
+
+function IntegrationSnippets(props: {
+  apiKey?: string;
+  copiedSnippet?: string;
+  onCopy: (id: string, value: string) => Promise<void>;
+}) {
+  const snippets = getIntegrationSnippets(props.apiKey);
+
+  return (
+    <div className="api-keys-snippets">
+      {snippets.map((snippet) => (
+        <div className="api-keys-snippet" key={snippet.id}>
+          <div className="api-keys-snippet-header">
+            <span>
+              <Terminal aria-hidden="true" size={14} />
+              {snippet.label}
+            </span>
+            <Button
+              aria-label={`Copy ${snippet.label} snippet`}
+              isIconOnly
+              onPress={() => {
+                void props.onCopy(snippet.id, snippet.value);
+              }}
+              type="button"
+              variant="tertiary"
+            >
+              {props.copiedSnippet === snippet.id ? (
+                <Check aria-hidden="true" size={14} />
+              ) : (
+                <Copy aria-hidden="true" size={14} />
+              )}
+            </Button>
+          </div>
+          <pre>
+            <code>{snippet.value}</code>
+          </pre>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function getIntegrationSnippets(apiKey?: string) {
+  const keyValue = apiKey ?? "ostat_your_project_key";
+
+  return [
+    {
+      id: "javascript",
+      label: "JavaScript",
+      value: `npm install openstat
+
+OPENSTAT_API_KEY=${keyValue}
+
+import { createOpenStatClient } from "openstat";
+
+const openstat = createOpenStatClient({
+  apiKey: process.env.OPENSTAT_API_KEY!,
+  endpoint: "https://api.openstat.online",
+  serviceName: "my-agent",
+});
+
+await openstat.sendHeartbeat({
+  agent: { id: "agent-1", name: "My Agent" },
+  status: "online",
+});`,
+    },
+    {
+      id: "python",
+      label: "Python",
+      value: `pip install openstat-sdk
+
+OPENSTAT_API_KEY=${keyValue}
+
+import os
+
+from openstat import OpenStatClient
+
+client = OpenStatClient(
+    api_key=os.environ["OPENSTAT_API_KEY"],
+    endpoint="https://api.openstat.online",
+    service_name="my-agent",
+)
+
+client.send_heartbeat(
+    agent={"id": "agent-1", "name": "My Agent"},
+    status="online",
+)`,
+    },
+  ];
 }
 
 function ApiKeyStatusChip(props: { isRevoked: boolean }) {
@@ -484,7 +629,9 @@ async function requestJson<T>(path: string, init: RequestInit): Promise<T> {
     | undefined;
 
   if (!response.ok) {
-    throw new Error(data?.error?.message ?? `${path} returned ${response.status}`);
+    throw new Error(
+      data?.error?.message ?? `${path} returned ${response.status}`,
+    );
   }
 
   return data as T;
