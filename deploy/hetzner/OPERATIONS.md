@@ -1,5 +1,30 @@
 # OpenStat Operations
 
+## VPS Operating Envelope
+
+The recommended single-node early-access target is a 4 vCPU / 8 GB RAM / 80 GB
+SSD VPS with the API, worker, Postgres, Redis, and Caddy only. Treat this as an
+OpenStat control-plane host, not an agent execution host.
+
+Keep the DeepBook Predict runner and any AI-TradingAgent process outside this
+VPS. They should call the public API with an OpenStat project API key. This
+keeps strategy loops, Sui RPC latency, model calls, and retry storms from
+starving Postgres, Redis, or the ingestion worker.
+
+Before increasing traffic:
+
+- Keep `INGESTION_WORKER_BATCH_SIZE=100` until the worker can drain bursts
+  without sustained CPU or Postgres pressure.
+- Raise worker batch size gradually only after `/ready` shows healthy outbox
+  state and Postgres CPU has headroom.
+- Keep `INGESTION_RATE_LIMIT_MAX` conservative for public API keys.
+- Keep raw telemetry retention at `RAW_RETENTION_DAYS=30` until disk growth is
+  measured under real traffic.
+- Keep derived projections longer, but lower `DERIVED_RETENTION_DAYS` if disk
+  usage crosses the warning threshold.
+- Add a second worker replica only after verifying idempotency and lock timing
+  under production traffic.
+
 ## Nightly Backups
 
 Run the backup script from the repository root on the VPS:

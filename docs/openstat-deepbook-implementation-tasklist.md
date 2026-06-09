@@ -136,36 +136,36 @@ Redis
 Caddy
 ```
 
-- [ ] Audit `deploy/hetzner` compose, env examples, and runbooks.
-- [ ] Document the target VPS size in deployment docs.
+- [x] Audit `deploy/hetzner` compose, env examples, and runbooks.
+- [x] Document the target VPS size in deployment docs.
 - [ ] Add or verify container health checks for API and worker.
-- [ ] Add or verify Postgres health check.
-- [ ] Add or verify Redis health check.
-- [ ] Add or verify Caddy health or readiness guidance.
-- [ ] Add Docker memory or restart guidance if missing.
-- [ ] Add Postgres backup command/runbook if missing.
-- [ ] Add restore drill command/runbook if missing.
-- [ ] Add log rotation guidance for API, worker, Caddy, Postgres, and Redis.
-- [ ] Add disk usage monitoring guidance.
-- [ ] Add worker batch-size and retry tuning guidance.
-- [ ] Add retention cleanup guidance for raw telemetry and derived projections.
-- [ ] Confirm `.env.example` files do not include secrets.
-- [ ] Confirm split web/API deployment variables are documented.
-- [ ] Confirm Redis can fail gracefully where the app claims it is optional.
+- [x] Add or verify Postgres health check.
+- [x] Add or verify Redis health check.
+- [x] Add or verify Caddy health or readiness guidance.
+- [x] Add Docker memory or restart guidance if missing.
+- [x] Add Postgres backup command/runbook if missing.
+- [x] Add restore drill command/runbook if missing.
+- [x] Add log rotation guidance for API, worker, Caddy, Postgres, and Redis.
+- [x] Add disk usage monitoring guidance.
+- [x] Add worker batch-size and retry tuning guidance.
+- [x] Add retention cleanup guidance for raw telemetry and derived projections.
+- [x] Confirm `.env.example` files do not include secrets.
+- [x] Confirm split web/API deployment variables are documented.
+- [x] Confirm Redis can fail gracefully where the app claims it is optional.
 - [ ] Run backend health tests after any health route changes.
-- [ ] Run deployment docs through Prettier.
+- [x] Run deployment docs through Prettier.
 
 Acceptance checks:
 
-- [ ] There is a clear deploy path for the upgraded VPS.
-- [ ] Backups and restore steps are documented.
-- [ ] OpenStat core services do not depend on the DeepBook Predict agent runner
+- [x] There is a clear deploy path for the upgraded VPS.
+- [x] Backups and restore steps are documented.
+- [x] OpenStat core services do not depend on the DeepBook Predict agent runner
       being colocated.
-- [ ] Secrets and private keys are not committed or logged.
+- [x] Secrets and private keys are not committed or logged.
 
 Suggested commit slices:
 
-- [ ] `docs(infra): document vps deployment target`
+- [x] `docs(infra): document vps deployment target`
 - [ ] `chore(infra): add service health checks`
 - [ ] `docs(infra): add backup and restore runbook`
 

@@ -3,6 +3,44 @@
 This deploys the API, ingestion worker, Postgres, Redis, and Caddy on one
 Hetzner VPS. The web dashboard can stay on Vercel and point to `API_PUBLIC_URL`.
 
+## Target VPS
+
+Use the upgraded single-node deployment for OpenStat core services:
+
+```text
+4 vCPU
+8 GB RAM
+80 GB SSD
+20 TB traffic
+```
+
+Keep this VPS focused on the OpenStat control plane:
+
+- backend API
+- ingestion worker
+- Postgres
+- Redis
+- Caddy
+
+Do not colocate the DeepBook Predict agent runner, Sui RPC/indexing services,
+model workers, browser automation, or long-running strategy search jobs on this
+box. Run those from a laptop, a second VPS, or a temporary worker host and send
+telemetry to `API_PUBLIC_URL` with an OpenStat project API key.
+
+Suggested starting budget:
+
+| Service                | Starting Budget               | Notes                                                           |
+| ---------------------- | ----------------------------- | --------------------------------------------------------------- |
+| Postgres               | 3-4 GB RAM, persistent volume | Primary state store; watch disk and backup age.                 |
+| Backend API            | 512 MB-1 GB RAM               | Keep HTTP request bodies bounded by `INGESTION_MAX_BODY_BYTES`. |
+| Worker                 | 512 MB-1 GB RAM               | Tune `INGESTION_WORKER_BATCH_SIZE` before adding replicas.      |
+| Redis                  | 768 MB RAM                    | Compose sets `maxmemory=768mb` and `volatile-lru`.              |
+| Caddy                  | 128-256 MB RAM                | Public ingress only; Postgres/Redis stay private.               |
+| OS and Docker overhead | 1-2 GB RAM                    | Leave enough headroom for deploys and backups.                  |
+
+Scale away from this node before adding high-volume agent execution, local LLM
+inference, or custom Sui archive/indexing workloads.
+
 ## First Boot
 
 1. Provision a Hetzner VPS with Docker and the Docker Compose plugin.
