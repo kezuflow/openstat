@@ -174,4 +174,114 @@ describe("OpenStat ingestion schemas", () => {
       }),
     ).toThrow();
   });
+
+  it("accepts DeepBook Predict telemetry conventions", () => {
+    const baseEvent = {
+      agent: {
+        id: "deepbook-predict-v1",
+        name: "DeepBook Predict Agent",
+        tags: ["deepbook", "sui"],
+      },
+      run_id: "seed-trade-run-deepbook-predict-range-v1-0",
+      metadata: {
+        chain: "sui",
+        execution_mode: "paper",
+        market: "SUI/USDC",
+        network: "testnet",
+        product: "deepbook-predict-agent-desk",
+        venue: "deepbook-predict",
+      },
+      tags: ["deepbook", "demo"],
+    };
+
+    expect(
+      ingestEventInputSchema.parse({
+        ...baseEvent,
+        type: "market_snapshot",
+        data: {
+          best_ask: "3.8400",
+          best_bid: "3.8000",
+          liquidity_usd: "180000",
+          market: "SUI/USDC",
+          oracle_price: "3.8200",
+          summary:
+            "SUI/USDC market snapshot captured before strategy evaluation.",
+        },
+      }).type,
+    ).toBe("market_snapshot");
+
+    expect(
+      ingestEventInputSchema.parse({
+        ...baseEvent,
+        type: "strategy_evaluation",
+        data: {
+          candidate_strategies: [
+            { name: "range-mean-reversion", score: 88 },
+            { name: "breakout-follow", score: 71 },
+          ],
+          selected_strategy: "range-mean-reversion",
+        },
+      }).type,
+    ).toBe("strategy_evaluation");
+
+    expect(
+      ingestEventInputSchema.parse({
+        ...baseEvent,
+        type: "position_proposal",
+        data: {
+          entry_price: "3.8200",
+          market: "SUI/USDC",
+          max_loss_usd: "18.50",
+          position_side: "yes",
+          quantity: "25",
+          settlement_window: "24h",
+        },
+      }).type,
+    ).toBe("position_proposal");
+
+    expect(
+      ingestEventInputSchema.parse({
+        ...baseEvent,
+        type: "settlement",
+        data: {
+          market: "SUI/USDC",
+          outcome: "range_won",
+          settlement_price: "3.8800",
+          status: "settled",
+        },
+      }).type,
+    ).toBe("settlement");
+
+    expect(
+      ingestEventInputSchema.parse({
+        ...baseEvent,
+        type: "audit_insight",
+        data: {
+          checks: ["strategy_evaluation_present", "risk_gate_approved"],
+          summary:
+            "Audit review found strategy, risk, execution, and settlement breadcrumbs.",
+          verdict: "passed",
+        },
+      }).type,
+    ).toBe("audit_insight");
+
+    expect(
+      ingestEventInputSchema.parse({
+        ...baseEvent,
+        type: "chain_transaction",
+        data: {
+          chain: "sui",
+          digest_reference: "demo-sui-digest-0-3",
+          execution_mode: "paper",
+          network: "testnet",
+          status: "paper_not_broadcast",
+        },
+      }).data,
+    ).toEqual(
+      expect.objectContaining({
+        chain: "sui",
+        digest_reference: "demo-sui-digest-0-3",
+      }),
+    );
+  });
 });

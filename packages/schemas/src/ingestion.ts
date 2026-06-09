@@ -7,11 +7,18 @@ const timestampMillisSchema = z.number().int().positive();
 export const normalizedEventTypeSchema = z.enum([
   "chain_transaction",
   "decision",
+  "market_snapshot",
+  "strategy_evaluation",
+  "strategy_selected",
   "risk_check",
+  "position_proposal",
   "order",
   "fill",
+  "settlement",
   "position",
   "pnl_snapshot",
+  "audit_insight",
+  "audit_anchor",
   "heartbeat",
   "error",
   "completion",
@@ -34,6 +41,13 @@ export const chainReceiptStatusSchema = z.enum([
   "submitted",
   "confirmed",
   "reverted",
+]);
+export const suiReferenceStatusSchema = z.enum([
+  "submitted",
+  "confirmed",
+  "reverted",
+  "simulated_from_replay",
+  "paper_not_broadcast",
 ]);
 
 export const tradingSideSchema = z.enum(["buy", "sell"]);
@@ -82,10 +96,54 @@ export const decisionDataSchema = tradingIdentitySchema.extend({
   rationale_summary: z.string().max(2000).optional(),
 });
 
+export const marketSnapshotDataSchema = z.object({
+  market: z.string().min(1).max(80),
+  venue: z.string().min(1).max(80).optional(),
+  best_bid: decimalInputSchema.optional(),
+  best_ask: decimalInputSchema.optional(),
+  oracle_price: decimalInputSchema.optional(),
+  liquidity_usd: decimalInputSchema.optional(),
+  summary: z.string().max(2000).optional(),
+});
+
+export const strategyEvaluationDataSchema = z.object({
+  market: z.string().min(1).max(80).optional(),
+  candidate_strategies: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(160),
+        score: z.number().int().min(0).max(100),
+        reason: z.string().max(1000).optional(),
+      }),
+    )
+    .min(1)
+    .max(12),
+  selected_strategy: z.string().min(1).max(160).optional(),
+  summary: z.string().max(2000).optional(),
+});
+
+export const strategySelectedDataSchema = z.object({
+  market: z.string().min(1).max(80).optional(),
+  selected_strategy: z.string().min(1).max(160),
+  confidence: z.number().int().min(0).max(100).optional(),
+  reason: z.string().max(2000).optional(),
+  summary: z.string().max(2000).optional(),
+});
+
 export const riskCheckDataSchema = z.object({
   decision_id: z.string().min(1).max(160).optional(),
   result: riskResultSchema,
   reason: z.string().max(2000).optional(),
+});
+
+export const positionProposalDataSchema = z.object({
+  market: z.string().min(1).max(80),
+  position_side: z.enum(["yes", "no", "long", "short"]),
+  quantity: decimalInputSchema,
+  entry_price: decimalInputSchema.optional(),
+  max_loss_usd: decimalInputSchema.optional(),
+  settlement_window: z.string().min(1).max(80).optional(),
+  summary: z.string().max(2000).optional(),
 });
 
 export const orderDataSchema = tradingIdentitySchema.extend({
@@ -121,6 +179,27 @@ export const pnlSnapshotDataSchema = z.object({
   equity: decimalInputSchema.optional(),
 });
 
+export const settlementDataSchema = z.object({
+  market: z.string().min(1).max(80).optional(),
+  status: z.string().min(1).max(80),
+  outcome: z.string().min(1).max(160).optional(),
+  settlement_price: decimalInputSchema.optional(),
+  summary: z.string().max(2000).optional(),
+});
+
+export const auditInsightDataSchema = z.object({
+  verdict: z.enum(["passed", "warning", "failed"]),
+  checks: z.array(z.string().min(1).max(160)).max(50).optional(),
+  summary: z.string().max(2000).optional(),
+});
+
+export const auditAnchorDataSchema = z.object({
+  status: z.string().min(1).max(80),
+  anchor_mode: z.string().min(1).max(80).optional(),
+  digest_reference: z.string().min(1).max(160).optional(),
+  summary: z.string().max(2000).optional(),
+});
+
 export const heartbeatDataSchema = z.object({
   status: agentStatusSchema.default("online"),
   expected_check_in_seconds: z.number().int().positive().optional(),
@@ -148,7 +227,7 @@ export const errorDataSchema = z.object({
   retryable: z.boolean().optional(),
 });
 
-export const chainTransactionDataSchema = z.object({
+export const evmChainTransactionDataSchema = z.object({
   chain: chainIntegrationSchema,
   chain_id: chainIdSchema,
   tx_hash: evmTransactionHashSchema,
@@ -157,18 +236,37 @@ export const chainTransactionDataSchema = z.object({
   from_address: evmAddressSchema.optional(),
   to_address: evmAddressSchema.optional(),
 });
+export const suiChainTransactionDataSchema = z.object({
+  chain: z.literal("sui"),
+  network: z.string().min(1).max(80),
+  digest_reference: z.string().min(1).max(160),
+  execution_mode: z.enum(["replay", "paper", "testnet"]).optional(),
+  status: suiReferenceStatusSchema.default("submitted"),
+  summary: z.string().max(2000).optional(),
+});
+export const chainTransactionDataSchema = z.union([
+  evmChainTransactionDataSchema,
+  suiChainTransactionDataSchema,
+]);
 
 export const normalizedEventDataSchemas = {
+  audit_anchor: auditAnchorDataSchema,
+  audit_insight: auditInsightDataSchema,
   chain_transaction: chainTransactionDataSchema,
   completion: completionDataSchema,
   decision: decisionDataSchema,
   error: errorDataSchema,
   fill: fillDataSchema,
   heartbeat: heartbeatDataSchema,
+  market_snapshot: marketSnapshotDataSchema,
   order: orderDataSchema,
   pnl_snapshot: pnlSnapshotDataSchema,
   position: positionDataSchema,
+  position_proposal: positionProposalDataSchema,
   risk_check: riskCheckDataSchema,
+  settlement: settlementDataSchema,
+  strategy_evaluation: strategyEvaluationDataSchema,
+  strategy_selected: strategySelectedDataSchema,
 } as const;
 
 export const ingestEventInputSchema = z

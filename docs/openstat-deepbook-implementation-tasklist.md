@@ -239,39 +239,39 @@ Suggested commit slices:
 Goal: the backend can recognize DeepBook Predict/Sui telemetry cleanly without
 hardcoding Sui-specific branches into generic ingestion.
 
-- [ ] Define DeepBook Predict event metadata conventions.
-- [ ] Define Sui chain transaction metadata conventions.
-- [ ] Decide whether Sui transaction support starts as generic telemetry only
+- [x] Define DeepBook Predict event metadata conventions.
+- [x] Define Sui chain transaction metadata conventions.
+- [x] Decide whether Sui transaction support starts as generic telemetry only
       or a dedicated adapter under `packages/ingestion/src/integrations/sui`.
 - [ ] Add Sui adapter directory if dedicated receipt reconciliation is in scope.
 - [ ] Register the Sui adapter in the chain integration registry if needed.
 - [ ] Add Sui explorer URL helper for transaction digests.
 - [ ] Add Sui transaction status mapping if receipt reconciliation is in scope.
 - [ ] Add tests for Sui adapter explorer URLs and status mapping if implemented.
-- [ ] Ensure DeepBook Predict fields project into existing run/trade/event
+- [x] Ensure DeepBook Predict fields project into existing run/trade/event
       surfaces.
-- [ ] Ensure metadata includes:
+- [x] Ensure metadata includes:
       `product`, `venue`, `chain`, `network`, `market`, `strategy`, and
       `execution_mode`.
-- [ ] Ensure event data can represent strategy candidates, selected strategy,
+- [x] Ensure event data can represent strategy candidates, selected strategy,
       position proposal, settlement state, and outcome.
 - [ ] Ensure any wallet address or account identifiers are redacted or safely
       summarized by default.
 - [ ] Update OpenAPI schemas if backend response shapes change.
-- [ ] Update backend route tests if new read endpoints are added.
+- [x] Update backend route tests if new read endpoints are added.
 
 Acceptance checks:
 
-- [ ] DeepBook Predict/Sui events can be ingested through existing OpenStat
+- [x] DeepBook Predict/Sui events can be ingested through existing OpenStat
       APIs.
-- [ ] DeepBook Predict/Sui data appears in the dashboard without leaking
+- [x] DeepBook Predict/Sui data appears in the dashboard without leaking
       secrets.
 - [ ] Any Sui-specific adapter is isolated under `packages/ingestion/src/integrations/sui`.
-- [ ] Existing Mantle/Base/BNB behavior does not regress.
+- [x] Existing Mantle/Base/BNB behavior does not regress.
 
 Suggested commit slices:
 
-- [ ] `feat(ingestion): add deepbook predict telemetry conventions`
+- [x] `feat(ingestion): add deepbook predict telemetry conventions`
 - [ ] `feat(ingestion): add sui transaction adapter`
 - [ ] `test(ingestion): cover sui transaction mapping`
 

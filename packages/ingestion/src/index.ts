@@ -1422,7 +1422,9 @@ type WindowCursor = {
   id: string;
 };
 
-function parseWindowCursor(cursor: string | undefined): WindowCursor | undefined {
+function parseWindowCursor(
+  cursor: string | undefined,
+): WindowCursor | undefined {
   if (!cursor) {
     return undefined;
   }
@@ -1494,7 +1496,9 @@ async function projectEvent(
         .update(schema.agents)
         .set({
           status: heartbeatStatus,
-          expectedCheckInSeconds: getNumber(event.data?.expected_check_in_seconds),
+          expectedCheckInSeconds: getNumber(
+            event.data?.expected_check_in_seconds,
+          ),
           lastSeenAt: timestamp,
           updatedAt: new Date(),
         })
@@ -1532,6 +1536,11 @@ async function projectChainTransaction(
 
   const data = event.data ?? {};
   const chain = getRequiredString(data.chain, "chain_transaction.chain");
+
+  if (chain === "sui") {
+    return;
+  }
+
   const chainId = getNumber(data.chain_id);
   const transactionHash = getTransactionHash(
     data.tx_hash,
@@ -2386,7 +2395,10 @@ function getFillStatus(value: unknown) {
     case "cancelled":
       return status;
     default:
-      throw new IngestionError("INVALID_OUTBOX_PAYLOAD", "Invalid fill status.");
+      throw new IngestionError(
+        "INVALID_OUTBOX_PAYLOAD",
+        "Invalid fill status.",
+      );
   }
 }
 
