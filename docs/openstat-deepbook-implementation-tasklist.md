@@ -80,23 +80,23 @@ Goal: OpenStat can show one complete decision-to-outcome story beautifully and
 reliably before DeepBook-specific work begins.
 
 - [ ] Audit current run detail and inspector behavior.
-- [ ] Audit current seeded demo data in `apps/backend/src/scripts/seed-dev.ts`.
-- [ ] Define the canonical demo run:
+- [x] Audit current seeded demo data in `apps/backend/src/scripts/seed-dev.ts`.
+- [x] Define the canonical demo run:
       market context, strategy evaluation, strategy selection, decision, risk
       check, position proposal, simulated or testnet execution, settlement, PnL,
       chain transaction, audit insight, audit anchor, completion.
-- [ ] Add or update seed data for a complete run timeline.
-- [ ] Ensure demo data includes at least one successful run.
-- [ ] Ensure demo data includes at least one risk-rejected or warning run.
+- [x] Add or update seed data for a complete run timeline.
+- [x] Ensure demo data includes at least one successful run.
+- [x] Ensure demo data includes at least one risk-rejected or warning run.
 - [ ] Ensure demo data includes at least one failed or reverted action if useful
       for audit storytelling.
-- [ ] Ensure event timestamps produce a coherent timeline order.
-- [ ] Ensure run lifecycle events settle terminal run states.
+- [x] Ensure event timestamps produce a coherent timeline order.
+- [x] Ensure run lifecycle events settle terminal run states.
 - [ ] Improve timeline grouping for decision, risk, order, fill, PnL, chain, and
       completion events.
 - [ ] Improve event labels so the timeline reads like an agent story instead of
       raw database rows.
-- [ ] Surface redacted reasoning summaries without exposing prompts or raw tool
+- [x] Surface redacted reasoning summaries without exposing prompts or raw tool
       payloads.
 - [ ] Link run timeline items to trade, event, or onchain inspectors where
       available.
@@ -109,15 +109,15 @@ reliably before DeepBook-specific work begins.
 
 Acceptance checks:
 
-- [ ] Seed data produces a complete run that makes sense to a first-time viewer.
+- [x] Seed data produces a complete run that makes sense to a first-time viewer.
 - [ ] The run timeline clearly shows decision, risk, execution, outcome, and
       audit.
-- [ ] Sensitive fields are redacted by default.
+- [x] Sensitive fields are redacted by default.
 - [ ] Backend tests pass for changed projection/read behavior.
 
 Suggested commit slices:
 
-- [ ] `feat(backend): seed complete agent run demo`
+- [x] `feat(backend): seed complete agent run demo`
 - [ ] `feat(web): polish run timeline storytelling`
 - [ ] `test(ingestion): cover demo run projections`
 
