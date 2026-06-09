@@ -937,6 +937,156 @@ describe("read routes", () => {
     await app.close();
   });
 
+  it("returns DeepBook Predict run timeline events in order", async () => {
+    const deepbookRun = {
+      ...run,
+      externalRunId: "seed-trade-run-deepbook-predict-range-v1-0",
+      strategy: "deepbook-predict-range-v1",
+      status: "completed",
+      metadata: {
+        chain: "sui",
+        execution_mode: "paper",
+        product: "deepbook-predict-agent-desk",
+        venue: "deepbook-predict",
+      },
+    };
+    const timelineEvents = [
+      {
+        ...event,
+        id: "00000000-0000-4000-8000-000000000111",
+        eventType: "market_snapshot",
+        runId: deepbookRun.externalRunId,
+        timestamp: new Date("2026-05-11T09:30:00.000Z"),
+        data: {
+          market: "SUI/USDC",
+          summary:
+            "SUI/USDC market snapshot captured before strategy evaluation.",
+        },
+        metadata: deepbookRun.metadata,
+      },
+      {
+        ...event,
+        id: "00000000-0000-4000-8000-000000000112",
+        eventType: "strategy_evaluation",
+        runId: deepbookRun.externalRunId,
+        timestamp: new Date("2026-05-11T09:32:00.000Z"),
+        data: {
+          candidate_strategies: [
+            { name: "range-mean-reversion", score: 88 },
+            { name: "breakout-follow", score: 71 },
+          ],
+          selected_strategy: "range-mean-reversion",
+          summary:
+            "Agent compared range, breakout, and liquidity-neutral strategies.",
+        },
+        metadata: deepbookRun.metadata,
+      },
+      {
+        ...event,
+        id: "00000000-0000-4000-8000-000000000113",
+        eventType: "risk_check",
+        runId: deepbookRun.externalRunId,
+        timestamp: new Date("2026-05-11T09:39:00.000Z"),
+        data: {
+          result: "approved",
+          reason: "Within liquidity, exposure, and settlement risk limits.",
+        },
+        metadata: deepbookRun.metadata,
+      },
+      {
+        ...event,
+        id: "00000000-0000-4000-8000-000000000114",
+        eventType: "settlement",
+        runId: deepbookRun.externalRunId,
+        timestamp: new Date("2026-05-11T09:56:00.000Z"),
+        data: {
+          outcome: "range_won",
+          status: "settled",
+          summary: "Prediction settled in range and realized simulated profit.",
+        },
+        metadata: deepbookRun.metadata,
+      },
+      {
+        ...event,
+        id: "00000000-0000-4000-8000-000000000115",
+        eventType: "audit_anchor",
+        runId: deepbookRun.externalRunId,
+        timestamp: new Date("2026-05-11T10:02:00.000Z"),
+        data: {
+          anchor_mode: "demo_not_broadcast",
+          status: "ready",
+          summary:
+            "Audit packet is ready to anchor; demo mode does not broadcast.",
+        },
+        metadata: deepbookRun.metadata,
+      },
+      {
+        ...event,
+        id: "00000000-0000-4000-8000-000000000116",
+        eventType: "completion",
+        runId: deepbookRun.externalRunId,
+        timestamp: new Date("2026-05-11T10:04:00.000Z"),
+        data: {
+          model: "deepbook-predict-agent",
+          status: "completed",
+          summary:
+            "DeepBook Predict run completed with simulated settlement and PnL.",
+        },
+        metadata: deepbookRun.metadata,
+      },
+    ];
+
+    state.getAgentRunTimeline.mockResolvedValue({
+      run: deepbookRun,
+      events: timelineEvents,
+      decisions: [
+        {
+          id: "00000000-0000-4000-8000-000000000901",
+          strategy: "deepbook-predict-range-v1",
+          symbol: "SUI/USDC",
+          action: "buy_yes_range",
+          confidence: 84,
+          rationaleSummary:
+            "SUI/USDC range probability and liquidity supported a buy position.",
+          metadata: deepbookRun.metadata,
+          decidedAt: new Date("2026-05-11T09:35:00.000Z"),
+        },
+      ],
+    });
+
+    const app = await createApp();
+    const response = await app.inject({
+      method: "GET",
+      url: `/v1/runs/${deepbookRun.id}/timeline?limit=20`,
+    });
+    const body = response.json<{
+      events: Array<{
+        data: Record<string, unknown>;
+        eventType: string;
+        metadata: Record<string, unknown>;
+        runId: string;
+      }>;
+      run: { metadata: Record<string, unknown>; strategy: string };
+    }>();
+
+    expect(response.statusCode).toBe(200);
+    expect(body.run.strategy).toBe("deepbook-predict-range-v1");
+    expect(body.run.metadata.product).toBe("deepbook-predict-agent-desk");
+    expect(body.events.map((item) => item.eventType)).toEqual([
+      "market_snapshot",
+      "strategy_evaluation",
+      "risk_check",
+      "settlement",
+      "audit_anchor",
+      "completion",
+    ]);
+    expect(body.events[1]?.data.selected_strategy).toBe("range-mean-reversion");
+    expect(body.events[1]?.data).not.toHaveProperty("raw_prompt");
+    expect(body.events[4]?.metadata.chain).toBe("sui");
+
+    await app.close();
+  });
+
   it("returns a stable error code when a run is out of scope", async () => {
     const app = await createApp();
     const response = await app.inject({

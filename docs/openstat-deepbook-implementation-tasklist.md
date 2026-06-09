@@ -101,7 +101,7 @@ reliably before DeepBook-specific work begins.
 - [ ] Link run timeline items to trade, event, or onchain inspectors where
       available.
 - [ ] Add or update projection tests for the demo event sequence.
-- [ ] Add or update read API tests for run timeline fields if behavior changes.
+- [x] Add or update read API tests for run timeline fields if behavior changes.
 - [ ] Add or update redaction tests if new demo fields are introduced.
 - [ ] Verify the Runs page in browser at desktop width.
 - [ ] Verify the Runs page in browser at mobile width.
@@ -113,7 +113,7 @@ Acceptance checks:
 - [ ] The run timeline clearly shows decision, risk, execution, outcome, and
       audit.
 - [x] Sensitive fields are redacted by default.
-- [ ] Backend tests pass for changed projection/read behavior.
+- [x] Backend tests pass for changed projection/read behavior.
 
 Suggested commit slices:
 
