@@ -5,7 +5,11 @@ import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { CSSProperties } from "react";
 
-import type { DashboardInspectorData } from "../../lib/openstat-api";
+import type {
+  DashboardEvent,
+  DashboardInspectorData,
+} from "../../lib/openstat-api";
+import { formatEventType, summarizeEvent } from "./dashboard-event-utils";
 
 export function DashboardInspector(props: {
   closeHref: string;
@@ -488,8 +492,13 @@ function getTimelineItem(
   selectedEventId: string | undefined,
 ) {
   const record = asRecord(item);
+  const eventType =
+    typeof record?.eventType === "string" ? record.eventType : undefined;
+  const eventSummary = eventType
+    ? summarizeEvent(toTimelineEvent(record ?? {}))
+    : undefined;
   const label =
-    record?.eventType ??
+    (eventType ? formatEventType(eventType) : undefined) ??
     record?.status ??
     record?.result ??
     record?.symbol ??
@@ -504,6 +513,9 @@ function getTimelineItem(
     getNumberFromRecord(asRecord(record?.metadata), "latency_ms") ??
     getNumberFromRecord(record, "latencyMs");
   const timestampLabel = timestamp ? String(timestamp) : undefined;
+  const meta = [eventSummary, timestampLabel]
+    .filter((value) => value && value !== "Telemetry event")
+    .join(" - ");
 
   return {
     durationMs: latencyMs,
@@ -511,8 +523,22 @@ function getTimelineItem(
     index,
     isSelected: Boolean(selectedEventId && record?.id === selectedEventId),
     label: String(label),
-    meta: timestampLabel,
+    meta: meta || undefined,
     sortTime: getSortTime(timestamp),
+  };
+}
+
+function toTimelineEvent(record: Record<string, unknown>): DashboardEvent {
+  return {
+    agentId: typeof record.agentId === "string" ? record.agentId : undefined,
+    data: asRecord(record.data),
+    eventType: typeof record.eventType === "string" ? record.eventType : "",
+    id: typeof record.id === "string" ? record.id : "",
+    metadata: asRecord(record.metadata),
+    runId: typeof record.runId === "string" ? record.runId : undefined,
+    source: typeof record.source === "string" ? record.source : "",
+    timestamp: typeof record.timestamp === "string" ? record.timestamp : "",
+    traceId: typeof record.traceId === "string" ? record.traceId : undefined,
   };
 }
 

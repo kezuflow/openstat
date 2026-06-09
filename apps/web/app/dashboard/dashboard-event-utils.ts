@@ -31,8 +31,31 @@ export function getEventState(event: DashboardEvent) {
     return getString(event.data?.status) ?? "completion";
   }
 
-  if (event.eventType === "order" || event.eventType === "fill") {
+  if (
+    event.eventType === "audit_anchor" ||
+    event.eventType === "audit_insight" ||
+    event.eventType === "chain_transaction" ||
+    event.eventType === "order" ||
+    event.eventType === "fill" ||
+    event.eventType === "settlement"
+  ) {
     return getString(event.data?.status) ?? event.eventType;
+  }
+
+  if (event.eventType === "strategy_evaluation") {
+    return "evaluated";
+  }
+
+  if (event.eventType === "strategy_selected") {
+    return "selected";
+  }
+
+  if (event.eventType === "market_snapshot") {
+    return "snapshot";
+  }
+
+  if (event.eventType === "position_proposal") {
+    return "proposed";
   }
 
   return event.eventType;
@@ -115,6 +138,109 @@ export function summarizeEvent(event: DashboardEvent) {
         `Heartbeat ${getString(data.status) ?? "received"}`
       );
     }
+    case "market_snapshot": {
+      return (
+        getString(data.summary) ??
+        [
+          getString(data.market) ?? getString(data.symbol) ?? "Market",
+          getDecimal(data.best_bid)
+            ? `bid ${getDecimal(data.best_bid)}`
+            : undefined,
+          getDecimal(data.best_ask)
+            ? `ask ${getDecimal(data.best_ask)}`
+            : undefined,
+        ]
+          .filter(Boolean)
+          .join(" - ")
+      );
+    }
+    case "strategy_evaluation": {
+      return (
+        getString(data.summary) ??
+        [
+          "Evaluated strategies",
+          getString(data.selected_strategy)
+            ? `selected ${getString(data.selected_strategy)}`
+            : undefined,
+        ]
+          .filter(Boolean)
+          .join(" - ")
+      );
+    }
+    case "strategy_selected": {
+      return (
+        getString(data.summary) ??
+        [
+          "Selected",
+          getString(data.selected_strategy),
+          getNumber(data.confidence) === undefined
+            ? undefined
+            : `${getNumber(data.confidence)}% confidence`,
+        ]
+          .filter(Boolean)
+          .join(" - ")
+      );
+    }
+    case "position_proposal": {
+      return (
+        getString(data.summary) ??
+        [
+          "Proposed",
+          getString(data.position_side)?.toUpperCase(),
+          getDecimal(data.quantity),
+          getString(data.market) ?? getString(data.symbol),
+        ]
+          .filter(Boolean)
+          .join(" ")
+      );
+    }
+    case "chain_transaction": {
+      return (
+        getString(data.summary) ??
+        [
+          getString(data.chain)?.toUpperCase() ?? "Chain",
+          getString(data.status) ?? "transaction",
+          getString(data.digest_reference),
+        ]
+          .filter(Boolean)
+          .join(" - ")
+      );
+    }
+    case "settlement": {
+      return (
+        getString(data.summary) ??
+        [
+          capitalize(getString(data.status) ?? "settlement"),
+          getString(data.outcome),
+          getDecimal(data.settlement_price)
+            ? `at ${getDecimal(data.settlement_price)}`
+            : undefined,
+        ]
+          .filter(Boolean)
+          .join(" - ")
+      );
+    }
+    case "audit_insight": {
+      return (
+        getString(data.summary) ??
+        [
+          "Audit",
+          getString(data.verdict)
+            ? `verdict ${getString(data.verdict)}`
+            : undefined,
+        ]
+          .filter(Boolean)
+          .join(" - ")
+      );
+    }
+    case "audit_anchor": {
+      return (
+        getString(data.summary) ??
+        ["Audit anchor", getString(data.status), getString(data.anchor_mode)]
+          .filter(Boolean)
+          .join(" - ")
+      );
+    }
     case "completion": {
       const usage = getRecord(data.usage);
 
@@ -142,7 +268,11 @@ export function summarizeEvent(event: DashboardEvent) {
       );
     }
     default:
-      return "Telemetry event";
+      return (
+        getString(data.summary) ??
+        getString(data.rationale_summary) ??
+        "Telemetry event"
+      );
   }
 }
 

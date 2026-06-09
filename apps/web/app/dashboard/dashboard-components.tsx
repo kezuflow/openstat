@@ -153,7 +153,12 @@ export function DashboardStatusChip(props: { status: string }) {
         : normalized.includes("active") ||
             normalized.includes("online") ||
             normalized.includes("ok") ||
-            normalized.includes("filled")
+            normalized.includes("filled") ||
+            normalized.includes("approved") ||
+            normalized.includes("pass") ||
+            normalized.includes("ready") ||
+            normalized.includes("selected") ||
+            normalized.includes("settled")
           ? "success"
           : "default";
 

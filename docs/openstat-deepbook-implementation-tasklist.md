@@ -94,7 +94,7 @@ reliably before DeepBook-specific work begins.
 - [x] Ensure run lifecycle events settle terminal run states.
 - [ ] Improve timeline grouping for decision, risk, order, fill, PnL, chain, and
       completion events.
-- [ ] Improve event labels so the timeline reads like an agent story instead of
+- [x] Improve event labels so the timeline reads like an agent story instead of
       raw database rows.
 - [x] Surface redacted reasoning summaries without exposing prompts or raw tool
       payloads.
@@ -118,7 +118,7 @@ Acceptance checks:
 Suggested commit slices:
 
 - [x] `feat(backend): seed complete agent run demo`
-- [ ] `feat(web): polish run timeline storytelling`
+- [x] `feat(web): polish run timeline storytelling`
 - [ ] `test(ingestion): cover demo run projections`
 
 ## Phase 3: Polish Deployment And Operations
