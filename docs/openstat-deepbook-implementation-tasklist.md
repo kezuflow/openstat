@@ -186,12 +186,12 @@ Dashboard route:
 /dashboard/deepbook
 ```
 
-- [ ] Choose final product name.
-- [ ] Choose final public page framing: product page, live demo, or hybrid.
-- [ ] Add `/deepbook` public route.
-- [ ] Add public DeepBook Predict page metadata.
-- [ ] Add public DeepBook Predict page CTA to sign in or open dashboard.
-- [ ] Add public DeepBook Predict page fallback demo summary if live data is
+- [x] Choose final product name.
+- [x] Choose final public page framing: product page, live demo, or hybrid.
+- [x] Add `/deepbook` public route.
+- [x] Add public DeepBook Predict page metadata.
+- [x] Add public DeepBook Predict page CTA to sign in or open dashboard.
+- [x] Add public DeepBook Predict page fallback demo summary if live data is
       unavailable.
 - [ ] Add `/dashboard/deepbook` route.
 - [ ] Add DeepBook to dashboard sidebar between Trades and Onchain.
@@ -221,7 +221,7 @@ Dashboard route:
 
 Acceptance checks:
 
-- [ ] The public page explains the DeepBook Predict Agent Desk in under one
+- [x] The public page explains the DeepBook Predict Agent Desk in under one
       viewport.
 - [ ] The sidebar link is visible and active on `/dashboard/deepbook`.
 - [ ] The dashboard page works with no data, demo data, and backend errors.
@@ -230,7 +230,7 @@ Acceptance checks:
 
 Suggested commit slices:
 
-- [ ] `feat(web): add deepbook public page`
+- [x] `feat(web): add deepbook public page`
 - [ ] `feat(web): add deepbook dashboard route`
 - [ ] `feat(web): add deepbook sidebar navigation`
 
