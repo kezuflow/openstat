@@ -291,49 +291,49 @@ DEEPBOOK_MARKET=SUI/USDC
 DEEPBOOK_EXECUTION_MODE=paper
 ```
 
-- [ ] Decide where the agent runner should live in the repo.
-- [ ] Decide whether the first runner is TypeScript, Python, or wraps the
+- [x] Decide where the agent runner should live in the repo.
+- [x] Decide whether the first runner is TypeScript, Python, or wraps the
       existing AI-TradingAgent.
-- [ ] Add an agent runner README.
-- [ ] Add an `.env.example` for agent runner configuration.
-- [ ] Implement deterministic replay mode.
-- [ ] Implement paper trading mode if replay is not enough.
+- [x] Add an agent runner README.
+- [x] Add an `.env.example` for agent runner configuration.
+- [x] Implement deterministic replay mode.
+- [x] Implement paper trading mode if replay is not enough.
 - [ ] Add optional Sui testnet execution only after replay/paper mode is stable.
-- [ ] Emit `heartbeat` events.
-- [ ] Emit `market_snapshot` or equivalent context events.
-- [ ] Emit `strategy_evaluation` events with candidate strategies and scores.
-- [ ] Emit `strategy_selected` events with the chosen strategy and reason.
-- [ ] Emit `decision` events.
-- [ ] Emit `risk_check` events.
-- [ ] Emit `position_proposal` events.
-- [ ] Emit `position_execution` or `simulated_position` events.
-- [ ] Emit `settlement` or `simulated_settlement` events.
-- [ ] Emit `pnl_snapshot` events.
-- [ ] Emit `chain_transaction` events when applicable.
-- [ ] Emit terminal `completion` events.
-- [ ] Add rate limits or sleep intervals so the agent cannot flood ingestion.
-- [ ] Add a dry-run mode that prints telemetry without sending it.
-- [ ] Add tests for event payload construction.
-- [ ] Add a one-command demo replay script.
+- [x] Emit `heartbeat` events.
+- [x] Emit `market_snapshot` or equivalent context events.
+- [x] Emit `strategy_evaluation` events with candidate strategies and scores.
+- [x] Emit `strategy_selected` events with the chosen strategy and reason.
+- [x] Emit `decision` events.
+- [x] Emit `risk_check` events.
+- [x] Emit `position_proposal` events.
+- [x] Emit `position_execution` or `simulated_position` events.
+- [x] Emit `settlement` or `simulated_settlement` events.
+- [x] Emit `pnl_snapshot` events.
+- [x] Emit `chain_transaction` events when applicable.
+- [x] Emit terminal `completion` events.
+- [x] Add rate limits or sleep intervals so the agent cannot flood ingestion.
+- [x] Add a dry-run mode that prints telemetry without sending it.
+- [x] Add tests for event payload construction.
+- [x] Add a one-command demo replay script.
 - [ ] Verify replay events appear in `/dashboard/deepbook`.
 - [ ] Verify replay events appear in generic Runs and Trades pages.
 
 Acceptance checks:
 
-- [ ] The agent runner can run from a laptop, second VPS, or temporary runtime.
-- [ ] The runner does not require access to OpenStat internals.
-- [ ] The runner chooses a strategy automatically only after emitting strategy
+- [x] The agent runner can run from a laptop, second VPS, or temporary runtime.
+- [x] The runner does not require access to OpenStat internals.
+- [x] The runner chooses a strategy automatically only after emitting strategy
       evaluation telemetry.
-- [ ] The runner executes automatically only in the configured execution mode
+- [x] The runner executes automatically only in the configured execution mode
       and only after risk approval.
-- [ ] Replay mode can seed a polished demo without live market risk.
+- [x] Replay mode can seed a polished demo without live market risk.
 - [ ] Testnet/live execution remains optional and clearly separated.
 
 Suggested commit slices:
 
-- [ ] `feat(deepbook): add predict agent replay runner`
-- [ ] `feat(deepbook): emit openstat telemetry events`
-- [ ] `test(deepbook): cover agent payload mapping`
+- [x] `feat(deepbook): add predict agent replay runner`
+- [x] `feat(deepbook): emit openstat telemetry events`
+- [x] `test(deepbook): cover agent payload mapping`
 
 ## Phase 7: Polish Docs And Submission Package
 

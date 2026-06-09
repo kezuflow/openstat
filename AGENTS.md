@@ -12,6 +12,8 @@ product for autonomous agents.
 - `apps/web`: Next.js dashboard app, currently on port `3000`.
 - `apps/docs`: Next.js docs app, currently on port `3001`.
 - `apps/backend`: Fastify API server, currently on port `4000`.
+- `apps/deepbook-agent`: deterministic DeepBook Predict replay runner that
+  sends telemetry to OpenStat from outside the core VPS.
 - `packages/auth`: authentication helpers.
 - `packages/db`: Drizzle schema, migrations, and database utilities.
 - `packages/ingestion`: ingestion, projections, analytics, and optional
@@ -73,6 +75,8 @@ pnpm --filter backend dev
 pnpm --filter backend test
 pnpm --filter backend test:integration
 pnpm --filter backend seed:dev
+pnpm --filter deepbook-agent dry-run
+pnpm --filter deepbook-agent replay
 pnpm --filter @openstat/contracts test
 pnpm --filter @openstat/contracts deploy:mantle-sepolia
 pnpm --filter openstat build
