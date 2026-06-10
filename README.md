@@ -22,6 +22,11 @@ product path:
 - **Contract address:** `0x1f5a3354dc01beb89ba7de1a01d04295274a737a`.
 - **Public proof transaction:**
   `0x22f6e966f1190404580228a2e71597f0beb17ddc269aab6e0b7325bfcdbaad4b`.
+- **Tencent Cloud integration:** `deploy/tencent-cloud/proof-verifier` contains
+  a Tencent Cloud Serverless Cloud Function verifier for the Mantle proof
+  transaction.
+- **Tencent Cloud verifier URL:**
+  `https://1442161061-1eo7ds24yh.eu-frankfurt.tencentscf.com?runId=mantle-demo-run`.
 - **Hosted product:** `https://openstat.online`.
 - **Mantle proof dashboard:** `https://openstat.online/dashboard/onchain/mantle`.
 - **Visible dashboard proof:** the on-chain transactions table shows
@@ -39,6 +44,7 @@ agent run telemetry
   -> telemetryDigest + insightDigest
   -> OpenStatAuditAnchor.anchorAudit(...) on Mantle Sepolia
   -> MantleScan-verifiable proof transaction
+  -> Tencent Cloud SCF proof-verifier endpoint
   -> OpenStat dashboard proof view
 ```
 
@@ -65,8 +71,8 @@ OpenStat fits the Mantle Turing scorecard as agent verification infrastructure:
   onboarding friction for Web2 agent developers.
 - **AI DevTools track fit, 50 pts:** OpenStat is an audit and verification tool
   for Mantle builders. Its output is actionable, reproducible, and independently
-  checkable through tests, dashboard state, RPC reconciliation, and MantleScan
-  proof links.
+  checkable through tests, dashboard state, RPC reconciliation, Tencent Cloud
+  SCF verifier output, and MantleScan proof links.
 
 ## AI Trading & Strategy Track Fit
 
@@ -107,11 +113,11 @@ verifiable outcomes.
 OpenStat's AI DevTools angle is **audit and verification infrastructure for
 Mantle agent builders**.
 
-- **Sponsor scorecard integration depth, 12 pts:** OpenStat does not claim
-  Tencent Cloud usage. It focuses on the Mantle side of this criterion: Mantle
-  is used as the proof layer, not only as a logo or deployment target. OpenStat
-  reconciles Mantle transaction receipts and anchors audit commitments on Mantle
-  Sepolia.
+- **Sponsor scorecard integration depth, 12 pts:** Mantle is the on-chain proof
+  layer, and Tencent Cloud is the serverless verification layer. The
+  `deploy/tencent-cloud/proof-verifier` SCF package verifies the public Mantle
+  Sepolia audit proof by reading the transaction receipt and decoding the
+  `AuditAnchored(...)` event from `OpenStatAuditAnchor`.
 - **Optimization or audit output quality, 13 pts:** audit output is structured
   around redacted run context, receipt status, anomaly labels, verdicts,
   telemetry digests, and insight digests. The goal is useful review evidence,
@@ -121,7 +127,8 @@ Mantle agent builders**.
   audit insight generation, and proof anchoring.
 - **Verifiability and benchmarking, 10 pts:** the value is independently
   checkable through route tests, SDK tests, ingestion tests, contract tests,
-  deterministic digest generation, and public MantleScan links.
+  deterministic digest generation, Tencent Cloud proof-verifier output, and
+  public MantleScan links.
 - **Execution and demo quality, 5 pts:** the product is deployed, the repo has
   reproducible commands, and the Mantle Sepolia proof transaction demonstrates
   the end-to-end output.
@@ -131,6 +138,10 @@ Mantle agent builders**.
 - Product: `https://openstat.online`.
 - Mantle proof dashboard: `https://openstat.online/dashboard/onchain/mantle`.
 - Mantle proof docs: `apps/docs/gitbook/guides/ai-agent-proofs-on-mantle.md`.
+- Tencent Cloud proof verifier:
+  `deploy/tencent-cloud/proof-verifier/README.md`.
+- Live Tencent Cloud verifier:
+  `https://1442161061-1eo7ds24yh.eu-frankfurt.tencentscf.com?runId=mantle-demo-run`.
 - Contract: `0x1f5a3354dc01beb89ba7de1a01d04295274a737a`.
 - Contract explorer:
   `https://sepolia.mantlescan.xyz/address/0x1f5a3354dc01beb89ba7de1a01d04295274a737a`
@@ -146,6 +157,7 @@ the repository root:
 pnpm --filter backend test
 pnpm --filter openstat test
 pnpm --filter @openstat/contracts test
+node deploy/tencent-cloud/proof-verifier/local-invoke.js mantle-demo-run
 pnpm --filter web build
 pnpm lint
 pnpm check-types
@@ -282,6 +294,23 @@ Chain behavior lives under `packages/ingestion/src/integrations/*`; core
 ingestion remains chain-agnostic, while the submission path uses
 `packages/ingestion/src/integrations/mantle`.
 
+### Tencent Cloud Proof Verifier
+
+`deploy/tencent-cloud/proof-verifier` contains a Tencent Cloud Serverless Cloud
+Function that verifies the public Mantle Sepolia proof transaction directly from
+Mantle RPC. It accepts `runId` or `txHash`, checks the transaction receipt,
+decodes the `AuditAnchored(...)` event, and returns a JSON proof verdict.
+
+This gives the AI DevTools submission a concrete Tencent Cloud integration:
+Tencent Cloud hosts the verification endpoint, Mantle stores the proof, and
+OpenStat provides the agent telemetry, audit digest, and dashboard context.
+
+Live verifier:
+
+```text
+https://1442161061-1eo7ds24yh.eu-frankfurt.tencentscf.com?runId=mantle-demo-run
+```
+
 ### Deployed Audit Proof
 
 The current public onchain audit proof deployment is:
@@ -312,6 +341,7 @@ sdks/
   python/         Public openstat-sdk Python package
 deploy/
   hetzner/        Docker Compose deployment, Caddy config, operations scripts
+  tencent-cloud/  Tencent Cloud SCF proof verifier for Mantle audit proofs
 docs/
   architecture/   Architecture notes, system design, and production design
 ```

@@ -23,6 +23,8 @@ product for autonomous agents.
   import path for trading-agent telemetry.
 - `packages/ui`: shared React component package exported as `@repo/ui/*`.
 - `packages/contracts`: Hardhat workspace for optional onchain audit anchors.
+- `deploy/tencent-cloud`: Tencent Cloud Serverless Cloud Function proof verifier
+  for Mantle audit proofs.
 - `packages/eslint-config`: shared ESLint configs.
 - `packages/typescript-config`: shared TypeScript configs.
 
@@ -67,6 +69,7 @@ pnpm --filter backend test:integration
 pnpm --filter backend seed:dev
 pnpm --filter @openstat/contracts test
 pnpm --filter @openstat/contracts deploy:mantle-sepolia
+node deploy/tencent-cloud/proof-verifier/local-invoke.js mantle-demo-run
 pnpm --filter openstat build
 ```
 
@@ -101,6 +104,11 @@ Mantle anchor indexing is also optional. Enable
 `MANTLE_ANCHOR_INDEXING_ENABLED` only after setting
 `MANTLE_SEPOLIA_ANCHOR_CONTRACT_ADDRESS` and, for initial backfill,
 `MANTLE_ANCHOR_INDEX_START_BLOCK`.
+
+The Tencent Cloud proof verifier is a standalone SCF deployment package under
+`deploy/tencent-cloud/proof-verifier`. It verifies public Mantle Sepolia proof
+transactions through Mantle RPC and does not require OpenStat database access or
+project secrets.
 
 For the hosted `*.openstat.online` deployment, the backend resolves the shared
 Better Auth cookie domain as `.openstat.online`. Set

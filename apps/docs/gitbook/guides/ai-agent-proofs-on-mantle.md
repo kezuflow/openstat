@@ -33,6 +33,7 @@ AI agent run
   -> telemetryDigest + insightDigest
   -> OpenStatAuditAnchor.anchorAudit(...)
   -> public Mantle proof transaction
+  -> Tencent Cloud proof-verifier endpoint
 ```
 
 When an agent submits a Mantle transaction, OpenStat stores the run context and
@@ -51,6 +52,29 @@ and the AI insight, then calls `anchorAudit(...)` with:
 Only these commitments and the outcome are written on-chain. Raw prompts,
 wallet secrets, private account details, and unredacted telemetry stay out of
 public chain data.
+
+## Tencent Cloud proof verifier
+
+The repository includes a Tencent Cloud Serverless Cloud Function deployment
+package at `deploy/tencent-cloud/proof-verifier`.
+
+The verifier accepts `runId` or `txHash`, fetches the Mantle Sepolia transaction
+receipt, confirms the `AuditAnchored(...)` event came from
+`OpenStatAuditAnchor`, decodes the audit outcome, and returns a JSON proof
+status. It gives the DevTools workflow an independent serverless verification
+endpoint without requiring OpenStat database access or private credentials.
+
+Local test:
+
+```sh
+node deploy/tencent-cloud/proof-verifier/local-invoke.js mantle-demo-run
+```
+
+Live Tencent Cloud verifier:
+
+```text
+https://1442161061-1eo7ds24yh.eu-frankfurt.tencentscf.com?runId=mantle-demo-run
+```
 
 ## The on-chain transaction
 

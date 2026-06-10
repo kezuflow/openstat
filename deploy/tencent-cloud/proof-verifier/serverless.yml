@@ -1,0 +1,21 @@
+component: scf
+name: openstat-mantle-proof-verifier
+
+inputs:
+  name: openstat-mantle-proof-verifier
+  namespace: default
+  src: ./
+  type: event
+  handler: index.main_handler
+  runtime: Nodejs12.16
+  region: ap-singapore
+  description: Tencent Cloud SCF verifier for OpenStat Mantle audit proofs.
+  memorySize: 128
+  timeout: 10
+  environment:
+    variables:
+      MANTLE_RPC_URL: https://rpc.sepolia.mantle.xyz
+      MANTLE_CHAIN_ID: "5003"
+      MANTLE_EXPLORER_BASE_URL: https://sepolia.mantlescan.xyz
+      OPENSTAT_AUDIT_ANCHOR_CONTRACT_ADDRESS: "0x1f5a3354dc01beb89ba7de1a01d04295274a737a"
+      PROOF_TX_BY_RUN_ID: '{"mantle-demo-run":"0x22f6e966f1190404580228a2e71597f0beb17ddc269aab6e0b7325bfcdbaad4b"}'
