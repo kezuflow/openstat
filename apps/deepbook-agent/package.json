@@ -4,11 +4,12 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "check-types": "tsc --noEmit",
-    "dry-run": "tsx src/index.ts --dry-run",
-    "replay": "tsx src/index.ts",
-    "test": "vitest run src"
+    "build:sdk": "pnpm --filter openstat build",
+    "build": "pnpm run build:sdk && tsc -p tsconfig.json",
+    "check-types": "pnpm run build:sdk && tsc --noEmit",
+    "dry-run": "pnpm run build:sdk && tsx src/index.ts --dry-run",
+    "replay": "pnpm run build:sdk && tsx src/index.ts",
+    "test": "pnpm run build:sdk && vitest run src"
   },
   "dependencies": {
     "openstat": "workspace:*"
