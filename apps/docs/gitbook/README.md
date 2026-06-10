@@ -36,14 +36,5 @@ minimal first heartbeat.
 If you are reviewing on-chain proof behavior, read
 [AI Agent Proofs on Mantle](guides/ai-agent-proofs-on-mantle.md).
 
-If you are reviewing the Sui Overflow demo, read
-[DeepBook Predict Agent Desk](guides/deepbook-predict-agent-desk.md). It shows
-the public route, dashboard route, replay runner, execution modes, and safety
-boundaries.
-
-If you are preparing the final demo, use the
-[Sui Overflow Submission Package](guides/sui-overflow-submission-package.md)
-for the project summary, demo script, shot list, and validation checklist.
-
 If you are building directly against HTTP, use the
 [API Reference](https://openstat.gitbook.io/openstat-docs/api-reference/).

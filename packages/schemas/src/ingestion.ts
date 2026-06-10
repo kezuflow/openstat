@@ -42,13 +42,6 @@ export const chainReceiptStatusSchema = z.enum([
   "confirmed",
   "reverted",
 ]);
-export const suiReferenceStatusSchema = z.enum([
-  "submitted",
-  "confirmed",
-  "reverted",
-  "simulated_from_replay",
-  "paper_not_broadcast",
-]);
 
 export const tradingSideSchema = z.enum(["buy", "sell"]);
 export const orderTypeSchema = z.enum([
@@ -236,18 +229,7 @@ export const evmChainTransactionDataSchema = z.object({
   from_address: evmAddressSchema.optional(),
   to_address: evmAddressSchema.optional(),
 });
-export const suiChainTransactionDataSchema = z.object({
-  chain: z.literal("sui"),
-  network: z.string().min(1).max(80),
-  digest_reference: z.string().min(1).max(160),
-  execution_mode: z.enum(["replay", "paper", "testnet"]).optional(),
-  status: suiReferenceStatusSchema.default("submitted"),
-  summary: z.string().max(2000).optional(),
-});
-export const chainTransactionDataSchema = z.union([
-  evmChainTransactionDataSchema,
-  suiChainTransactionDataSchema,
-]);
+export const chainTransactionDataSchema = evmChainTransactionDataSchema;
 
 export const normalizedEventDataSchemas = {
   audit_anchor: auditAnchorDataSchema,

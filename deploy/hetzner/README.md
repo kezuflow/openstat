@@ -22,10 +22,10 @@ Keep this VPS focused on the OpenStat control plane:
 - Redis
 - Caddy
 
-Do not colocate the DeepBook Predict agent runner, Sui RPC/indexing services,
-model workers, browser automation, or long-running strategy search jobs on this
-box. Run those from a laptop, a second VPS, or a temporary worker host and send
-telemetry to `API_PUBLIC_URL` with an OpenStat project API key.
+Do not colocate model workers, browser automation, high-volume agent execution,
+custom indexing services, or long-running strategy search jobs on this box. Run
+those from a laptop, a second VPS, or a temporary worker host and send telemetry
+to `API_PUBLIC_URL` with an OpenStat project API key.
 
 Suggested starting budget:
 
@@ -39,7 +39,7 @@ Suggested starting budget:
 | OS and Docker overhead | 1-2 GB RAM                    | Leave enough headroom for deploys and backups.                  |
 
 Scale away from this node before adding high-volume agent execution, local LLM
-inference, or custom Sui archive/indexing workloads.
+inference, or custom archive/indexing workloads.
 
 ## First Boot
 

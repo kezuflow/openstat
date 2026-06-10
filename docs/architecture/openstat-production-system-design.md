@@ -25,23 +25,24 @@ Hetzner VPS
 
 External runtimes
   customer agents
-  DeepBook Predict agent runner
-  Sui RPC providers
+  trading-agent workers
+  EVM RPC providers
   LLM API providers
 ```
 
-The DeepBook Predict agent runner must remain outside the core OpenStat VPS
-unless a future deployment explicitly provisions separate capacity for it.
+Trading-agent workers and other high-volume external runtimes must remain
+outside the core OpenStat VPS unless a future deployment explicitly provisions
+separate capacity for them.
 
 ## Current Product Decisions
 
-- Billing is not part of the Sui Overflow production scope.
-- Product quotas are not part of the Sui Overflow production scope.
+- Billing is not part of the Mantle Turing hackathon production scope.
+- Product quotas are not part of the Mantle Turing hackathon production scope.
 - Retention does not vary by plan during the current production phase.
 - Hosted workspaces are effectively single-user for the demo and early
   production path.
-- The DeepBook Predict agent runner should start with replay or paper mode
-  before any Sui testnet execution.
+- Trading-agent demos should start with replay or paper mode before any
+  testnet transaction path.
 
 ## Production Goals
 
@@ -57,8 +58,8 @@ Near-term goals:
 - Keep project/org isolation strict.
 - Redact sensitive telemetry by default.
 - Keep backups and restore drills real, not aspirational.
-- Keep the deployment simple enough to operate during the DeepBook/Sui Overflow
-  push.
+- Keep the deployment simple enough to operate during the Mantle Turing
+  hackathon push.
 
 Non-goals for the current production phase:
 
@@ -112,7 +113,7 @@ Caddy
 It is not intended to run:
 
 ```text
-always-on DeepBook Predict agent runner
+always-on trading-agent workers
 local LLMs
 heavy backtests
 high-volume indexing jobs
@@ -269,8 +270,8 @@ Current decision:
 
 Current decision:
 
-- Do not implement product quotas or billing-driven overages during the Sui
-  Overflow production phase.
+- Do not implement product quotas or billing-driven overages during the Mantle
+  Turing hackathon production phase.
 - Keep technical abuse controls such as request body limits and rate limits.
   These protect the service; they are not product-plan quotas.
 
@@ -411,7 +412,7 @@ Current target:
 
 ## Billing, Plans, And Quotas
 
-Billing is not required for the DeepBook demo or the current production phase.
+Billing is not required for the Mantle Turing demo or the current production phase.
 The architecture still tracks future billing boundaries because ingestion and
 retention directly cost money.
 
@@ -450,7 +451,7 @@ Quota dimensions:
 Current decision:
 
 - Do not enforce product quotas before billing exists.
-- Treat DeepBook demo traffic as first-party demo traffic, protected by
+- Treat hackathon demo traffic as first-party demo traffic, protected by
   technical rate limits rather than product quotas.
 
 Open question:
@@ -475,69 +476,42 @@ Rules:
 
 Open questions:
 
-- Should DeepBook telemetry introduce a `deepbook.schema_version` metadata key
-  from day one?
-- Should OpenStat publish a formal event schema reference in docs before Sui
-  Overflow?
+- Should OpenStat publish a formal event schema reference in docs before the
+  Mantle Turing submission?
 
-## DeepBook Predict And Sui Production Notes
+## Mantle Turing Production Notes
 
-DeepBook Predict/Sui should be a vertical product layer on top of OpenStat, not
-a special case inside core ingestion.
+Mantle proof anchoring should stay a verification layer on top of OpenStat's
+generic telemetry model, not a special case inside core ingestion.
 
 Rules:
 
-- DeepBook Predict dashboard views may be product-specific.
-- DeepBook Predict events should still ingest through normal OpenStat APIs.
-- Sui-specific receipt reconciliation, if implemented, belongs under
-  `packages/ingestion/src/integrations/sui`.
-- The DeepBook Predict agent runner should use an OpenStat API key and public API
-  endpoint like any customer agent.
-- The runner should support deterministic replay before paper/testnet/live
-  execution.
-- Live execution must be optional and clearly separated from replay/paper mode.
-- The OpenStat backend must not custody wallets or sign Sui transactions.
-- The runner may select strategies automatically, but should emit
-  `strategy_evaluation` and `strategy_selected` telemetry before proposing a
-  position.
+- Mantle-specific behavior belongs under
+  `packages/ingestion/src/integrations/mantle` or `packages/contracts`.
+- Agent events should still ingest through normal OpenStat APIs.
+- Chain receipt reconciliation stays optional and read-only.
+- Contract deployment and transaction broadcasts require explicit approval.
+- The OpenStat backend must not custody wallets or sign transactions.
+- Trading agents may select strategies automatically, but should emit decision
+  and risk telemetry before submitting orders or proof anchors.
 - Automatic execution is allowed only in the configured execution mode and only
   after a passing risk check.
 
-Required DeepBook Predict metadata:
+Required Mantle proof metadata:
 
 ```text
-product=deepbook-predict-agent-desk
-venue=deepbook
-chain=sui
-network=<mainnet|testnet|devnet>
-market=<pair>
-strategy=<strategy-name>
-execution_mode=<replay|paper|testnet|live>
-```
-
-Recommended demo choices:
-
-```text
-Market
-  Recommended: SUI/USDC
-  Alternatives: DEEP/USDC or DEEP/SUI if DeepBook Predict market availability makes them better
-
-Execution mode
-  Recommended: replay + paper trading
-  Stretch: optional Sui testnet execution after replay is reliable
-  Avoid for demo: live mainnet autonomous execution
-
-RPC
-  Recommended for early demo: official Sui Testnet public RPC with low request volume
-  Production direction: dedicated provider endpoint or owned node
+chain=mantle
+network=<mainnet|sepolia>
+tx_hash=<transaction-hash>
+action=<agent-action>
+run_id=<openstat-run-id>
+audit_status=<pass|warn|fail>
 ```
 
 Open questions:
 
-- Should the recorded submission video show only replay/paper mode, or include
-  one optional Sui testnet execution?
-- Which dedicated Sui RPC provider should be used if public endpoint rate limits
-  become a problem?
+- Should the public docs include a dedicated Mantle Sepolia receipt walkthrough?
+- Should proof anchoring support mainnet after the hackathon demo path is stable?
 
 ## Incident Response
 
@@ -583,5 +557,5 @@ Urgent conditions:
 - [ ] Worker lag and dead letters are visible.
 - [ ] Disk usage alerts exist.
 - [ ] Sentry or equivalent error reporting is configured.
-- [ ] DeepBook agent runner is isolated from the core OpenStat VPS.
-- [ ] DeepBook replay mode works without live trading risk.
+- [ ] External trading-agent workers are isolated from the core OpenStat VPS.
+- [ ] Replay or paper mode works without live trading risk.

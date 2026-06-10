@@ -6,10 +6,10 @@ The recommended single-node early-access target is a 4 vCPU / 8 GB RAM / 80 GB
 SSD VPS with the API, worker, Postgres, Redis, and Caddy only. Treat this as an
 OpenStat control-plane host, not an agent execution host.
 
-Keep the DeepBook Predict runner and any AI-TradingAgent process outside this
-VPS. They should call the public API with an OpenStat project API key. This
-keeps strategy loops, Sui RPC latency, model calls, and retry storms from
-starving Postgres, Redis, or the ingestion worker.
+Keep trading agents, model workers, browser automation, and long-running
+strategy jobs outside this VPS. They should call the public API with an OpenStat
+project API key. This keeps strategy loops, RPC latency, model calls, and retry
+storms from starving Postgres, Redis, or the ingestion worker.
 
 Before increasing traffic:
 

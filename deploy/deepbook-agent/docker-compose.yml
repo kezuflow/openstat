@@ -1,9 +1,0 @@
-services:
-  deepbook-agent-project-example:
-    build:
-      context: ../..
-      dockerfile: apps/deepbook-agent/Dockerfile
-    env_file:
-      - path: ./projects/project-example.env
-        required: false
-    restart: unless-stopped

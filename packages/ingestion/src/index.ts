@@ -1537,10 +1537,6 @@ async function projectChainTransaction(
   const data = event.data ?? {};
   const chain = getRequiredString(data.chain, "chain_transaction.chain");
 
-  if (chain === "sui") {
-    return;
-  }
-
   const chainId = getNumber(data.chain_id);
   const transactionHash = getTransactionHash(
     data.tx_hash,

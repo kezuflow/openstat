@@ -110,76 +110,79 @@ describe("OpenStatClient", () => {
     });
   });
 
-  it("sends DeepBook Predict telemetry through native batches", async () => {
+  it("sends Mantle proof telemetry through native batches", async () => {
     const requests: Request[] = [];
     const client = createOpenStatClient({
       apiKey: "ostat_public_secret",
       endpoint: "https://api.example.com",
-      serviceName: "deepbook-agent",
+      serviceName: "audit-copilot",
       fetch: async (input, init) => {
         requests.push(new Request(input, init));
         return createJsonResponse({ accepted: true, acceptedCount: 3 });
       },
     });
     const metadata = {
-      chain: "sui",
-      execution_mode: "paper",
-      market: "SUI/USDC",
-      network: "testnet",
-      product: "deepbook-predict-agent-desk",
-      venue: "deepbook-predict",
+      action: "anchor_audit",
+      chain: "mantle",
+      network: "sepolia",
+      product: "openstat-mantle-turing",
+      run_id: "mantle-demo-run",
     };
 
     await client.sendBatch([
       {
-        type: "market_snapshot",
-        run_id: "run-deepbook",
+        type: "risk_check",
+        run_id: "mantle-demo-run",
         data: {
-          best_ask: "3.84",
-          best_bid: "3.80",
-          market: "SUI/USDC",
+          audit_score: 0,
+          result: "pass",
+          summary: "Audit Copilot found no policy violations.",
         },
         metadata,
-        tags: ["deepbook"],
+        tags: ["mantle", "audit"],
       },
       {
-        type: "strategy_evaluation",
-        run_id: "run-deepbook",
+        type: "audit_insight",
+        run_id: "mantle-demo-run",
         data: {
-          candidate_strategies: [{ name: "range-mean-reversion", score: 88 }],
-          selected_strategy: "range-mean-reversion",
+          checks: ["strategy_present", "risk_gate_passed"],
+          summary: "Run is ready for Mantle proof anchoring.",
+          verdict: "passed",
         },
         metadata,
-        tags: ["deepbook"],
+        tags: ["mantle", "audit"],
       },
       {
         type: "chain_transaction",
-        run_id: "run-deepbook",
+        run_id: "mantle-demo-run",
         data: {
-          chain: "sui",
-          digest_reference: "demo-sui-digest",
-          execution_mode: "paper",
-          network: "testnet",
-          status: "paper_not_broadcast",
+          action: "anchor_audit",
+          chain: "mantle",
+          chain_id: 5003,
+          network: "sepolia",
+          status: "confirmed",
+          tx_hash:
+            "0x22f6e966f1190404580228a2e71597f0beb17ddc269aab6e0b7325bfcdbaad4b",
         },
         metadata,
-        tags: ["deepbook"],
+        tags: ["mantle", "proof"],
       },
     ]);
 
     const body = (await requests[0].json()) as { events: NativeEvent[] };
     expect(body.events.map((event) => event.type)).toEqual([
-      "market_snapshot",
-      "strategy_evaluation",
+      "risk_check",
+      "audit_insight",
       "chain_transaction",
     ]);
     expect(body.events[0]?.metadata).toMatchObject({
-      product: "deepbook-predict-agent-desk",
-      service_name: "deepbook-agent",
+      chain: "mantle",
+      service_name: "audit-copilot",
     });
     expect(body.events[2]?.data).toMatchObject({
-      chain: "sui",
-      digest_reference: "demo-sui-digest",
+      chain: "mantle",
+      tx_hash:
+        "0x22f6e966f1190404580228a2e71597f0beb17ddc269aab6e0b7325bfcdbaad4b",
     });
   });
 
