@@ -11,6 +11,7 @@
 
 - [AI Agent Proofs on Mantle](guides/ai-agent-proofs-on-mantle.md)
 - [DeepBook Predict Agent Desk](guides/deepbook-predict-agent-desk.md)
+- [Sui Overflow Submission Package](guides/sui-overflow-submission-package.md)
 
 ## API Reference
 

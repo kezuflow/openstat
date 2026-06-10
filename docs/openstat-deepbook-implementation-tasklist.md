@@ -361,25 +361,25 @@ verify the security boundaries.
 - [x] Document no-private-key and no-secrets telemetry rules.
 - [x] Document redaction defaults for prompts, tool payloads, accounts, and raw
       order payloads.
-- [ ] Add Sui Overflow submission summary.
-- [ ] Add demo script.
-- [ ] Add demo video shot list.
-- [ ] Add final validation checklist.
-- [ ] Run Prettier over changed docs.
+- [x] Add Sui Overflow submission summary.
+- [x] Add demo script.
+- [x] Add demo video shot list.
+- [x] Add final validation checklist.
+- [x] Run Prettier over changed docs.
 
 Acceptance checks:
 
 - [x] A builder can instrument a simple agent from the docs.
 - [x] A judge can understand the DeepBook Predict demo from the public page and
       docs.
-- [ ] The submission copy matches the running product.
+- [x] The submission copy matches the running product.
 - [x] Security boundaries are explicit.
 
 Suggested commit slices:
 
 - [x] `docs(sdk): refresh openstat quickstart`
 - [x] `docs(deepbook): add agent desk guide`
-- [ ] `docs(deepbook): add overflow submission package`
+- [x] `docs(deepbook): add overflow submission package`
 
 ## Final Validation
 
