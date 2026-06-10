@@ -88,7 +88,12 @@ describe("api key routes", () => {
     });
 
     const body = response.json<{
-      apiKey: { id: string; name: string; prefix: string };
+      apiKey: {
+        id: string;
+        name: string;
+        prefix: string;
+        secretHash?: string;
+      };
       key: string;
     }>();
 
@@ -98,8 +103,10 @@ describe("api key routes", () => {
         organizationId: scope.organizationId,
         projectId: scope.projectId,
         name: "Main ingestion",
+        secretHash: expect.any(String),
       }),
     );
+    expect(createKeyValues.mock.calls[0]?.[0]).not.toHaveProperty("key");
     expect(createNotificationValues).toHaveBeenCalledWith(
       expect.objectContaining({
         organizationId: scope.organizationId,
@@ -116,7 +123,11 @@ describe("api key routes", () => {
     );
     expect(body.apiKey.id).toBe("key_1");
     expect(body.apiKey.prefix).toBe("ostat_public");
+    expect(body.apiKey.secretHash).toBeUndefined();
     expect(body.key).toMatch(/^ostat_[A-Za-z0-9_-]+_[A-Za-z0-9_-]+$/u);
+    expect(
+      JSON.stringify(createNotificationValues.mock.calls[0]?.[0]),
+    ).not.toContain(body.key);
 
     await app.close();
   });
@@ -148,6 +159,15 @@ describe("api key routes", () => {
 
     expect(response.statusCode).toBe(200);
     expect(state.requireSessionScope).toHaveBeenCalledOnce();
+    expect(Object.keys(state.db.select.mock.calls[0]?.[0] ?? {})).toEqual([
+      "id",
+      "name",
+      "prefix",
+      "lastUsedAt",
+      "revokedAt",
+      "expiresAt",
+      "createdAt",
+    ]);
     expect(where).toHaveBeenCalledOnce();
     expect(body.apiKeys).toHaveLength(1);
     expect(body.apiKeys[0]?.id).toBe("key_1");
@@ -183,6 +203,15 @@ describe("api key routes", () => {
     }>();
 
     expect(response.statusCode).toBe(200);
+    expect(Object.keys(state.db.select.mock.calls[0]?.[0] ?? {})).toEqual([
+      "id",
+      "name",
+      "prefix",
+      "lastUsedAt",
+      "revokedAt",
+      "expiresAt",
+      "createdAt",
+    ]);
     expect(where).toHaveBeenCalledOnce();
     expect(body.apiKey.id).toBe("00000000-0000-4000-8000-000000000001");
     expect(body.apiKey.prefix).toBe("ostat_public");
@@ -311,7 +340,7 @@ describe("api key routes", () => {
     });
 
     const body = response.json<{
-      apiKey: { id: string; name: string; prefix: string };
+      apiKey: { id: string; name: string; prefix: string; secretHash?: string };
       key: string;
       rotatedApiKey: { id: string; revokedAt: string };
     }>();
@@ -329,8 +358,10 @@ describe("api key routes", () => {
         organizationId: scope.organizationId,
         projectId: scope.projectId,
         name: "Main ingestion",
+        secretHash: expect.any(String),
       }),
     );
+    expect(insertKeyValues.mock.calls[0]?.[0]).not.toHaveProperty("key");
     expect(insertNotificationValues).toHaveBeenCalledWith(
       expect.objectContaining({
         organizationId: scope.organizationId,
@@ -353,7 +384,11 @@ describe("api key routes", () => {
     expect(body.rotatedApiKey.id).toBe("00000000-0000-4000-8000-000000000001");
     expect(body.apiKey.id).toBe("00000000-0000-4000-8000-000000000002");
     expect(body.apiKey.prefix).toBe("ostat_rotated");
+    expect(body.apiKey.secretHash).toBeUndefined();
     expect(body.key).toMatch(/^ostat_[A-Za-z0-9_-]+_[A-Za-z0-9_-]+$/u);
+    expect(
+      JSON.stringify(insertNotificationValues.mock.calls[0]?.[0]),
+    ).not.toContain(body.key);
 
     await app.close();
   });

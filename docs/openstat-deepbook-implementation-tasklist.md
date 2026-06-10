@@ -55,7 +55,7 @@ code.
 - [x] Ensure revoke confirmation copy is clear and difficult to misread.
 - [x] Show API key prefix, created date, last-used date, and revoked state.
 - [x] Confirm API key create/revoke behavior remains project-scoped.
-- [ ] Add or update API key route tests if response behavior changes.
+- [x] Add or update API key route tests if response behavior changes.
 - [ ] Add or update dashboard smoke coverage if the repo already has a pattern
       for it.
 - [ ] Verify the API Keys page in browser at desktop width.
@@ -66,13 +66,13 @@ Acceptance checks:
 - [ ] A new user can create an API key from the dashboard.
 - [x] A new user sees exact JS and Python next steps after creating a key.
 - [x] Empty states point to the next useful action.
-- [ ] API key auth error codes remain stable.
+- [x] API key auth error codes remain stable.
 
 Suggested commit slices:
 
 - [x] `fix(web): clarify dashboard empty states`
 - [x] `feat(web): add api key setup snippets`
-- [ ] `test(backend): preserve api key lifecycle behavior`
+- [x] `test(backend): preserve api key lifecycle behavior`
 
 ## Phase 2: Polish Run Timeline And Demo Data
 
