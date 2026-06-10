@@ -110,7 +110,7 @@ export function DeepBookConfigManager(props: DeepBookConfigManagerProps) {
       <div className={styles.configHeader}>
         <div>
           <div className="dashboard-panel-title-row">
-            <h2>Agent control desk</h2>
+            <h2>Advanced guardrails</h2>
             <Chip
               color={hasInvalidAllocation ? "danger" : "success"}
               size="sm"
@@ -120,8 +120,8 @@ export function DeepBookConfigManager(props: DeepBookConfigManagerProps) {
             </Chip>
           </div>
           <p>
-            Configure the strategy set and risk boundaries the DeepBook agent
-            should evaluate before it emits decisions.
+            Keep the agent autonomous while bounding market choice, execution
+            mode, exposure, slippage, and allowed strategy weights.
           </p>
         </div>
         <SlidersHorizontal aria-hidden="true" size={18} />

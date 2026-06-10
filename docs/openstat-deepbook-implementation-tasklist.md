@@ -360,26 +360,30 @@ decisions.
 - [x] Validate that enabled strategy weights stay within 100%.
 - [x] Keep config telemetry free of API keys, private keys, wallet secrets, and
       raw account identifiers.
-- [ ] Connect the external DeepBook runner to fetch this saved config before
+- [x] Add a dashboard Agent Console with start/replay actions.
+- [x] Add a backend queue convention for dashboard-requested DeepBook runs.
+- [x] Connect the external DeepBook runner to claim queued jobs before
       evaluation.
-- [ ] Add a dashboard action to start or request a paper run when the runner
+- [x] Add a dashboard action to start or request a paper run when the runner
       control channel is ready.
 - [ ] Surface the active config beside live run telemetry after a run starts.
+- [ ] Add stop/cancel once the runner has a long-running polling loop.
+- [ ] Replace polling with SSE if the console needs lower-latency streaming.
 
 Acceptance checks:
 
 - [x] The DeepBook dashboard is an agent configuration surface, not only a
       replay viewer.
 - [x] Strategy and risk settings are project-scoped.
-- [ ] The runner uses the saved config as its source of truth.
+- [x] The runner uses the saved config as its source of truth.
 - [ ] Execution remains paper/replay until optional Sui testnet execution is
       explicitly implemented.
 
 Suggested commit slices:
 
 - [x] `feat(deepbook): add agent strategy config`
-- [ ] `feat(deepbook): load dashboard config in runner`
-- [ ] `feat(deepbook): request paper agent runs`
+- [x] `feat(deepbook): request paper agent runs`
+- [x] `feat(deepbook): load dashboard config in runner`
 
 ## Phase 7: Polish Docs And Submission Package
 

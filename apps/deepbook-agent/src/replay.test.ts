@@ -40,6 +40,10 @@ describe("DeepBook replay payloads", () => {
       chain: "sui",
       status: "paper_not_broadcast",
     });
+    expect(events[15]?.metadata).toMatchObject({
+      kind: "run_lifecycle",
+      run_status: "completed",
+    });
   });
 
   it("emits execution only after risk approval", () => {
@@ -55,5 +59,63 @@ describe("DeepBook replay payloads", () => {
 
     expect(risk?.data).toMatchObject({ result: "approved" });
     expect(orderIndex).toBeGreaterThan(riskIndex);
+  });
+
+  it("uses enabled dashboard guardrails for strategy selection and risk limits", () => {
+    const events = buildDeepBookReplayEvents({
+      config: {
+        maxExposureUsd: 1_200,
+        maxSlippageBps: 20,
+        settlementWindow: "24h",
+        strategyCandidates: [
+          {
+            name: "range-mean-reversion",
+            enabled: false,
+            maxWeight: 80,
+          },
+          {
+            name: "breakout-follow",
+            enabled: true,
+            maxWeight: 55,
+          },
+          {
+            name: "liquidity-neutral",
+            enabled: true,
+            maxWeight: 25,
+          },
+        ],
+      },
+      executionMode: "paper",
+      market: "SUI/USDC",
+      network: "testnet",
+      now: Date.UTC(2026, 4, 11, 9, 30),
+    });
+    const strategyEvaluation = events.find(
+      (event) => event.type === "strategy_evaluation",
+    );
+    const strategySelected = events.find(
+      (event) => event.type === "strategy_selected",
+    );
+    const riskCheck = events.find((event) => event.type === "risk_check");
+
+    expect(strategyEvaluation?.data?.candidate_strategies).toEqual([
+      {
+        max_weight: 55,
+        name: "breakout-follow",
+        score: 99,
+      },
+      {
+        max_weight: 25,
+        name: "liquidity-neutral",
+        score: 77,
+      },
+    ]);
+    expect(strategySelected?.data).toMatchObject({
+      selected_strategy: "breakout-follow",
+    });
+    expect(riskCheck?.data).toMatchObject({
+      max_exposure_usd: 1200,
+      max_slippage_bps: 20,
+    });
   });
 });

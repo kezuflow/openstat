@@ -11,7 +11,6 @@ import {
   DEEPBOOK_EVENTS_LIMIT,
   DEEPBOOK_VENUE,
   findLatestEvent,
-  getNumberLike,
   getString,
   isDeepBookEvent,
   isDeepBookRun,
@@ -19,11 +18,9 @@ import {
 } from "../../features/deepbook/dashboard";
 import {
   DashboardDataTable,
-  DashboardKpiCard,
   DashboardPanel,
   DashboardStatusChip,
   formatDateTime,
-  formatPnl,
   formatRelativeTime,
 } from "../dashboard-components";
 import { formatEventType, summarizeEvent } from "../dashboard-event-utils";
@@ -35,6 +32,7 @@ import {
 } from "../dashboard-page-utils";
 import { DashboardRouteShell } from "../dashboard-route-shell";
 
+import { DeepBookAgentConsole } from "./deepbook-agent-console";
 import { DeepBookConfigManager } from "./deepbook-config-manager";
 import styles from "./deepbook-dashboard.module.css";
 
@@ -79,7 +77,12 @@ export default async function DeepBookDashboardPage(props: DeepBookPageProps) {
   const latestAudit =
     findLatestEvent(deepbookEvents, "audit_anchor") ??
     findLatestEvent(deepbookEvents, "audit_insight");
-  const latestPnl = findLatestEvent(deepbookEvents, "pnl_snapshot");
+  const latestDeepBookRun = deepbookRuns[0];
+  const latestRunEvents = latestDeepBookRun?.externalRunId
+    ? deepbookEvents.filter(
+        (event) => event.runId === latestDeepBookRun.externalRunId,
+      )
+    : [];
   const currentHref = `/dashboard/deepbook?range=${range}`;
   const selectedMarket =
     getString(latestMarket?.data?.market) ??
@@ -90,19 +93,6 @@ export default async function DeepBookDashboardPage(props: DeepBookPageProps) {
     getString(latestMarket?.metadata?.execution_mode) ??
     getString(deepbookEvents[0]?.metadata?.execution_mode) ??
     "not configured";
-  const riskState =
-    getString(latestRisk?.data?.result) ??
-    getString(latestRisk?.data?.status) ??
-    "waiting";
-  const settlementState =
-    getString(latestSettlement?.data?.status) ??
-    getString(latestSettlement?.data?.outcome) ??
-    "unsettled";
-  const auditState =
-    getString(latestAudit?.data?.verdict) ??
-    getString(latestAudit?.data?.status) ??
-    "not ready";
-  const pnlValue = getNumberLike(latestPnl?.data?.realized_pnl);
 
   return (
     <DashboardRouteShell
@@ -112,39 +102,6 @@ export default async function DeepBookDashboardPage(props: DeepBookPageProps) {
       range={range}
       title="DeepBook Predict"
     >
-      <section
-        className={`dashboard-kpi-grid dashboard-route-kpis ${styles.kpis}`}
-      >
-        <DashboardKpiCard
-          badge={{ label: executionMode, tone: "neutral" }}
-          href="/dashboard/deepbook"
-          label="Selected market"
-          tone={selectedMarket === "No market" ? "neutral" : "success"}
-          value={selectedMarket}
-        />
-        <DashboardKpiCard
-          badge={{ label: riskState }}
-          href="/dashboard/deepbook"
-          label="Risk state"
-          tone={riskState === "approved" ? "success" : "warning"}
-          value={riskState}
-        />
-        <DashboardKpiCard
-          badge={{ label: settlementState }}
-          href="/dashboard/deepbook"
-          label="Settlement"
-          tone={settlementState === "settled" ? "success" : "neutral"}
-          value={settlementState}
-        />
-        <DashboardKpiCard
-          badge={{ label: auditState }}
-          href="/dashboard/deepbook"
-          label="Run PnL"
-          tone={(pnlValue ?? 0) >= 0 ? "success" : "danger"}
-          value={pnlValue === undefined ? "--" : formatPnl(pnlValue)}
-        />
-      </section>
-
       {data.errors.length > 0 ? (
         <DashboardPanel
           className={`dashboard-latest-panel ${styles.error}`}
@@ -169,97 +126,118 @@ export default async function DeepBookDashboardPage(props: DeepBookPageProps) {
         </DashboardPanel>
       ) : null}
 
-      <DashboardPanel
-        className={`dashboard-latest-panel ${styles.panel} ${styles.configPanel}`}
-        title="Agent control"
-      >
-        <DeepBookConfigManager
-          initialConfig={configData.config}
-          initialUpdatedAt={configData.updatedAt}
-        />
-      </DashboardPanel>
+      <section className={styles.agentWorkArea}>
+        <div className={styles.agentMainColumn}>
+          <DashboardPanel
+            className={`dashboard-latest-panel ${styles.panel} ${styles.consolePanel}`}
+            title="Agent console"
+          >
+            <DeepBookAgentConsole
+              config={configData.config}
+              initialEvents={latestRunEvents}
+              initialRun={latestDeepBookRun}
+            />
+          </DashboardPanel>
 
-      <section className={styles.grid}>
-        <DashboardPanel
-          className={`dashboard-latest-panel ${styles.panel}`}
-          title="Run timeline"
-          titleCount={deepbookEvents.length}
-        >
-          <div className={styles.timeline}>
-            {deepbookEvents.slice(0, 10).map((event) => (
-              <Link
-                href={`${currentHref}&inspect=event&id=${event.id}`}
-                key={event.id}
-                scroll={false}
-              >
-                <span>{formatEventType(event.eventType)}</span>
-                <strong>{summarizeEvent(event)}</strong>
-                <small title={formatDateTime(event.timestamp)}>
-                  {formatRelativeTime(event.timestamp)}
-                </small>
-              </Link>
-            ))}
-          </div>
-        </DashboardPanel>
+          <section className={styles.grid}>
+            <DashboardPanel
+              className={`dashboard-latest-panel ${styles.panel}`}
+              title="Run timeline"
+              titleCount={deepbookEvents.length}
+            >
+              <div className={styles.timeline}>
+                {deepbookEvents.slice(0, 10).map((event) => (
+                  <Link
+                    href={`${currentHref}&inspect=event&id=${event.id}`}
+                    key={event.id}
+                    scroll={false}
+                  >
+                    <span>{formatEventType(event.eventType)}</span>
+                    <strong>{summarizeEvent(event)}</strong>
+                    <small title={formatDateTime(event.timestamp)}>
+                      {formatRelativeTime(event.timestamp)}
+                    </small>
+                  </Link>
+                ))}
+              </div>
+            </DashboardPanel>
 
-        <DashboardPanel
-          className={`dashboard-latest-panel ${styles.panel}`}
-          title="Market snapshot"
-        >
-          <DeepBookFactList
-            items={[
-              ["Market", selectedMarket],
-              [
-                "Venue",
-                getString(latestMarket?.metadata?.venue) ?? DEEPBOOK_VENUE,
-              ],
-              [
-                "Network",
-                getString(latestMarket?.metadata?.network) ?? "testnet",
-              ],
-              ["Execution", executionMode],
-              ["Oracle", getString(latestMarket?.data?.oracle_price) ?? "--"],
-              [
-                "Liquidity",
-                getString(latestMarket?.data?.liquidity_usd) ?? "--",
-              ],
-            ]}
-          />
-        </DashboardPanel>
+            <DashboardPanel
+              className={`dashboard-latest-panel ${styles.panel}`}
+              title="Market snapshot"
+            >
+              <DeepBookFactList
+                items={[
+                  ["Market", selectedMarket],
+                  [
+                    "Venue",
+                    getString(latestMarket?.metadata?.venue) ?? DEEPBOOK_VENUE,
+                  ],
+                  [
+                    "Network",
+                    getString(latestMarket?.metadata?.network) ?? "testnet",
+                  ],
+                  ["Execution", executionMode],
+                  [
+                    "Oracle",
+                    getString(latestMarket?.data?.oracle_price) ?? "--",
+                  ],
+                  [
+                    "Liquidity",
+                    getString(latestMarket?.data?.liquidity_usd) ?? "--",
+                  ],
+                ]}
+              />
+            </DashboardPanel>
 
-        <DashboardPanel
-          className={`dashboard-latest-panel ${styles.panel}`}
-          title="Strategy evaluator"
-        >
-          <DeepBookFactList
-            items={[
-              [
-                "Selected",
-                getString(latestStrategy?.data?.selected_strategy) ?? "waiting",
-              ],
-              [
-                "Confidence",
-                latestStrategy?.data?.confidence === undefined
-                  ? "--"
-                  : `${String(latestStrategy.data.confidence)}%`,
-              ],
-              ["Summary", summarizeNullableEvent(latestStrategy)],
-            ]}
-          />
-        </DashboardPanel>
+            <DashboardPanel
+              className={`dashboard-latest-panel ${styles.panel}`}
+              title="Strategy evaluator"
+            >
+              <DeepBookFactList
+                items={[
+                  [
+                    "Selected",
+                    getString(latestStrategy?.data?.selected_strategy) ??
+                      "waiting",
+                  ],
+                  [
+                    "Confidence",
+                    latestStrategy?.data?.confidence === undefined
+                      ? "--"
+                      : `${String(latestStrategy.data.confidence)}%`,
+                  ],
+                  ["Summary", summarizeNullableEvent(latestStrategy)],
+                ]}
+              />
+            </DashboardPanel>
 
-        <DashboardPanel
-          className={`dashboard-latest-panel ${styles.panel}`}
-          title="Risk and audit"
-        >
-          <DeepBookFactList
-            items={[
-              ["Risk", summarizeNullableEvent(latestRisk)],
-              ["Settlement", summarizeNullableEvent(latestSettlement)],
-              ["Audit", summarizeNullableEvent(latestAudit)],
-            ]}
-          />
-        </DashboardPanel>
+            <DashboardPanel
+              className={`dashboard-latest-panel ${styles.panel}`}
+              title="Risk and audit"
+            >
+              <DeepBookFactList
+                items={[
+                  ["Risk", summarizeNullableEvent(latestRisk)],
+                  ["Settlement", summarizeNullableEvent(latestSettlement)],
+                  ["Audit", summarizeNullableEvent(latestAudit)],
+                ]}
+              />
+            </DashboardPanel>
+          </section>
+        </div>
+
+        <aside className={styles.agentControlRail}>
+          <DashboardPanel
+            className={`dashboard-latest-panel ${styles.panel} ${styles.configPanel}`}
+            title="Agent control"
+          >
+            <DeepBookConfigManager
+              initialConfig={configData.config}
+              initialUpdatedAt={configData.updatedAt}
+            />
+          </DashboardPanel>
+        </aside>
       </section>
 
       <DashboardPanel

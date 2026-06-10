@@ -28,7 +28,9 @@ DEEPBOOK_EXECUTION_MODE=paper
 
 - `replay`: deterministic replay with a redacted Sui digest reference.
 - `paper`: simulated execution and settlement, no transaction broadcast.
-- `testnet`: reserved for a future explicit testnet execution slice.
+
+`testnet` execution is intentionally rejected until a future explicit execution
+slice adds real transaction handling.
 
 ## Run
 
@@ -43,6 +45,16 @@ Send the replay to OpenStat:
 ```sh
 OPENSTAT_DRY_RUN=false pnpm --filter deepbook-agent replay
 ```
+
+Claim one queued run from the DeepBook dashboard:
+
+```sh
+OPENSTAT_DRY_RUN=false pnpm --filter deepbook-agent replay -- --claim-once
+```
+
+The claim path calls `/v1/deepbook/jobs/claim`, receives the next queued
+dashboard run, evaluates the configured paper/replay strategy flow, and emits
+telemetry back through the normal OpenStat ingestion API.
 
 The runner sleeps between events so it cannot flood ingestion. Increase
 `OPENSTAT_REPLAY_DELAY_MS` if you want a slower demo recording.

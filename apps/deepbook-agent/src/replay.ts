@@ -1,9 +1,29 @@
 import type { NativeEvent } from "openstat";
 
-export type DeepBookExecutionMode = "paper" | "replay" | "testnet";
+export type DeepBookExecutionMode = "paper" | "replay";
+
+export type DeepBookStrategyName =
+  | "range-mean-reversion"
+  | "breakout-follow"
+  | "liquidity-neutral";
+
+export type DeepBookStrategyConfig = {
+  name: DeepBookStrategyName;
+  enabled: boolean;
+  maxWeight: number;
+  notes?: string;
+};
+
+export type DeepBookAgentConfig = {
+  maxExposureUsd: number;
+  maxSlippageBps: number;
+  settlementWindow: "24h";
+  strategyCandidates: DeepBookStrategyConfig[];
+};
 
 export type DeepBookReplayOptions = {
   agentId?: string;
+  config?: DeepBookAgentConfig;
   executionMode: DeepBookExecutionMode;
   market: string;
   network: string;
@@ -12,9 +32,25 @@ export type DeepBookReplayOptions = {
   suiRpcUrl?: string;
 };
 
-const strategy = "deepbook-predict-range-v1";
 const venue = "deepbook-predict";
 const product = "deepbook-predict-agent-desk";
+const defaultStrategyCandidates: DeepBookStrategyConfig[] = [
+  {
+    name: "range-mean-reversion",
+    enabled: true,
+    maxWeight: 45,
+  },
+  {
+    name: "breakout-follow",
+    enabled: true,
+    maxWeight: 35,
+  },
+  {
+    name: "liquidity-neutral",
+    enabled: true,
+    maxWeight: 20,
+  },
+];
 
 export function buildDeepBookReplayEvents(
   options: DeepBookReplayOptions,
@@ -22,6 +58,13 @@ export function buildDeepBookReplayEvents(
   const startedAt = options.now ?? Date.now();
   const runId =
     options.runId ?? `deepbook-replay-${new Date(startedAt).toISOString()}`;
+  const config = normalizeConfig(options.config);
+  const candidateStrategies = rankCandidateStrategies(
+    config.strategyCandidates,
+  );
+  const selectedStrategy = candidateStrategies[0]?.name ?? "liquidity-neutral";
+  const maxExposureUsd = config.maxExposureUsd;
+  const maxSlippageBps = config.maxSlippageBps;
   const agent = {
     id: options.agentId ?? "deepbook-predict-v1",
     name: "DeepBook Predict Agent",
@@ -33,7 +76,7 @@ export function buildDeepBookReplayEvents(
     market: options.market,
     network: options.network,
     product,
-    strategy,
+    strategy: selectedStrategy,
     sui_rpc_configured: Boolean(options.suiRpcUrl),
     venue,
   };
@@ -45,12 +88,12 @@ export function buildDeepBookReplayEvents(
   };
   const timestamp = (minutes: number) => startedAt + minutes * 60_000;
   const marketPrice = getMarketPrice(options.market);
-  const selectedStrategy = "range-mean-reversion";
   const side = "buy";
-  const quantity = "25";
+  const quantity = getPositionQuantity(maxExposureUsd, marketPrice);
   const entryPrice = marketPrice.toFixed(4);
   const fillPrice = (marketPrice + 0.024).toFixed(4);
   const outcome = "range_won";
+  const maxLossUsd = Math.max(1, maxExposureUsd * 0.0069).toFixed(2);
 
   return [
     {
@@ -81,15 +124,11 @@ export function buildDeepBookReplayEvents(
       type: "strategy_evaluation",
       timestamp: timestamp(2),
       data: {
-        candidate_strategies: [
-          { name: selectedStrategy, score: 88 },
-          { name: "breakout-follow", score: 71 },
-          { name: "liquidity-neutral", score: 62 },
-        ],
+        candidate_strategies: candidateStrategies,
         market: options.market,
         selected_strategy: selectedStrategy,
         summary:
-          "Agent compared range, breakout, and liquidity-neutral strategies.",
+          "Agent compared enabled strategies from the dashboard guardrails.",
       },
     },
     {
@@ -97,12 +136,11 @@ export function buildDeepBookReplayEvents(
       type: "strategy_selected",
       timestamp: timestamp(3),
       data: {
-        confidence: 84,
+        confidence: candidateStrategies[0]?.score ?? 60,
         market: options.market,
-        reason:
-          "Order book spread and oracle drift favored a bounded range position.",
+        reason: getStrategyReason(selectedStrategy),
         selected_strategy: selectedStrategy,
-        summary: "Range strategy selected for DeepBook Predict market.",
+        summary: `${formatStrategyName(selectedStrategy)} selected for DeepBook Predict market.`,
       },
     },
     {
@@ -111,9 +149,9 @@ export function buildDeepBookReplayEvents(
       timestamp: timestamp(5),
       data: {
         action: "buy_yes_range",
-        confidence: 84,
+        confidence: candidateStrategies[0]?.score ?? 60,
         rationale_summary: `${options.market} range probability and liquidity supported a ${side} position.`,
-        strategy,
+        strategy: selectedStrategy,
         symbol: options.market,
         venue,
       },
@@ -123,7 +161,9 @@ export function buildDeepBookReplayEvents(
       type: "risk_check",
       timestamp: timestamp(9),
       data: {
-        reason: "Within liquidity, exposure, and settlement risk limits.",
+        max_exposure_usd: maxExposureUsd,
+        max_slippage_bps: maxSlippageBps,
+        reason: `Within exposure cap $${maxExposureUsd} and slippage cap ${maxSlippageBps} bps.`,
         result: "approved",
       },
     },
@@ -134,10 +174,10 @@ export function buildDeepBookReplayEvents(
       data: {
         entry_price: entryPrice,
         market: options.market,
-        max_loss_usd: "17.25",
+        max_loss_usd: maxLossUsd,
         position_side: "yes",
         quantity,
-        settlement_window: "24h",
+        settlement_window: config.settlementWindow,
         summary: "Agent proposed a bounded DeepBook Predict position.",
       },
     },
@@ -152,7 +192,7 @@ export function buildDeepBookReplayEvents(
         quantity,
         side,
         status: "filled",
-        strategy,
+        strategy: selectedStrategy,
         symbol: options.market,
         venue,
       },
@@ -168,7 +208,7 @@ export function buildDeepBookReplayEvents(
         quantity,
         side,
         status: "filled",
-        strategy,
+        strategy: selectedStrategy,
         symbol: options.market,
         venue,
       },
@@ -180,7 +220,7 @@ export function buildDeepBookReplayEvents(
       data: {
         average_price: fillPrice,
         quantity,
-        strategy,
+        strategy: selectedStrategy,
         symbol: options.market,
         venue,
       },
@@ -223,7 +263,7 @@ export function buildDeepBookReplayEvents(
       data: {
         equity: "25180.00",
         realized_pnl: "12.42",
-        strategy,
+        strategy: selectedStrategy,
         symbol: options.market,
         unrealized_pnl: "0.00",
       },
@@ -258,6 +298,11 @@ export function buildDeepBookReplayEvents(
     },
     {
       ...context,
+      metadata: {
+        ...metadata,
+        kind: "run_lifecycle",
+        run_status: "completed",
+      },
       type: "completion",
       timestamp: timestamp(34),
       data: {
@@ -272,6 +317,54 @@ export function buildDeepBookReplayEvents(
       },
     },
   ];
+}
+
+function normalizeConfig(
+  config: DeepBookAgentConfig | undefined,
+): DeepBookAgentConfig {
+  return {
+    maxExposureUsd: config?.maxExposureUsd ?? 2_500,
+    maxSlippageBps: config?.maxSlippageBps ?? 35,
+    settlementWindow: config?.settlementWindow ?? "24h",
+    strategyCandidates: config?.strategyCandidates.filter(
+      (candidate) => candidate.enabled,
+    ).length
+      ? config.strategyCandidates
+      : defaultStrategyCandidates,
+  };
+}
+
+function rankCandidateStrategies(strategies: DeepBookStrategyConfig[]) {
+  return strategies
+    .filter((strategyCandidate) => strategyCandidate.enabled)
+    .map((strategyCandidate, index) => ({
+      max_weight: strategyCandidate.maxWeight,
+      name: strategyCandidate.name,
+      score: Math.max(
+        1,
+        Math.min(99, 54 + strategyCandidate.maxWeight - index * 2),
+      ),
+    }))
+    .sort((left, right) => right.score - left.score);
+}
+
+function getPositionQuantity(maxExposureUsd: number, marketPrice: number) {
+  return String(Math.max(1, Math.floor(maxExposureUsd / marketPrice / 40)));
+}
+
+function formatStrategyName(name: DeepBookStrategyName) {
+  return name.replaceAll("-", " ");
+}
+
+function getStrategyReason(name: DeepBookStrategyName) {
+  switch (name) {
+    case "breakout-follow":
+      return "Momentum, liquidity, and guardrail weight favored breakout-follow.";
+    case "liquidity-neutral":
+      return "Liquidity-neutral was preferred because market depth was uncertain.";
+    case "range-mean-reversion":
+      return "Order book spread and oracle drift favored a bounded range position.";
+  }
 }
 
 function getMarketPrice(market: string) {

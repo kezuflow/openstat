@@ -1,31 +1,74 @@
 import { createOpenStatClient } from "openstat";
 
 import {
+  type DeepBookAgentConfig,
   type DeepBookExecutionMode,
   buildDeepBookReplayEvents,
 } from "./replay.js";
 
 const args = new Set(process.argv.slice(2));
+const claimOnce = args.has("--claim-once");
 const dryRun = args.has("--dry-run") || process.env.OPENSTAT_DRY_RUN === "true";
 const endpoint = process.env.OPENSTAT_ENDPOINT ?? "https://api.openstat.online";
 const apiKey = process.env.OPENSTAT_API_KEY;
-const market = process.env.DEEPBOOK_MARKET ?? "SUI/USDC";
-const network = process.env.DEEPBOOK_NETWORK ?? "testnet";
-const executionMode = parseExecutionMode(
-  process.env.DEEPBOOK_EXECUTION_MODE ?? "paper",
-);
 const delayMs = parseDelay(process.env.OPENSTAT_REPLAY_DELAY_MS);
 
-const events = buildDeepBookReplayEvents({
-  executionMode,
-  market,
-  network,
-  suiRpcUrl: process.env.SUI_RPC_URL,
-});
+await main();
 
-if (dryRun) {
-  console.log(JSON.stringify({ events }, null, 2));
-} else {
+async function main() {
+  if (claimOnce) {
+    await runClaimedJob();
+    return;
+  }
+
+  const events = buildDeepBookReplayEvents({
+    executionMode: parseExecutionMode(
+      process.env.DEEPBOOK_EXECUTION_MODE ?? "paper",
+    ),
+    market: process.env.DEEPBOOK_MARKET ?? "SUI/USDC",
+    network: process.env.DEEPBOOK_NETWORK ?? "testnet",
+    suiRpcUrl: process.env.SUI_RPC_URL,
+  });
+
+  if (dryRun) {
+    console.log(JSON.stringify({ events }, null, 2));
+    return;
+  }
+
+  await sendEvents(events);
+}
+
+async function runClaimedJob() {
+  if (dryRun) {
+    throw new Error("--claim-once cannot be combined with --dry-run.");
+  }
+
+  if (!apiKey) {
+    throw new Error("OPENSTAT_API_KEY is required to claim DeepBook jobs.");
+  }
+
+  const job = await claimDeepBookJob();
+
+  if (!job) {
+    console.log("no queued DeepBook job");
+    return;
+  }
+
+  const events = buildDeepBookReplayEvents({
+    config: job.config,
+    executionMode: job.executionMode,
+    market: job.config.market,
+    network: job.config.network,
+    runId: job.externalRunId,
+    suiRpcUrl: process.env.SUI_RPC_URL,
+  });
+
+  await sendEvents([buildClaimedEvent(job), ...events]);
+}
+
+async function sendEvents(
+  events: ReturnType<typeof buildDeepBookReplayEvents>,
+) {
   if (!apiKey) {
     throw new Error("OPENSTAT_API_KEY is required unless --dry-run is set.");
   }
@@ -33,7 +76,7 @@ if (dryRun) {
   const client = createOpenStatClient({
     apiKey,
     endpoint,
-    environment: network,
+    environment: process.env.DEEPBOOK_NETWORK ?? "testnet",
     serviceName: "deepbook-predict-agent",
   });
 
@@ -44,14 +87,38 @@ if (dryRun) {
   }
 }
 
+async function claimDeepBookJob(): Promise<DeepBookClaimedJob | undefined> {
+  const response = await fetch(
+    `${endpoint.replace(/\/$/u, "")}/v1/deepbook/jobs/claim`,
+    {
+      body: JSON.stringify({
+        runnerId: process.env.DEEPBOOK_RUNNER_ID ?? "deepbook-agent",
+      }),
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `/v1/deepbook/jobs/claim returned ${response.status}: ${await response.text()}`,
+    );
+  }
+
+  const data = (await response.json()) as { job?: DeepBookClaimedJob | null };
+
+  return data.job ?? undefined;
+}
+
 function parseExecutionMode(value: string): DeepBookExecutionMode {
-  if (value === "paper" || value === "replay" || value === "testnet") {
+  if (value === "paper" || value === "replay") {
     return value;
   }
 
-  throw new Error(
-    "DEEPBOOK_EXECUTION_MODE must be one of: replay, paper, testnet.",
-  );
+  throw new Error("DEEPBOOK_EXECUTION_MODE must be one of: replay, paper.");
 }
 
 function parseDelay(value: string | undefined) {
@@ -74,4 +141,42 @@ function sleep(ms: number) {
   return new Promise<void>((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+type DeepBookClaimedJob = {
+  externalRunId: string;
+  executionMode: DeepBookExecutionMode;
+  config: DeepBookAgentConfig & {
+    market: string;
+    network: string;
+  };
+};
+
+function buildClaimedEvent(job: DeepBookClaimedJob) {
+  const runnerId = process.env.DEEPBOOK_RUNNER_ID ?? "deepbook-agent";
+
+  return {
+    agent: {
+      id: "deepbook-predict-v1",
+      name: "DeepBook Predict Agent",
+      tags: ["deepbook", "predict", "sui"],
+    },
+    data: {
+      runner_id: runnerId,
+      status: "claimed",
+      summary: `Claimed by ${runnerId}.`,
+    },
+    metadata: {
+      chain: "sui",
+      execution_mode: job.executionMode,
+      market: job.config.market,
+      network: job.config.network,
+      product: "deepbook-predict-agent-desk",
+      venue: "deepbook-predict",
+    },
+    run_id: job.externalRunId,
+    tags: ["deepbook", "predict", "console"],
+    timestamp: Date.now(),
+    type: "heartbeat",
+  } satisfies ReturnType<typeof buildDeepBookReplayEvents>[number];
 }

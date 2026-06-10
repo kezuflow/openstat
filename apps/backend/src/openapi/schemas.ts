@@ -554,6 +554,79 @@ export const deepBookAgentConfigResponseSchema = {
   },
 } as const;
 
+export const createDeepBookRunBodySchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    executionMode: { type: "string", enum: ["replay", "paper"] },
+  },
+} as const;
+
+export const deepBookConsoleLineSchema = {
+  type: "object",
+  required: ["timestamp", "message"],
+  additionalProperties: false,
+  properties: {
+    timestamp: { type: "string", format: "date-time" },
+    level: { type: "string", enum: ["info", "warning", "error"] },
+    message: { type: "string" },
+  },
+} as const;
+
+export const deepBookRunJobSchema = {
+  type: "object",
+  required: [
+    "id",
+    "externalRunId",
+    "status",
+    "executionMode",
+    "config",
+    "consoleLines",
+    "createdAt",
+  ],
+  properties: {
+    id: { type: "string", format: "uuid" },
+    externalRunId: { type: "string" },
+    status: {
+      type: "string",
+      enum: ["queued", "running", "completed", "failed"],
+    },
+    executionMode: { type: "string", enum: ["replay", "paper"] },
+    config: deepBookAgentConfigSchema,
+    consoleLines: {
+      type: "array",
+      items: deepBookConsoleLineSchema,
+    },
+    createdAt: { type: "string", format: "date-time" },
+  },
+} as const;
+
+export const createDeepBookRunResponseSchema = {
+  type: "object",
+  required: ["run"],
+  properties: {
+    run: deepBookRunJobSchema,
+  },
+} as const;
+
+export const claimDeepBookJobBodySchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    runnerId: { type: "string", minLength: 1, maxLength: 120 },
+  },
+} as const;
+
+export const claimDeepBookJobResponseSchema = {
+  type: "object",
+  required: ["job"],
+  properties: {
+    job: {
+      oneOf: [deepBookRunJobSchema, { type: "null" }],
+    },
+  },
+} as const;
+
 export const listQueryStringSchema = {
   type: "object",
   properties: {

@@ -238,6 +238,22 @@ export type DashboardDeepBookAgentConfigData = {
   updatedAt: string | null;
 };
 
+export type DashboardDeepBookConsoleLine = {
+  timestamp: string;
+  level?: "info" | "warning" | "error";
+  message: string;
+};
+
+export type DashboardDeepBookRunJob = {
+  id: string;
+  externalRunId: string;
+  status: "queued" | "running" | "completed" | "failed";
+  executionMode: "replay" | "paper";
+  config: DashboardDeepBookAgentConfig;
+  consoleLines: DashboardDeepBookConsoleLine[];
+  createdAt: string;
+};
+
 export async function getDashboardData(
   range: DashboardRange = "7d",
   options: { includeRuns?: boolean } = {},

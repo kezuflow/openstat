@@ -5,6 +5,7 @@ import { registerErrorHandler } from "../plugins/errors.js";
 import { registerDeepBookRoutes } from "./deepbook.js";
 
 const state = vi.hoisted(() => ({
+  authenticateIngestionScope: vi.fn(),
   db: {
     insert: vi.fn(),
     select: vi.fn(),
@@ -24,6 +25,7 @@ vi.mock("../auth-scope.js", async (importOriginal) => {
 
   return {
     ...actual,
+    authenticateIngestionScope: state.authenticateIngestionScope,
     requireSessionScope: state.requireSessionScope,
   };
 });
@@ -62,6 +64,7 @@ const savedConfig = {
 describe("deepbook routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    state.authenticateIngestionScope.mockResolvedValue(scope);
     state.requireSessionScope.mockResolvedValue(scope);
   });
 
@@ -225,6 +228,173 @@ describe("deepbook routes", () => {
     expect(response.statusCode).toBe(400);
     expect(state.db.insert).not.toHaveBeenCalled();
     expect(state.db.update).not.toHaveBeenCalled();
+
+    await app.close();
+  });
+
+  it("creates a queued DeepBook run for the dashboard console", async () => {
+    mockSelectResult([
+      {
+        id: "00000000-0000-4000-8000-0000000000aa",
+        externalId: "deepbook-predict-v1",
+        name: "DeepBook Predict Agent",
+        metadata: {
+          deepbook_config: savedConfig,
+        },
+        updatedAt: new Date("2026-06-10T00:00:00.000Z"),
+      },
+    ]);
+    const returning = vi.fn().mockResolvedValue([
+      {
+        id: "00000000-0000-4000-8000-000000000101",
+        externalRunId: "deepbook-paper-2026-06-10T00:00:00.000Z-demo",
+        status: "queued",
+        metadata: {
+          product: "deepbook-predict",
+          venue: "deepbook",
+          queue_status: "queued",
+          execution_mode: "paper",
+          config_snapshot: savedConfig,
+          console_lines: [
+            {
+              timestamp: "2026-06-10T00:00:00.000Z",
+              level: "info",
+              message: "Run requested from DeepBook Agent Console.",
+            },
+          ],
+        },
+        startedAt: new Date("2026-06-10T00:00:00.000Z"),
+        createdAt: new Date("2026-06-10T00:00:00.000Z"),
+      },
+    ]);
+    const values = vi.fn().mockReturnValue({ returning });
+
+    state.db.insert.mockReturnValue({ values });
+
+    const app = await createApp();
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/deepbook/runs",
+      payload: {
+        executionMode: "paper",
+      },
+    });
+    const body = response.json<{
+      run: {
+        config: typeof savedConfig;
+        consoleLines: Array<{ message: string }>;
+        status: string;
+      };
+    }>();
+
+    expect(response.statusCode).toBe(200);
+    expect(values).toHaveBeenCalledWith(
+      expect.objectContaining({
+        organizationId: scope.organizationId,
+        projectId: scope.projectId,
+        agentId: "00000000-0000-4000-8000-0000000000aa",
+        status: "queued",
+        metadata: expect.objectContaining({
+          product: "deepbook-predict",
+          queue_status: "queued",
+          config_snapshot: expect.objectContaining({
+            market: "DEEP/USDC",
+          }),
+        }),
+      }),
+    );
+    expect(body.run.status).toBe("queued");
+    expect(body.run.config.market).toBe("DEEP/USDC");
+    expect(body.run.consoleLines[0]?.message).toContain("Run requested");
+
+    await app.close();
+  });
+
+  it("lets the external DeepBook agent claim the oldest queued job", async () => {
+    const queuedRun = {
+      id: "00000000-0000-4000-8000-000000000101",
+      externalRunId: "deepbook-paper-run",
+      status: "queued",
+      metadata: {
+        product: "deepbook-predict",
+        venue: "deepbook",
+        queue_status: "queued",
+        config_snapshot: savedConfig,
+        console_lines: [
+          {
+            timestamp: "2026-06-10T00:00:00.000Z",
+            level: "info",
+            message: "Run requested from DeepBook Agent Console.",
+          },
+        ],
+      },
+      startedAt: new Date("2026-06-10T00:00:00.000Z"),
+      createdAt: new Date("2026-06-10T00:00:00.000Z"),
+    };
+    const limit = vi.fn().mockResolvedValue([queuedRun]);
+    const orderBy = vi.fn().mockReturnValue({ limit });
+    const where = vi.fn().mockReturnValue({ orderBy });
+    const from = vi.fn().mockReturnValue({ where });
+    const returning = vi.fn().mockResolvedValue([
+      {
+        ...queuedRun,
+        status: "running",
+        metadata: {
+          ...queuedRun.metadata,
+          queue_status: "claimed",
+          runner_id: "deepbook-agent-vps-01",
+          console_lines: [
+            ...queuedRun.metadata.console_lines,
+            {
+              timestamp: "2026-06-10T00:01:00.000Z",
+              level: "info",
+              message: "Claimed by deepbook-agent-vps-01.",
+            },
+          ],
+        },
+      },
+    ]);
+    const updateWhere = vi.fn().mockReturnValue({ returning });
+    const set = vi.fn().mockReturnValue({ where: updateWhere });
+
+    state.db.select.mockReturnValue({ from });
+    state.db.update.mockReturnValue({ set });
+
+    const app = await createApp();
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/deepbook/jobs/claim",
+      headers: {
+        authorization: "Bearer ostat_test",
+      },
+      payload: {
+        runnerId: "deepbook-agent-vps-01",
+      },
+    });
+    const body = response.json<{
+      job: {
+        config: typeof savedConfig;
+        externalRunId: string;
+        status: string;
+      } | null;
+    }>();
+
+    expect(response.statusCode).toBe(200);
+    expect(state.authenticateIngestionScope).toHaveBeenCalledWith(
+      "Bearer ostat_test",
+    );
+    expect(set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "running",
+        metadata: expect.objectContaining({
+          queue_status: "claimed",
+          runner_id: "deepbook-agent-vps-01",
+        }),
+      }),
+    );
+    expect(body.job?.externalRunId).toBe("deepbook-paper-run");
+    expect(body.job?.status).toBe("running");
+    expect(body.job?.config.market).toBe("DEEP/USDC");
 
     await app.close();
   });
