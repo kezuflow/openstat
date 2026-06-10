@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   type DashboardEvent,
   getDashboardData,
+  getDashboardDeepBookConfig,
   getDashboardEvents,
   getDashboardInspectorData,
 } from "../../../lib/openstat-api";
@@ -34,6 +35,7 @@ import {
 } from "../dashboard-page-utils";
 import { DashboardRouteShell } from "../dashboard-route-shell";
 
+import { DeepBookConfigManager } from "./deepbook-config-manager";
 import styles from "./deepbook-dashboard.module.css";
 
 type DeepBookPageProps = {
@@ -45,12 +47,13 @@ export default async function DeepBookDashboardPage(props: DeepBookPageProps) {
   const range = parseDashboardRange(getFirstParam(searchParams?.range));
   const inspect = parseInspectorKind(getFirstParam(searchParams?.inspect));
   const inspectId = getFirstParam(searchParams?.id);
-  const [dashboardData, eventData] = await Promise.all([
+  const [dashboardData, eventData, configData] = await Promise.all([
     getDashboardData(range),
     getDashboardEvents(range, {
       includeRange: true,
       limit: DEEPBOOK_EVENTS_LIMIT,
     }),
+    getDashboardDeepBookConfig(),
   ]);
   const inspector =
     inspect && inspectId
@@ -58,7 +61,11 @@ export default async function DeepBookDashboardPage(props: DeepBookPageProps) {
       : undefined;
   const data = {
     ...dashboardData,
-    errors: [...dashboardData.errors, ...eventData.errors],
+    errors: [
+      ...dashboardData.errors,
+      ...eventData.errors,
+      ...configData.errors,
+    ],
   };
   const deepbookEvents = eventData.events.filter(isDeepBookEvent);
   const deepbookRuns = dashboardData.runs.filter(isDeepBookRun);
@@ -161,6 +168,16 @@ export default async function DeepBookDashboardPage(props: DeepBookPageProps) {
           </p>
         </DashboardPanel>
       ) : null}
+
+      <DashboardPanel
+        className={`dashboard-latest-panel ${styles.panel} ${styles.configPanel}`}
+        title="Agent control"
+      >
+        <DeepBookConfigManager
+          initialConfig={configData.config}
+          initialUpdatedAt={configData.updatedAt}
+        />
+      </DashboardPanel>
 
       <section className={styles.grid}>
         <DashboardPanel

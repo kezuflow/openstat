@@ -346,6 +346,41 @@ Suggested commit slices:
 - [x] `feat(deepbook): emit openstat telemetry events`
 - [x] `test(deepbook): cover agent payload mapping`
 
+## Phase 6A: Add The DeepBook Agent Control Desk
+
+Goal: `/dashboard/deepbook` is where the user configures the AI agent's
+strategy candidates and risk limits before the runner evaluates or emits
+decisions.
+
+- [x] Add a project-scoped DeepBook Predict config API.
+- [x] Store the config with the project DeepBook agent instead of adding a
+      hard-to-remove product table.
+- [x] Add dashboard controls for market, execution mode, exposure cap,
+      slippage cap, and enabled strategies.
+- [x] Validate that enabled strategy weights stay within 100%.
+- [x] Keep config telemetry free of API keys, private keys, wallet secrets, and
+      raw account identifiers.
+- [ ] Connect the external DeepBook runner to fetch this saved config before
+      evaluation.
+- [ ] Add a dashboard action to start or request a paper run when the runner
+      control channel is ready.
+- [ ] Surface the active config beside live run telemetry after a run starts.
+
+Acceptance checks:
+
+- [x] The DeepBook dashboard is an agent configuration surface, not only a
+      replay viewer.
+- [x] Strategy and risk settings are project-scoped.
+- [ ] The runner uses the saved config as its source of truth.
+- [ ] Execution remains paper/replay until optional Sui testnet execution is
+      explicitly implemented.
+
+Suggested commit slices:
+
+- [x] `feat(deepbook): add agent strategy config`
+- [ ] `feat(deepbook): load dashboard config in runner`
+- [ ] `feat(deepbook): request paper agent runs`
+
 ## Phase 7: Polish Docs And Submission Package
 
 Goal: judges and builders can understand the product, run the demo path, and

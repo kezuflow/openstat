@@ -207,6 +207,37 @@ export type DashboardChainTransaction = {
   transactionHash: string;
 };
 
+export type DashboardDeepBookStrategyName =
+  | "range-mean-reversion"
+  | "breakout-follow"
+  | "liquidity-neutral";
+
+export type DashboardDeepBookAgentConfig = {
+  market: "SUI/USDC" | "DEEP/USDC" | "DEEP/SUI";
+  network: "testnet";
+  executionMode: "replay" | "paper";
+  maxExposureUsd: number;
+  maxSlippageBps: number;
+  settlementWindow: "24h";
+  strategyCandidates: Array<{
+    name: DashboardDeepBookStrategyName;
+    enabled: boolean;
+    maxWeight: number;
+    notes?: string;
+  }>;
+};
+
+export type DashboardDeepBookAgentConfigData = {
+  agent: {
+    id: string | null;
+    externalId: string;
+    name: string;
+  };
+  config: DashboardDeepBookAgentConfig;
+  errors: string[];
+  updatedAt: string | null;
+};
+
 export async function getDashboardData(
   range: DashboardRange = "7d",
   options: { includeRuns?: boolean } = {},
@@ -248,6 +279,34 @@ export async function getDashboardData(
       notifications,
       apiKeys,
     ].flatMap((result) => (result.ok ? [] : [result.error])),
+  };
+}
+
+export async function getDashboardDeepBookConfig(): Promise<DashboardDeepBookAgentConfigData> {
+  await ensureWorkspaceInitialized();
+
+  const config = await getJson<{
+    agent: DashboardDeepBookAgentConfigData["agent"];
+    config: DashboardDeepBookAgentConfig;
+    updatedAt: string | null;
+  }>("/v1/deepbook/config");
+
+  if (!config.ok) {
+    return {
+      agent: {
+        id: null,
+        externalId: "deepbook-predict-v1",
+        name: "DeepBook Predict Agent",
+      },
+      config: getDefaultDeepBookAgentConfig(),
+      errors: [config.error],
+      updatedAt: null,
+    };
+  }
+
+  return {
+    ...config.data,
+    errors: [],
   };
 }
 
@@ -655,6 +714,37 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
   }
 
   return undefined;
+}
+
+function getDefaultDeepBookAgentConfig(): DashboardDeepBookAgentConfig {
+  return {
+    market: "SUI/USDC",
+    network: "testnet",
+    executionMode: "paper",
+    maxExposureUsd: 2_500,
+    maxSlippageBps: 35,
+    settlementWindow: "24h",
+    strategyCandidates: [
+      {
+        name: "range-mean-reversion",
+        enabled: true,
+        maxWeight: 45,
+        notes: "Prefer bounded markets with stable liquidity.",
+      },
+      {
+        name: "breakout-follow",
+        enabled: true,
+        maxWeight: 35,
+        notes: "Activate when momentum and liquidity agree.",
+      },
+      {
+        name: "liquidity-neutral",
+        enabled: true,
+        maxWeight: 20,
+        notes: "Fallback when spreads or book depth are unfavorable.",
+      },
+    ],
+  };
 }
 
 async function ensureWorkspaceInitialized() {

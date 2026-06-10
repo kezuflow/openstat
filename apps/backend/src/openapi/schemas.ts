@@ -475,6 +475,85 @@ export const rotateApiKeyResponseSchema = {
   },
 } as const;
 
+export const deepBookAgentStrategySchema = {
+  type: "object",
+  required: ["name", "enabled", "maxWeight"],
+  additionalProperties: false,
+  properties: {
+    name: {
+      type: "string",
+      enum: ["range-mean-reversion", "breakout-follow", "liquidity-neutral"],
+    },
+    enabled: { type: "boolean" },
+    maxWeight: {
+      type: "integer",
+      minimum: 0,
+      maximum: 100,
+      description: "Maximum strategy allocation weight in percent.",
+    },
+    notes: { type: "string", maxLength: 500 },
+  },
+} as const;
+
+export const deepBookAgentConfigSchema = {
+  type: "object",
+  required: [
+    "market",
+    "network",
+    "executionMode",
+    "maxExposureUsd",
+    "maxSlippageBps",
+    "settlementWindow",
+    "strategyCandidates",
+  ],
+  additionalProperties: false,
+  properties: {
+    market: { type: "string", enum: ["SUI/USDC", "DEEP/USDC", "DEEP/SUI"] },
+    network: { type: "string", enum: ["testnet"] },
+    executionMode: {
+      type: "string",
+      enum: ["replay", "paper"],
+      description:
+        "Replay emits deterministic demo telemetry. Paper evaluates live-like strategy state without broadcasting transactions.",
+    },
+    maxExposureUsd: {
+      type: "integer",
+      minimum: 100,
+      maximum: 100000,
+    },
+    maxSlippageBps: {
+      type: "integer",
+      minimum: 1,
+      maximum: 1000,
+    },
+    settlementWindow: { type: "string", enum: ["24h"] },
+    strategyCandidates: {
+      type: "array",
+      minItems: 1,
+      maxItems: 3,
+      items: deepBookAgentStrategySchema,
+    },
+  },
+} as const;
+
+export const deepBookAgentConfigResponseSchema = {
+  type: "object",
+  required: ["agent", "config", "updatedAt"],
+  properties: {
+    agent: {
+      type: "object",
+      required: ["id", "externalId", "name"],
+      properties: {
+        id: { type: ["string", "null"], format: "uuid" },
+        externalId: { type: "string" },
+        name: { type: "string" },
+      },
+    },
+    config: deepBookAgentConfigSchema,
+    updatedAt: { type: ["string", "null"], format: "date-time" },
+  },
+} as const;
+
 export const listQueryStringSchema = {
   type: "object",
   properties: {

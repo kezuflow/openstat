@@ -16,6 +16,7 @@ import {
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerApiKeyRoutes } from "./routes/api-keys.js";
 import { registerAuditRoutes } from "./routes/audit.js";
+import { registerDeepBookRoutes } from "./routes/deepbook.js";
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerIngestionRoutes } from "./routes/ingestion.js";
 import { registerOtlpRoutes } from "./routes/otlp.js";
@@ -158,6 +159,11 @@ export async function buildApp() {
           ].join("\n"),
         },
         {
+          name: "DeepBook Predict",
+          description:
+            "Authenticated DeepBook Predict agent configuration for strategy candidates, execution mode, and project-level risk limits.",
+        },
+        {
           name: "Workspace",
           description: "Authenticated workspace setup and lookup.",
         },
@@ -199,6 +205,7 @@ export async function buildApp() {
   await registerWorkspaceInfoRoutes(app);
   await registerApiKeyRoutes(app);
   await registerAuditRoutes(app);
+  await registerDeepBookRoutes(app);
   await registerIngestionRoutes(app);
   await registerOtlpRoutes(app);
   await registerReadRoutes(app);

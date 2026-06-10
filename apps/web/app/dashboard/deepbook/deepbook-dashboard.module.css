@@ -15,6 +15,94 @@
   min-width: 0;
 }
 
+.configPanel {
+  margin-bottom: 16px;
+}
+
+.configManager,
+.configForm {
+  display: grid;
+  gap: 16px;
+}
+
+.configHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.configHeader p {
+  max-width: 760px;
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.configHeader > svg {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+.configError {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in oklab, var(--danger) 34%, var(--line));
+  border-radius: 8px;
+  color: var(--danger);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.configFields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.numberInput {
+  width: 100%;
+  min-width: 0;
+}
+
+.strategyGrid {
+  display: grid;
+  gap: 10px;
+}
+
+.strategyRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 240px);
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #111311;
+}
+
+.configActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.configActions span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.configActions div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .error p,
 .empty p {
   margin: 0;
@@ -112,9 +200,27 @@
   .grid {
     grid-template-columns: 1fr;
   }
+
+  .configFields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 720px) {
+  .configFields,
+  .strategyRow {
+    grid-template-columns: 1fr;
+  }
+
+  .configActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .configActions div {
+    justify-content: stretch;
+  }
+
   .timeline a,
   .facts div {
     grid-template-columns: 1fr;
