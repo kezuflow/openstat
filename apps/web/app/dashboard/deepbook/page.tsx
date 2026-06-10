@@ -2,12 +2,20 @@ import Link from "next/link";
 
 import {
   type DashboardEvent,
-  type DashboardRun,
-  type DashboardTrade,
   getDashboardData,
   getDashboardEvents,
   getDashboardInspectorData,
 } from "../../../lib/openstat-api";
+import {
+  DEEPBOOK_EVENTS_LIMIT,
+  DEEPBOOK_VENUE,
+  findLatestEvent,
+  getNumberLike,
+  getString,
+  isDeepBookEvent,
+  isDeepBookRun,
+  isDeepBookTrade,
+} from "../../features/deepbook/dashboard";
 import {
   DashboardDataTable,
   DashboardKpiCard,
@@ -26,11 +34,11 @@ import {
 } from "../dashboard-page-utils";
 import { DashboardRouteShell } from "../dashboard-route-shell";
 
+import styles from "./deepbook-dashboard.module.css";
+
 type DeepBookPageProps = {
   searchParams?: Promise<DashboardSearchParams>;
 };
-
-const DEEPBOOK_EVENTS_LIMIT = 60;
 
 export default async function DeepBookDashboardPage(props: DeepBookPageProps) {
   const searchParams = await props.searchParams;
@@ -97,7 +105,9 @@ export default async function DeepBookDashboardPage(props: DeepBookPageProps) {
       range={range}
       title="DeepBook Predict"
     >
-      <section className="dashboard-kpi-grid dashboard-route-kpis deepbook-dashboard-kpis">
+      <section
+        className={`dashboard-kpi-grid dashboard-route-kpis ${styles.kpis}`}
+      >
         <DashboardKpiCard
           badge={{ label: executionMode, tone: "neutral" }}
           href="/dashboard/deepbook"
@@ -130,7 +140,7 @@ export default async function DeepBookDashboardPage(props: DeepBookPageProps) {
 
       {data.errors.length > 0 ? (
         <DashboardPanel
-          className="dashboard-latest-panel deepbook-dashboard-error"
+          className={`dashboard-latest-panel ${styles.error}`}
           title="Backend state"
         >
           <p>{data.errors.join(" | ")}</p>
@@ -141,7 +151,7 @@ export default async function DeepBookDashboardPage(props: DeepBookPageProps) {
       deepbookRuns.length === 0 &&
       deepbookTrades.length === 0 ? (
         <DashboardPanel
-          className="dashboard-latest-panel deepbook-dashboard-empty"
+          className={`dashboard-latest-panel ${styles.empty}`}
           title="DeepBook Predict"
         >
           <p>
@@ -152,13 +162,13 @@ export default async function DeepBookDashboardPage(props: DeepBookPageProps) {
         </DashboardPanel>
       ) : null}
 
-      <section className="deepbook-dashboard-grid">
+      <section className={styles.grid}>
         <DashboardPanel
-          className="dashboard-latest-panel deepbook-dashboard-panel"
+          className={`dashboard-latest-panel ${styles.panel}`}
           title="Run timeline"
           titleCount={deepbookEvents.length}
         >
-          <div className="deepbook-dashboard-timeline">
+          <div className={styles.timeline}>
             {deepbookEvents.slice(0, 10).map((event) => (
               <Link
                 href={`${currentHref}&inspect=event&id=${event.id}`}
@@ -176,7 +186,7 @@ export default async function DeepBookDashboardPage(props: DeepBookPageProps) {
         </DashboardPanel>
 
         <DashboardPanel
-          className="dashboard-latest-panel deepbook-dashboard-panel"
+          className={`dashboard-latest-panel ${styles.panel}`}
           title="Market snapshot"
         >
           <DeepBookFactList
@@ -184,7 +194,7 @@ export default async function DeepBookDashboardPage(props: DeepBookPageProps) {
               ["Market", selectedMarket],
               [
                 "Venue",
-                getString(latestMarket?.metadata?.venue) ?? "deepbook-predict",
+                getString(latestMarket?.metadata?.venue) ?? DEEPBOOK_VENUE,
               ],
               [
                 "Network",
@@ -201,7 +211,7 @@ export default async function DeepBookDashboardPage(props: DeepBookPageProps) {
         </DashboardPanel>
 
         <DashboardPanel
-          className="dashboard-latest-panel deepbook-dashboard-panel"
+          className={`dashboard-latest-panel ${styles.panel}`}
           title="Strategy evaluator"
         >
           <DeepBookFactList
@@ -222,7 +232,7 @@ export default async function DeepBookDashboardPage(props: DeepBookPageProps) {
         </DashboardPanel>
 
         <DashboardPanel
-          className="dashboard-latest-panel deepbook-dashboard-panel"
+          className={`dashboard-latest-panel ${styles.panel}`}
           title="Risk and audit"
         >
           <DeepBookFactList
@@ -236,7 +246,7 @@ export default async function DeepBookDashboardPage(props: DeepBookPageProps) {
       </section>
 
       <DashboardPanel
-        className="dashboard-latest-panel deepbook-dashboard-panel"
+        className={`dashboard-latest-panel ${styles.panel}`}
         title="Executions"
         titleCount={deepbookTrades.length}
       >
@@ -278,7 +288,7 @@ export default async function DeepBookDashboardPage(props: DeepBookPageProps) {
       </DashboardPanel>
 
       <DashboardPanel
-        className="dashboard-latest-panel deepbook-dashboard-panel"
+        className={`dashboard-latest-panel ${styles.panel}`}
         title="Agent runs"
         titleCount={deepbookRuns.length}
       >
@@ -322,7 +332,7 @@ export default async function DeepBookDashboardPage(props: DeepBookPageProps) {
 
 function DeepBookFactList(props: { items: Array<[string, string]> }) {
   return (
-    <dl className="deepbook-dashboard-facts">
+    <dl className={styles.facts}>
       {props.items.map(([label, value]) => (
         <div key={label}>
           <dt>{label}</dt>
@@ -333,53 +343,6 @@ function DeepBookFactList(props: { items: Array<[string, string]> }) {
   );
 }
 
-function isDeepBookEvent(event: DashboardEvent) {
-  return (
-    event.tags?.includes("deepbook") === true ||
-    event.metadata?.product === "deepbook-predict-agent-desk" ||
-    event.metadata?.venue === "deepbook-predict" ||
-    event.eventType === "strategy_evaluation" ||
-    event.eventType === "strategy_selected" ||
-    event.eventType === "settlement" ||
-    event.eventType === "audit_anchor"
-  );
-}
-
-function isDeepBookRun(run: DashboardRun) {
-  return Boolean(
-    run.strategy?.includes("deepbook") ||
-    run.externalRunId?.includes("deepbook"),
-  );
-}
-
-function isDeepBookTrade(trade: DashboardTrade) {
-  return Boolean(
-    trade.strategy?.includes("deepbook") || trade.symbol.includes("/"),
-  );
-}
-
-function findLatestEvent(events: DashboardEvent[], eventType: string) {
-  return events.find((event) => event.eventType === eventType);
-}
-
 function summarizeNullableEvent(event: DashboardEvent | undefined) {
   return event ? summarizeEvent(event) : "waiting";
-}
-
-function getString(value: unknown) {
-  return typeof value === "string" && value.trim() ? value : undefined;
-}
-
-function getNumberLike(value: unknown) {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
-
-  if (typeof value === "string" && value.trim()) {
-    const parsed = Number(value);
-
-    return Number.isFinite(parsed) ? parsed : undefined;
-  }
-
-  return undefined;
 }

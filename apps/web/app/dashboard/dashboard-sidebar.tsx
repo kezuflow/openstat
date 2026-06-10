@@ -15,7 +15,6 @@ import {
   PanelLeftOpen,
   Settings,
   ShieldCheck,
-  Target,
   TrendingUp,
   type LucideIcon,
 } from "lucide-react";
@@ -23,6 +22,7 @@ import { Avatar, Button, Chip, Drawer, Separator } from "@heroui/react";
 import { useEffect, useState } from "react";
 
 import type { DashboardUser } from "../../lib/openstat-api";
+import { deepBookDashboardNavItem } from "../features/deepbook/navigation";
 
 const apiUrl =
   process.env.NEXT_PUBLIC_OPENSTAT_API_URL ?? "http://localhost:4000";
@@ -42,7 +42,7 @@ const primaryNav: NavItem[] = [
   { label: "Events", href: "/dashboard/events", icon: ListTree },
   { label: "Runs", href: "/dashboard/runs", icon: Activity },
   { label: "Trades", href: "/dashboard/trades", icon: TrendingUp },
-  { label: "DeepBook", href: "/dashboard/deepbook", icon: Target },
+  deepBookDashboardNavItem,
   { label: "Onchain", href: "/dashboard/onchain", icon: ShieldCheck },
   { label: "Alerts", href: "/dashboard/alerts", icon: Bell, meta: "New" },
   { label: "API Keys", href: "/dashboard/api-keys", icon: KeyRound },

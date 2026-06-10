@@ -1,0 +1,126 @@
+.kpis {
+  margin-bottom: 18px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.panel,
+.empty,
+.error {
+  min-width: 0;
+}
+
+.error p,
+.empty p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.empty a {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.error {
+  margin-bottom: 16px;
+  border-color: color-mix(in oklab, var(--danger) 34%, var(--line));
+}
+
+.timeline,
+.facts {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.timeline a {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: 58px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #111311;
+}
+
+.timeline a:hover {
+  background: color-mix(in oklab, #111311 84%, var(--accent));
+}
+
+.timeline span,
+.timeline small,
+.facts dt {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.timeline span {
+  text-transform: capitalize;
+}
+
+.timeline strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timeline small {
+  font-variant-numeric: tabular-nums;
+}
+
+.facts {
+  padding: 0;
+}
+
+.facts div {
+  display: grid;
+  grid-template-columns: minmax(92px, 0.34fr) minmax(0, 1fr);
+  gap: 10px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #111311;
+}
+
+.facts dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--foreground);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+@media (max-width: 1100px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .timeline a,
+  .facts div {
+    grid-template-columns: 1fr;
+  }
+
+  .timeline strong {
+    white-space: normal;
+  }
+}

@@ -212,8 +212,14 @@ Dashboard route:
 - [x] Add links from DeepBook Predict rows to generic run/trade/onchain
       inspectors where the existing data model applies.
 - [x] Reuse existing dashboard data components where practical.
-- [x] Keep DeepBook-specific CSS prefixed with `deepbook-`.
+- [x] Keep DeepBook-specific CSS in route-owned CSS modules or prefixed
+      selectors.
 - [x] Avoid styling collisions with HeroUI BEM classes.
+- [x] Keep DeepBook dashboard predicates and sidebar registration under
+      `apps/web/app/features/deepbook`.
+- [x] Keep DeepBook demo seed constants and event payload construction under
+      `apps/backend/src/scripts/deepbook-demo.ts`.
+- [x] Keep the DeepBook runner isolated under `apps/deepbook-agent`.
 - [ ] Verify `/deepbook` in browser at desktop width.
 - [ ] Verify `/deepbook` in browser at mobile width.
 - [ ] Verify `/dashboard/deepbook` in browser at desktop width.
@@ -227,6 +233,11 @@ Acceptance checks:
 - [x] The dashboard page works with no data, demo data, and backend errors.
 - [x] The page feels like an operations desk, not a landing-page hero pasted
       into the dashboard.
+- [x] Removing DeepBook later is a bounded cleanup: delete
+      `apps/deepbook-agent`, `apps/web/app/deepbook`,
+      `apps/web/app/dashboard/deepbook`, `apps/web/app/features/deepbook`, and
+      `apps/backend/src/scripts/deepbook-demo.ts`, then remove the sidebar and
+      seed-dev imports.
 
 Suggested commit slices:
 

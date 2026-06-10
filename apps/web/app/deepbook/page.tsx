@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { Chip, Link as HeroLink } from "@heroui/react";
 import {
   Activity,
   ArrowRight,
@@ -10,6 +11,8 @@ import {
   ShieldCheck,
   Target,
 } from "lucide-react";
+
+import styles from "./deepbook-page.module.css";
 
 export const metadata: Metadata = {
   title: "DeepBook Predict Agent Desk | OpenStat",
@@ -49,9 +52,9 @@ const metrics = [
 
 export default function DeepBookPage() {
   return (
-    <main className="deepbook-page">
-      <nav className="deepbook-nav" aria-label="DeepBook navigation">
-        <Link className="deepbook-brand" href="/">
+    <main className={styles.page}>
+      <nav className={styles.nav} aria-label="DeepBook navigation">
+        <HeroLink className={styles.brand} href="/">
           <Image
             aria-hidden="true"
             alt=""
@@ -61,36 +64,36 @@ export default function DeepBookPage() {
             width={32}
           />
           OpenStat
-        </Link>
-        <div className="deepbook-nav-actions">
+        </HeroLink>
+        <div className={styles.navActions}>
           <Link href="/dashboard">Dashboard</Link>
           <Link href="https://docs.openstat.online">Docs</Link>
-          <Link className="deepbook-nav-cta" href="/sign-up">
+          <Link className={styles.navCta} href="/sign-up">
             Try it
             <ArrowRight aria-hidden="true" size={15} />
           </Link>
         </div>
       </nav>
 
-      <section className="deepbook-hero" aria-labelledby="deepbook-title">
-        <div className="deepbook-hero-copy">
-          <p className="deepbook-kicker">DeepBook Predict for Sui Overflow</p>
+      <section className={styles.hero} aria-labelledby="deepbook-title">
+        <div className={styles.heroCopy}>
+          <p className={styles.kicker}>DeepBook Predict for Sui Overflow</p>
           <h1 id="deepbook-title">DeepBook Predict Agent Desk</h1>
           <p>
             OpenStat turns a prediction-market agent run into an inspectable
             story: market context, strategy choice, risk approval, execution,
             settlement, PnL, and audit evidence in one operational surface.
           </p>
-          <div className="deepbook-actions">
+          <div className={styles.actions}>
             <Link
-              className="deepbook-button deepbook-button-primary"
+              className={`${styles.button} ${styles.buttonPrimary}`}
               href="/sign-up"
             >
               Open the desk
               <ArrowRight aria-hidden="true" size={16} />
             </Link>
             <Link
-              className="deepbook-button deepbook-button-secondary"
+              className={`${styles.button} ${styles.buttonSecondary}`}
               href="/dashboard/runs"
             >
               View runs
@@ -98,8 +101,8 @@ export default function DeepBookPage() {
           </div>
         </div>
 
-        <div className="deepbook-desk" aria-label="DeepBook Predict demo desk">
-          <div className="deepbook-desk-header">
+        <div className={styles.desk} aria-label="DeepBook Predict demo desk">
+          <div className={styles.deskHeader}>
             <span>
               <RadioTower aria-hidden="true" size={16} />
               Live demo replay
@@ -107,7 +110,7 @@ export default function DeepBookPage() {
             <strong>SUI/USDC range agent</strong>
           </div>
 
-          <div className="deepbook-metrics">
+          <div className={styles.metrics}>
             {metrics.map((metric) => (
               <div key={metric.label}>
                 <span>{metric.label}</span>
@@ -116,24 +119,26 @@ export default function DeepBookPage() {
             ))}
           </div>
 
-          <ol className="deepbook-timeline">
+          <ol className={styles.timeline}>
             {timeline.map((item) => (
               <li key={item.label}>
-                <span className="deepbook-timeline-icon">
+                <span className={styles.timelineIcon}>
                   <CheckCircle2 aria-hidden="true" size={15} />
                 </span>
                 <div>
                   <strong>{item.label}</strong>
                   <small>{item.meta}</small>
                 </div>
-                <em>{item.status}</em>
+                <Chip color="success" size="sm" variant="soft">
+                  <Chip.Label>{item.status}</Chip.Label>
+                </Chip>
               </li>
             ))}
           </ol>
         </div>
       </section>
 
-      <section className="deepbook-system" aria-label="Agent desk capabilities">
+      <section className={styles.system} aria-label="Agent desk capabilities">
         <article>
           <Target aria-hidden="true" size={20} />
           <h2>Strategy selection first</h2>

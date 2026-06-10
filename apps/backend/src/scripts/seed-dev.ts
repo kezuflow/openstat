@@ -4,6 +4,25 @@ import { and, eq, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
 import { env } from "../config/env.js";
+import {
+  deepBookDemoAgentSeed,
+  deepBookDemoTradingStrategySeed,
+  getDeepBookAction,
+  getDeepBookCompletion,
+  getDeepBookDecisionData,
+  getDeepBookExecutionMode,
+  getDeepBookFillData,
+  getDeepBookOrderData,
+  getDeepBookRiskData,
+  getDeepBookRiskReason,
+  getDeepBookRunMetadata,
+  getDeepBookVenue,
+  isDeepBookDemoStrategy,
+  seedDeepBookChainReference,
+  seedDeepBookPositionProposal,
+  seedDeepBookSettlementAuditEvents,
+  seedDeepBookStrategyEvents,
+} from "./deepbook-demo.js";
 
 const database = createDatabase(env.databaseUrl);
 
@@ -79,12 +98,7 @@ const agentSeeds = [
     status: "online",
     tags: ["trading", "risk"],
   },
-  {
-    externalId: "deepbook-predict-v1",
-    name: "DeepBook Predict Agent",
-    status: "online",
-    tags: ["trading", "deepbook", "predict", "sui"],
-  },
+  deepBookDemoAgentSeed,
 ] as const;
 
 const modelSeeds = [
@@ -151,11 +165,7 @@ const tradingStrategies = [
     agentExternalId: "risk-guardian-v1",
     symbols: ["SPY", "QQQ", "TSLA"],
   },
-  {
-    strategy: "deepbook-predict-range-v1",
-    agentExternalId: "deepbook-predict-v1",
-    symbols: ["SUI/USDC", "DEEP/USDC", "DEEP/SUI"],
-  },
+  deepBookDemoTradingStrategySeed,
 ] as const;
 
 async function main() {
@@ -820,13 +830,11 @@ async function seedTradingData(options: {
       const symbol = pick(strategySeed.symbols, day);
       const startedAt = atDay(day, 9 + strategyIndex * 2, 30);
       const externalRunId = `seed-trade-run-${strategySeed.strategy}-${day}`;
-      const isDeepBookRun =
-        strategySeed.strategy === "deepbook-predict-range-v1";
-      const side = (day + strategyIndex) % 2 === 0 ? "buy" : "sell";
+      const isDeepBookRun = isDeepBookDemoStrategy(strategySeed.strategy);
+      const side: "buy" | "sell" =
+        (day + strategyIndex) % 2 === 0 ? "buy" : "sell";
       const action = isDeepBookRun
-        ? side === "buy"
-          ? "buy_yes_range"
-          : "hedge_no_range"
+        ? getDeepBookAction(side)
         : side === "buy"
           ? "enter_long"
           : "trim_position";
@@ -834,24 +842,44 @@ async function seedTradingData(options: {
       const quantity = 10 + ((day + strategyIndex) % 8) * 5;
       const price = getDemoPrice(symbol, day, strategyIndex);
       const confidence = 68 + ((day + strategyIndex) % 24);
-      const venue = getVenue(symbol);
-      const executionMode = isDeepBookRun && day % 6 === 0 ? "replay" : "paper";
-      const metadata = {
-        seed: seedMarker,
-        demo_day: day,
-        market_session:
-          isDeepBookRun || strategyIndex === 1 ? "24h" : "regular",
-        ...(isDeepBookRun
+      const venue = isDeepBookRun ? getDeepBookVenue() : getVenue(symbol);
+      const executionMode = isDeepBookRun
+        ? getDeepBookExecutionMode(day)
+        : undefined;
+      const metadata = isDeepBookRun
+        ? getDeepBookRunMetadata({
+            day,
+            executionMode: executionMode ?? "paper",
+            seedMarker,
+            symbol,
+          })
+        : {
+            seed: seedMarker,
+            demo_day: day,
+            market_session: strategyIndex === 1 ? "24h" : "regular",
+          };
+      const deepBookContext =
+        isDeepBookRun && executionMode
           ? {
-              chain: "sui",
-              execution_mode: executionMode,
-              market: symbol,
-              network: "testnet",
-              product: "deepbook-predict-agent-desk",
-              venue,
+              agentId: agent.id,
+              confidence,
+              day,
+              executionMode,
+              externalRunId,
+              insertEvent,
+              metadata,
+              organizationId: options.organizationId,
+              price,
+              projectId: options.projectId,
+              quantity,
+              seedMarker,
+              side,
+              startedAt,
+              strategyIndex,
+              symbol,
+              traceId: `trace-trade-${strategySeed.strategy}-${day}`,
             }
-          : {}),
-      };
+          : undefined;
       const [run] = await database.db
         .insert(schema.agentRuns)
         .values({
@@ -875,109 +903,17 @@ async function seedTradingData(options: {
 
       runs += 1;
 
-      if (isDeepBookRun) {
-        const marketSnapshotAt = startedAt;
-        await insertEvent({
-          organizationId: options.organizationId,
-          projectId: options.projectId,
-          agentId: agent.id,
-          externalEventId: `seed-market-snapshot-${strategySeed.strategy}-${day}`,
-          eventType: "market_snapshot",
-          source: "sdk",
-          timestamp: marketSnapshotAt,
-          traceId: `trace-trade-${strategySeed.strategy}-${day}`,
-          spanId: `span-market-${strategySeed.strategy}-${day}`,
-          runId: externalRunId,
-          data: {
-            seed: seedMarker,
-            best_ask: (price + 0.02).toFixed(4),
-            best_bid: (price - 0.02).toFixed(4),
-            liquidity_usd: (180_000 + day * 1750).toString(),
-            market: symbol,
-            oracle_price: price.toFixed(4),
-            summary: `${symbol} market snapshot captured before strategy evaluation.`,
-            venue,
-          },
-          metadata,
-          tags: ["demo", "deepbook", "market"],
-          createdAt: marketSnapshotAt,
-          updatedAt: marketSnapshotAt,
-        });
-
-        const strategyEvaluationAt = new Date(
-          startedAt.valueOf() + 2 * 60 * 1000,
-        );
-        await insertEvent({
-          organizationId: options.organizationId,
-          projectId: options.projectId,
-          agentId: agent.id,
-          externalEventId: `seed-strategy-evaluation-${strategySeed.strategy}-${day}`,
-          eventType: "strategy_evaluation",
-          source: "sdk",
-          timestamp: strategyEvaluationAt,
-          traceId: `trace-trade-${strategySeed.strategy}-${day}`,
-          spanId: `span-strategy-eval-${strategySeed.strategy}-${day}`,
-          runId: externalRunId,
-          data: {
-            seed: seedMarker,
-            candidate_strategies: [
-              {
-                name: "range-mean-reversion",
-                score: 82 + (day % 9),
-              },
-              {
-                name: "breakout-follow",
-                score: 67 + (day % 7),
-              },
-              {
-                name: "liquidity-neutral",
-                score: 59 + (day % 6),
-              },
-            ],
-            market: symbol,
-            selected_strategy: "range-mean-reversion",
-            summary:
-              "Agent compared range, breakout, and liquidity-neutral strategies.",
-          },
-          metadata,
-          tags: ["demo", "deepbook", "strategy"],
-          createdAt: strategyEvaluationAt,
-          updatedAt: strategyEvaluationAt,
-        });
-
-        const strategySelectedAt = new Date(
-          startedAt.valueOf() + 3 * 60 * 1000,
-        );
-        await insertEvent({
-          organizationId: options.organizationId,
-          projectId: options.projectId,
-          agentId: agent.id,
-          externalEventId: `seed-strategy-selected-${strategySeed.strategy}-${day}`,
-          eventType: "strategy_selected",
-          source: "sdk",
-          timestamp: strategySelectedAt,
-          traceId: `trace-trade-${strategySeed.strategy}-${day}`,
-          spanId: `span-strategy-selected-${strategySeed.strategy}-${day}`,
-          runId: externalRunId,
-          data: {
-            seed: seedMarker,
-            confidence,
-            market: symbol,
-            reason:
-              "Order book spread and oracle drift favored a bounded range position.",
-            selected_strategy: "range-mean-reversion",
-            summary: "Range strategy selected for DeepBook Predict market.",
-          },
-          metadata,
-          tags: ["demo", "deepbook", "strategy"],
-          createdAt: strategySelectedAt,
-          updatedAt: strategySelectedAt,
-        });
+      if (deepBookContext) {
+        await seedDeepBookStrategyEvents(deepBookContext);
       }
 
       const decisionAt = isDeepBookRun
         ? new Date(startedAt.valueOf() + 5 * 60 * 1000)
         : startedAt;
+      const rationaleSummary =
+        isDeepBookRun && executionMode
+          ? `${symbol} range probability and liquidity supported a ${side} position.`
+          : `${symbol} signal aligned with ${strategySeed.strategy}.`;
       const decisionEvent = await insertEvent({
         organizationId: options.organizationId,
         projectId: options.projectId,
@@ -989,24 +925,25 @@ async function seedTradingData(options: {
         traceId: `trace-trade-${strategySeed.strategy}-${day}`,
         spanId: `span-decision-${strategySeed.strategy}-${day}`,
         runId: externalRunId,
-        data: {
-          seed: seedMarker,
-          action,
-          confidence,
-          rationale_summary: isDeepBookRun
-            ? `${symbol} range probability and liquidity supported a ${side} position.`
-            : `${symbol} signal aligned with ${strategySeed.strategy}.`,
-          strategy: strategySeed.strategy,
-          symbol,
-          ...(isDeepBookRun
-            ? {
-                execution_mode: executionMode,
-                market: symbol,
-                selected_strategy: "range-mean-reversion",
-                venue,
-              }
-            : {}),
-        },
+        data:
+          isDeepBookRun && executionMode
+            ? getDeepBookDecisionData({
+                action,
+                confidence,
+                executionMode,
+                seedMarker,
+                side,
+                strategy: strategySeed.strategy,
+                symbol,
+              })
+            : {
+                seed: seedMarker,
+                action,
+                confidence,
+                rationale_summary: rationaleSummary,
+                strategy: strategySeed.strategy,
+                symbol,
+              },
         metadata,
         tags: ["demo", "trading", "decision"],
         createdAt: decisionAt,
@@ -1024,9 +961,7 @@ async function seedTradingData(options: {
           symbol,
           action,
           confidence,
-          rationaleSummary: isDeepBookRun
-            ? `${symbol} range probability and liquidity supported a ${side} position.`
-            : `${symbol} signal aligned with ${strategySeed.strategy}.`,
+          rationaleSummary,
           metadata,
           decidedAt: decisionAt,
         })
@@ -1039,6 +974,11 @@ async function seedTradingData(options: {
       const checkedAt = new Date(
         startedAt.valueOf() + (isDeepBookRun ? 9 : 4) * 60 * 1000,
       );
+      const riskReason = isDeepBookRun
+        ? getDeepBookRiskReason(riskRejected)
+        : riskRejected
+          ? "Position size exceeds volatility budget."
+          : "Within risk envelope.";
       const riskEvent = await insertEvent({
         organizationId: options.organizationId,
         projectId: options.projectId,
@@ -1050,27 +990,23 @@ async function seedTradingData(options: {
         traceId: `trace-trade-${strategySeed.strategy}-${day}`,
         spanId: `span-risk-${strategySeed.strategy}-${day}`,
         runId: externalRunId,
-        data: {
-          seed: seedMarker,
-          result: riskRejected ? "rejected" : "approved",
-          reason: riskRejected
-            ? isDeepBookRun
-              ? "Prediction exposure exceeds market liquidity guard."
-              : "Position size exceeds volatility budget."
-            : isDeepBookRun
-              ? "Within liquidity, exposure, and settlement risk limits."
-              : "Within risk envelope.",
-          strategy: strategySeed.strategy,
-          symbol,
-          ...(isDeepBookRun
-            ? {
-                exposure_usd: (quantity * price).toFixed(2),
-                market: symbol,
-                max_slippage_bps: 35,
-                venue,
-              }
-            : {}),
-        },
+        data: isDeepBookRun
+          ? getDeepBookRiskData({
+              price,
+              quantity,
+              reason: riskReason,
+              rejected: riskRejected,
+              seedMarker,
+              strategy: strategySeed.strategy,
+              symbol,
+            })
+          : {
+              seed: seedMarker,
+              result: riskRejected ? "rejected" : "approved",
+              reason: riskReason,
+              strategy: strategySeed.strategy,
+              symbol,
+            },
         metadata,
         tags: ["demo", "trading", "risk"],
         createdAt: checkedAt,
@@ -1081,19 +1017,16 @@ async function seedTradingData(options: {
         decisionId: decision.id,
         projectId: options.projectId,
         result: riskRejected ? "rejected" : "approved",
-        reason: riskRejected
-          ? isDeepBookRun
-            ? "Prediction exposure exceeds market liquidity guard."
-            : "Position size exceeds volatility budget."
-          : isDeepBookRun
-            ? "Within liquidity, exposure, and settlement risk limits."
-            : "Within risk envelope.",
+        reason: riskReason,
         metadata,
         checkedAt,
       });
 
       if (riskRejected) {
         const completionAt = new Date(checkedAt.valueOf() + 60 * 1000);
+        const deepBookCompletion = isDeepBookRun
+          ? getDeepBookCompletion({ day, rejected: true })
+          : undefined;
         await insertEvent({
           organizationId: options.organizationId,
           projectId: options.projectId,
@@ -1110,13 +1043,13 @@ async function seedTradingData(options: {
             latency_ms: Math.round(
               completionAt.valueOf() - startedAt.valueOf(),
             ),
-            model: isDeepBookRun ? "deepbook-predict-agent" : "trading-agent",
+            model: deepBookCompletion?.model ?? "trading-agent",
             status: "completed_with_rejection",
-            summary: isDeepBookRun
-              ? "Run stopped after the DeepBook Predict risk gate rejected exposure."
-              : "Run stopped after risk rejection.",
+            summary:
+              deepBookCompletion?.summary ??
+              "Run stopped after risk rejection.",
             usage: {
-              total_tokens: isDeepBookRun ? 1420 + day * 3 : 860 + day * 2,
+              total_tokens: deepBookCompletion?.totalTokens ?? 860 + day * 2,
             },
           },
           metadata,
@@ -1127,34 +1060,8 @@ async function seedTradingData(options: {
         continue;
       }
 
-      if (isDeepBookRun) {
-        const proposalAt = new Date(startedAt.valueOf() + 11 * 60 * 1000);
-        await insertEvent({
-          organizationId: options.organizationId,
-          projectId: options.projectId,
-          agentId: agent.id,
-          externalEventId: `seed-position-proposal-${strategySeed.strategy}-${day}`,
-          eventType: "position_proposal",
-          source: "sdk",
-          timestamp: proposalAt,
-          traceId: `trace-trade-${strategySeed.strategy}-${day}`,
-          spanId: `span-position-proposal-${strategySeed.strategy}-${day}`,
-          runId: externalRunId,
-          data: {
-            seed: seedMarker,
-            entry_price: price.toFixed(4),
-            market: symbol,
-            max_loss_usd: (quantity * price * 0.18).toFixed(2),
-            position_side: side === "buy" ? "yes" : "no",
-            quantity: quantity.toString(),
-            settlement_window: "24h",
-            summary: "Agent proposed a bounded DeepBook Predict position.",
-          },
-          metadata,
-          tags: ["demo", "deepbook", "position"],
-          createdAt: proposalAt,
-          updatedAt: proposalAt,
-        });
+      if (deepBookContext) {
+        await seedDeepBookPositionProposal(deepBookContext);
       }
 
       const submittedAt = new Date(
@@ -1171,25 +1078,32 @@ async function seedTradingData(options: {
         traceId: `trace-trade-${strategySeed.strategy}-${day}`,
         spanId: `span-order-${strategySeed.strategy}-${day}`,
         runId: externalRunId,
-        data: {
-          seed: seedMarker,
-          order_id: `seed-order-${strategySeed.strategy}-${day}`,
-          order_type: "limit",
-          price: price.toFixed(2),
-          quantity: quantity.toString(),
-          side,
-          status: day % 14 === 0 ? "partially_filled" : "filled",
-          strategy: strategySeed.strategy,
-          symbol,
-          venue,
-          ...(isDeepBookRun
-            ? {
-                execution_mode: executionMode,
-                market_type: "prediction_range",
-                position_side: side === "buy" ? "yes" : "no",
-              }
-            : {}),
-        },
+        data:
+          isDeepBookRun && executionMode
+            ? getDeepBookOrderData({
+                executionMode,
+                orderId: `seed-order-${strategySeed.strategy}-${day}`,
+                orderType: "limit",
+                price: price.toFixed(2),
+                quantity: quantity.toString(),
+                seedMarker,
+                side,
+                status: day % 14 === 0 ? "partially_filled" : "filled",
+                strategy: strategySeed.strategy,
+                symbol,
+              })
+            : {
+                seed: seedMarker,
+                order_id: `seed-order-${strategySeed.strategy}-${day}`,
+                order_type: "limit",
+                price: price.toFixed(2),
+                quantity: quantity.toString(),
+                side,
+                status: day % 14 === 0 ? "partially_filled" : "filled",
+                strategy: strategySeed.strategy,
+                symbol,
+                venue,
+              },
         metadata,
         tags: ["demo", "trading", "order"],
         createdAt: submittedAt,
@@ -1238,24 +1152,30 @@ async function seedTradingData(options: {
         traceId: `trace-trade-${strategySeed.strategy}-${day}`,
         spanId: `span-fill-${strategySeed.strategy}-${day}`,
         runId: externalRunId,
-        data: {
-          seed: seedMarker,
-          fill_id: `seed-fill-${strategySeed.strategy}-${day}`,
-          order_id: `seed-order-${strategySeed.strategy}-${day}`,
-          price: (price + (side === "buy" ? 0.04 : -0.03)).toFixed(2),
-          quantity: fillQuantity.toString(),
-          side,
-          strategy: strategySeed.strategy,
-          symbol,
-          venue,
-          ...(isDeepBookRun
-            ? {
-                execution_mode: executionMode,
-                market_type: "prediction_range",
-                position_side: side === "buy" ? "yes" : "no",
-              }
-            : {}),
-        },
+        data:
+          isDeepBookRun && executionMode
+            ? getDeepBookFillData({
+                executionMode,
+                fillId: `seed-fill-${strategySeed.strategy}-${day}`,
+                orderId: `seed-order-${strategySeed.strategy}-${day}`,
+                price: (price + (side === "buy" ? 0.04 : -0.03)).toFixed(2),
+                quantity: fillQuantity.toString(),
+                seedMarker,
+                side,
+                strategy: strategySeed.strategy,
+                symbol,
+              })
+            : {
+                seed: seedMarker,
+                fill_id: `seed-fill-${strategySeed.strategy}-${day}`,
+                order_id: `seed-order-${strategySeed.strategy}-${day}`,
+                price: (price + (side === "buy" ? 0.04 : -0.03)).toFixed(2),
+                quantity: fillQuantity.toString(),
+                side,
+                strategy: strategySeed.strategy,
+                symbol,
+                venue,
+              },
         metadata,
         tags: ["demo", "trading", "fill"],
         createdAt: filledAt,
@@ -1277,39 +1197,8 @@ async function seedTradingData(options: {
       });
       fills += 1;
 
-      if (isDeepBookRun) {
-        const chainAt = new Date(startedAt.valueOf() + 20 * 60 * 1000);
-        await insertEvent({
-          organizationId: options.organizationId,
-          projectId: options.projectId,
-          agentId: agent.id,
-          externalEventId: `seed-chain-tx-${strategySeed.strategy}-${day}`,
-          eventType: "chain_transaction",
-          source: "sdk",
-          timestamp: chainAt,
-          traceId: `trace-trade-${strategySeed.strategy}-${day}`,
-          spanId: `span-chain-${strategySeed.strategy}-${day}`,
-          runId: externalRunId,
-          data: {
-            seed: seedMarker,
-            chain: "sui",
-            digest_reference: `demo-sui-digest-${day}-${strategyIndex}`,
-            execution_mode: executionMode,
-            network: "testnet",
-            status:
-              executionMode === "replay"
-                ? "simulated_from_replay"
-                : "paper_not_broadcast",
-            summary:
-              executionMode === "replay"
-                ? "Replay attached a redacted Sui transaction reference."
-                : "Paper execution recorded no broadcast transaction.",
-          },
-          metadata,
-          tags: ["demo", "deepbook", "chain"],
-          createdAt: chainAt,
-          updatedAt: chainAt,
-        });
+      if (deepBookContext) {
+        await seedDeepBookChainReference(deepBookContext);
       }
 
       await database.db
@@ -1341,127 +1230,14 @@ async function seedTradingData(options: {
           },
         });
 
-      if (isDeepBookRun) {
-        const settlementAt = new Date(startedAt.valueOf() + 26 * 60 * 1000);
-        const outcome =
-          (day + strategyIndex) % 4 === 0 ? "range_missed" : "range_won";
-        await insertEvent({
-          organizationId: options.organizationId,
-          projectId: options.projectId,
-          agentId: agent.id,
-          externalEventId: `seed-settlement-${strategySeed.strategy}-${day}`,
-          eventType: "settlement",
-          source: "sdk",
-          timestamp: settlementAt,
-          traceId: `trace-trade-${strategySeed.strategy}-${day}`,
-          spanId: `span-settlement-${strategySeed.strategy}-${day}`,
-          runId: externalRunId,
-          data: {
-            seed: seedMarker,
-            market: symbol,
-            outcome,
-            settlement_price: (
-              price + (outcome === "range_won" ? 0.06 : -0.08)
-            ).toFixed(4),
-            status: "settled",
-            summary:
-              outcome === "range_won"
-                ? "Prediction settled in range and realized simulated profit."
-                : "Prediction settled outside range and capped simulated loss.",
-          },
-          metadata,
-          tags: ["demo", "deepbook", "settlement"],
-          createdAt: settlementAt,
-          updatedAt: settlementAt,
-        });
-
-        const auditInsightAt = new Date(startedAt.valueOf() + 28 * 60 * 1000);
-        await insertEvent({
-          organizationId: options.organizationId,
-          projectId: options.projectId,
-          agentId: agent.id,
-          externalEventId: `seed-audit-insight-${strategySeed.strategy}-${day}`,
-          eventType: "audit_insight",
-          source: "sdk",
-          timestamp: auditInsightAt,
-          traceId: `trace-trade-${strategySeed.strategy}-${day}`,
-          spanId: `span-audit-insight-${strategySeed.strategy}-${day}`,
-          runId: externalRunId,
-          data: {
-            seed: seedMarker,
-            checks: [
-              "strategy_evaluation_present",
-              "risk_gate_approved",
-              "execution_mode_recorded",
-              "wallet_identifier_redacted",
-            ],
-            summary:
-              "Audit review found strategy, risk, execution, and settlement breadcrumbs.",
-            verdict: "passed",
-          },
-          metadata,
-          tags: ["demo", "deepbook", "audit"],
-          createdAt: auditInsightAt,
-          updatedAt: auditInsightAt,
-        });
-
-        const pnlAt = new Date(startedAt.valueOf() + 30 * 60 * 1000);
-        await insertEvent({
-          organizationId: options.organizationId,
-          projectId: options.projectId,
-          agentId: agent.id,
-          externalEventId: `seed-run-pnl-${strategySeed.strategy}-${day}`,
-          eventType: "pnl_snapshot",
-          source: "sdk",
-          timestamp: pnlAt,
-          traceId: `trace-trade-${strategySeed.strategy}-${day}`,
-          spanId: `span-pnl-${strategySeed.strategy}-${day}`,
-          runId: externalRunId,
-          data: {
-            seed: seedMarker,
-            equity: (25_000 + (demoDays - day) * 180).toFixed(2),
-            realized_pnl: (outcome === "range_won"
-              ? quantity * price * 0.13
-              : -quantity * price * 0.07
-            ).toFixed(2),
-            strategy: strategySeed.strategy,
-            symbol,
-            unrealized_pnl: "0.00",
-          },
-          metadata,
-          tags: ["demo", "deepbook", "pnl"],
-          createdAt: pnlAt,
-          updatedAt: pnlAt,
-        });
-
-        const auditAnchorAt = new Date(startedAt.valueOf() + 32 * 60 * 1000);
-        await insertEvent({
-          organizationId: options.organizationId,
-          projectId: options.projectId,
-          agentId: agent.id,
-          externalEventId: `seed-audit-anchor-${strategySeed.strategy}-${day}`,
-          eventType: "audit_anchor",
-          source: "sdk",
-          timestamp: auditAnchorAt,
-          traceId: `trace-trade-${strategySeed.strategy}-${day}`,
-          spanId: `span-audit-anchor-${strategySeed.strategy}-${day}`,
-          runId: externalRunId,
-          data: {
-            seed: seedMarker,
-            anchor_mode: "demo_not_broadcast",
-            digest_reference: `audit-demo-${day}-${strategyIndex}`,
-            status: "ready",
-            summary:
-              "Audit packet is ready to anchor; demo mode does not broadcast.",
-          },
-          metadata,
-          tags: ["demo", "deepbook", "audit"],
-          createdAt: auditAnchorAt,
-          updatedAt: auditAnchorAt,
-        });
+      if (deepBookContext) {
+        await seedDeepBookSettlementAuditEvents(deepBookContext);
       }
 
       const completionAt = new Date(startedAt.valueOf() + 34 * 60 * 1000);
+      const deepBookCompletion = isDeepBookRun
+        ? getDeepBookCompletion({ day, rejected: false })
+        : undefined;
       await insertEvent({
         organizationId: options.organizationId,
         projectId: options.projectId,
@@ -1476,13 +1252,11 @@ async function seedTradingData(options: {
         data: {
           seed: seedMarker,
           latency_ms: Math.round(completionAt.valueOf() - startedAt.valueOf()),
-          model: isDeepBookRun ? "deepbook-predict-agent" : "trading-agent",
+          model: deepBookCompletion?.model ?? "trading-agent",
           status: "completed",
-          summary: isDeepBookRun
-            ? "DeepBook Predict run completed with simulated settlement and PnL."
-            : "Trading run completed.",
+          summary: deepBookCompletion?.summary ?? "Trading run completed.",
           usage: {
-            total_tokens: isDeepBookRun ? 1860 + day * 4 : 930 + day * 3,
+            total_tokens: deepBookCompletion?.totalTokens ?? 930 + day * 3,
           },
         },
         metadata,
@@ -1677,10 +1451,6 @@ function getProvider(model: string) {
 }
 
 function getVenue(symbol: string) {
-  if (symbol.includes("/")) {
-    return "deepbook-predict";
-  }
-
   return symbol.endsWith("-USD") ? "coinbase" : "paper-broker";
 }
 
