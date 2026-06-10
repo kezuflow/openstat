@@ -353,11 +353,11 @@ verify the security boundaries.
 
 - [x] Update docs quickstart for JavaScript.
 - [x] Update docs quickstart for Python.
-- [ ] Add DeepBook Predict Agent Desk docs page.
-- [ ] Document `/deepbook` and `/dashboard/deepbook`.
-- [ ] Document agent runner replay mode.
-- [ ] Document agent runner environment variables.
-- [ ] Document Sui RPC and network assumptions.
+- [x] Add DeepBook Predict Agent Desk docs page.
+- [x] Document `/deepbook` and `/dashboard/deepbook`.
+- [x] Document agent runner replay mode.
+- [x] Document agent runner environment variables.
+- [x] Document Sui RPC and network assumptions.
 - [x] Document no-private-key and no-secrets telemetry rules.
 - [x] Document redaction defaults for prompts, tool payloads, accounts, and raw
       order payloads.
@@ -370,7 +370,7 @@ verify the security boundaries.
 Acceptance checks:
 
 - [x] A builder can instrument a simple agent from the docs.
-- [ ] A judge can understand the DeepBook Predict demo from the public page and
+- [x] A judge can understand the DeepBook Predict demo from the public page and
       docs.
 - [ ] The submission copy matches the running product.
 - [x] Security boundaries are explicit.
@@ -378,7 +378,7 @@ Acceptance checks:
 Suggested commit slices:
 
 - [x] `docs(sdk): refresh openstat quickstart`
-- [ ] `docs(deepbook): add agent desk guide`
+- [x] `docs(deepbook): add agent desk guide`
 - [ ] `docs(deepbook): add overflow submission package`
 
 ## Final Validation
