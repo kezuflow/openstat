@@ -351,15 +351,15 @@ Suggested commit slices:
 Goal: judges and builders can understand the product, run the demo path, and
 verify the security boundaries.
 
-- [ ] Update docs quickstart for JavaScript.
-- [ ] Update docs quickstart for Python.
+- [x] Update docs quickstart for JavaScript.
+- [x] Update docs quickstart for Python.
 - [ ] Add DeepBook Predict Agent Desk docs page.
 - [ ] Document `/deepbook` and `/dashboard/deepbook`.
 - [ ] Document agent runner replay mode.
 - [ ] Document agent runner environment variables.
 - [ ] Document Sui RPC and network assumptions.
-- [ ] Document no-private-key and no-secrets telemetry rules.
-- [ ] Document redaction defaults for prompts, tool payloads, accounts, and raw
+- [x] Document no-private-key and no-secrets telemetry rules.
+- [x] Document redaction defaults for prompts, tool payloads, accounts, and raw
       order payloads.
 - [ ] Add Sui Overflow submission summary.
 - [ ] Add demo script.
@@ -369,15 +369,15 @@ verify the security boundaries.
 
 Acceptance checks:
 
-- [ ] A builder can instrument a simple agent from the docs.
+- [x] A builder can instrument a simple agent from the docs.
 - [ ] A judge can understand the DeepBook Predict demo from the public page and
       docs.
 - [ ] The submission copy matches the running product.
-- [ ] Security boundaries are explicit.
+- [x] Security boundaries are explicit.
 
 Suggested commit slices:
 
-- [ ] `docs(sdk): refresh openstat quickstart`
+- [x] `docs(sdk): refresh openstat quickstart`
 - [ ] `docs(deepbook): add agent desk guide`
 - [ ] `docs(deepbook): add overflow submission package`
 
