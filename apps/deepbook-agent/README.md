@@ -22,6 +22,8 @@ SUI_RPC_URL=https://fullnode.testnet.sui.io:443
 DEEPBOOK_NETWORK=testnet
 DEEPBOOK_MARKET=SUI/USDC
 DEEPBOOK_EXECUTION_MODE=paper
+DEEPBOOK_RUNNER_ID=deepbook-agent-vps-01
+DEEPBOOK_CLAIM_INTERVAL_MS=5000
 ```
 
 `DEEPBOOK_EXECUTION_MODE` supports:
@@ -52,12 +54,29 @@ Claim one queued run from the DeepBook dashboard:
 OPENSTAT_DRY_RUN=false pnpm --filter deepbook-agent replay -- --claim-once
 ```
 
+Run continuously as a project-scoped VPS worker:
+
+```sh
+OPENSTAT_DRY_RUN=false pnpm --filter deepbook-agent claim-loop
+```
+
 The claim path calls `/v1/deepbook/jobs/claim`, receives the next queued
 dashboard run, evaluates the configured paper/replay strategy flow, and emits
 telemetry back through the normal OpenStat ingestion API.
 
+`claim-loop` keeps polling for queued jobs with
+`DEEPBOOK_CLAIM_INTERVAL_MS`. Run one worker per OpenStat project/account so
+each worker uses a separate project API key, runner ID, logs, and restart
+lifecycle.
+
 The runner sleeps between events so it cannot flood ingestion. Increase
 `OPENSTAT_REPLAY_DELAY_MS` if you want a slower demo recording.
+
+## Separate VPS
+
+Use `deploy/deepbook-agent` for the multi-project VPS deployment. The compose
+file intentionally lives outside the core OpenStat deployment so the agent can
+be moved, removed, or scaled independently.
 
 ## Telemetry Sequence
 

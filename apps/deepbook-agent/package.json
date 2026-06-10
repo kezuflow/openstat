@@ -7,6 +7,7 @@
     "build:sdk": "pnpm --filter openstat build",
     "build": "pnpm run build:sdk && tsc -p tsconfig.json",
     "check-types": "pnpm run build:sdk && tsc --noEmit",
+    "claim-loop": "pnpm run build:sdk && tsx src/index.ts --claim-loop",
     "dry-run": "pnpm run build:sdk && tsx src/index.ts --dry-run",
     "replay": "pnpm run build:sdk && tsx src/index.ts",
     "test": "pnpm run build:sdk && vitest run src"

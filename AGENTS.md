@@ -77,6 +77,7 @@ pnpm --filter backend test:integration
 pnpm --filter backend seed:dev
 pnpm --filter deepbook-agent dry-run
 pnpm --filter deepbook-agent replay
+pnpm --filter deepbook-agent claim-loop
 pnpm --filter @openstat/contracts test
 pnpm --filter @openstat/contracts deploy:mantle-sepolia
 pnpm --filter openstat build
@@ -125,6 +126,13 @@ For split web/API deployments, do not leave web API variables pointed at
 `localhost`. Set `apps/web` `NEXT_PUBLIC_OPENSTAT_API_URL` to the public backend
 origin, and set backend `APP_WEB_URL`, `API_PUBLIC_URL`, and `BETTER_AUTH_URL`
 to the deployed web/API origins.
+
+The DeepBook agent runner deploys separately from OpenStat core through
+`deploy/deepbook-agent`. Run one `deepbook-agent` worker service per OpenStat
+project/account, each with its own project API key and `DEEPBOOK_RUNNER_ID`.
+Do not add the runner to root `pnpm dev`; use
+`pnpm --filter deepbook-agent claim-loop` or the Docker Compose deployment when
+you explicitly want a long-running worker.
 
 Do not commit real `.env` files or secrets. `.env` files are intentionally
 ignored.

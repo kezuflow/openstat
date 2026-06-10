@@ -19,11 +19,17 @@ openstat.online/dashboard/deepbook
 
 DeepBook agent runner
   Runs outside the OpenStat VPS and sends telemetry to api.openstat.online.
+  For multiple OpenStat projects/accounts, run one isolated worker per project.
 ```
 
 The DeepBook Predict agent should be treated as an external instrumented agent.
 It does not need to run on the same VPS as the OpenStat API, worker, Postgres,
 Redis, and Caddy stack.
+
+For the separate DeepBook agent VPS, prefer one worker process/container per
+OpenStat project/account. Each worker should use a separate project API key,
+runner ID, logs, and restart lifecycle. This keeps the runner removable and
+avoids adding a multi-tenant control plane to OpenStat core before it is needed.
 
 The agent flow should be:
 
@@ -206,6 +212,8 @@ the demo is reliable.
 Acceptance checks:
 
 - The agent can run outside the OpenStat VPS.
+- Multiple projects/accounts can run as separate worker services on the
+  DeepBook agent VPS.
 - The agent emits DeepBook Predict/Sui metadata on every relevant event.
 - A deterministic replay command can seed a polished demo run.
 - Live DeepBook Predict execution is deferred until after the submission demo.

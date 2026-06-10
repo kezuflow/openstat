@@ -7,15 +7,28 @@ import {
 } from "./replay.js";
 
 const args = new Set(process.argv.slice(2));
+const claimLoop = args.has("--claim-loop");
 const claimOnce = args.has("--claim-once");
 const dryRun = args.has("--dry-run") || process.env.OPENSTAT_DRY_RUN === "true";
 const endpoint = process.env.OPENSTAT_ENDPOINT ?? "https://api.openstat.online";
 const apiKey = process.env.OPENSTAT_API_KEY;
+const claimIntervalMs = parseClaimInterval(
+  process.env.DEEPBOOK_CLAIM_INTERVAL_MS,
+);
 const delayMs = parseDelay(process.env.OPENSTAT_REPLAY_DELAY_MS);
 
 await main();
 
 async function main() {
+  if (claimLoop && claimOnce) {
+    throw new Error("--claim-loop cannot be combined with --claim-once.");
+  }
+
+  if (claimLoop) {
+    await runClaimLoop();
+    return;
+  }
+
   if (claimOnce) {
     await runClaimedJob();
     return;
@@ -36,6 +49,32 @@ async function main() {
   }
 
   await sendEvents(events);
+}
+
+async function runClaimLoop() {
+  if (dryRun) {
+    throw new Error("--claim-loop cannot be combined with --dry-run.");
+  }
+
+  if (!apiKey) {
+    throw new Error("OPENSTAT_API_KEY is required to claim DeepBook jobs.");
+  }
+
+  console.log(
+    `claim loop started for ${process.env.DEEPBOOK_RUNNER_ID ?? "deepbook-agent"} every ${claimIntervalMs}ms`,
+  );
+
+  for (;;) {
+    try {
+      await runClaimedJob();
+    } catch (error) {
+      console.error(
+        error instanceof Error ? error.message : "unknown claim-loop error",
+      );
+    }
+
+    await sleep(claimIntervalMs);
+  }
 }
 
 async function runClaimedJob() {
@@ -131,6 +170,22 @@ function parseDelay(value: string | undefined) {
   if (!Number.isInteger(parsed) || parsed < 0 || parsed > 60_000) {
     throw new Error(
       "OPENSTAT_REPLAY_DELAY_MS must be an integer from 0-60000.",
+    );
+  }
+
+  return parsed;
+}
+
+function parseClaimInterval(value: string | undefined) {
+  if (!value) {
+    return 5_000;
+  }
+
+  const parsed = Number(value);
+
+  if (!Number.isInteger(parsed) || parsed < 1_000 || parsed > 60_000) {
+    throw new Error(
+      "DEEPBOOK_CLAIM_INTERVAL_MS must be an integer from 1000-60000.",
     );
   }
 

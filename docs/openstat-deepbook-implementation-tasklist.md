@@ -366,7 +366,11 @@ decisions.
       evaluation.
 - [x] Add a dashboard action to start or request a paper run when the runner
       control channel is ready.
-- [ ] Surface the active config beside live run telemetry after a run starts.
+- [x] Surface the active config beside live run telemetry after a run starts.
+- [x] Add an explicit long-running `claim-loop` runner command without adding
+      the agent to root `pnpm dev`.
+- [x] Add separate DeepBook agent VPS deployment scaffold for one worker per
+      OpenStat project/account.
 - [ ] Add stop/cancel once the runner has a long-running polling loop.
 - [ ] Replace polling with SSE if the console needs lower-latency streaming.
 
@@ -376,6 +380,8 @@ Acceptance checks:
       replay viewer.
 - [x] Strategy and risk settings are project-scoped.
 - [x] The runner uses the saved config as its source of truth.
+- [x] The external agent can run as isolated per-project workers on a separate
+      VPS.
 - [ ] Execution remains paper/replay until optional Sui testnet execution is
       explicitly implemented.
 
@@ -384,6 +390,7 @@ Suggested commit slices:
 - [x] `feat(deepbook): add agent strategy config`
 - [x] `feat(deepbook): request paper agent runs`
 - [x] `feat(deepbook): load dashboard config in runner`
+- [x] `feat(deepbook): add project-scoped agent worker deployment`
 
 ## Phase 7: Polish Docs And Submission Package
 
