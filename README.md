@@ -38,6 +38,70 @@ orders or chain transactions followed, and how the run settled.
 - Keeps private telemetry off-chain; only safe digests and summaries are used
   for verification flows.
 
+## Who OpenStat Is For
+
+OpenStat is for teams running autonomous agents that trigger trades, rebalance
+positions, submit smart-contract actions, call external tools, or make
+operational decisions where post-run evidence matters.
+
+The first wedge is AI trading and on-chain execution teams that need a run
+timeline, risk decision, transaction receipt, AI audit verdict, and public proof
+link for important agent actions. These teams need more than generic logs: they
+need evidence that a private agent run was reviewed, reconciled, and committed
+to a verifiable proof trail without exposing sensitive prompts or wallet data.
+
+Initial users include:
+
+- Web3 AI-agent teams building autonomous trading or treasury workflows.
+- Mantle builders who need proof-backed monitoring around agent-submitted
+  transactions.
+- Trading infrastructure teams that need risk, order, fill, PnL, and audit
+  records in one place.
+- Developer teams that want SDK-first observability without building a custom
+  dashboard, ingestion worker, and proof system.
+
+## Commercial Direction
+
+OpenStat Cloud is designed as a project-based SaaS product:
+
+- **Free:** development projects, low event volume, short retention, and testnet
+  proof workflows.
+- **Pro:** production agents, higher event volume, longer retention, API key
+  management, Mantle proof anchors, and audit exports.
+- **Team:** multiple users and projects, higher limits, compliance-friendly
+  reports, longer proof history, and support for production incident review.
+
+The buyer is the team responsible for operating autonomous agents safely:
+founders, protocol engineers, trading infrastructure leads, compliance-minded
+operators, and developer teams shipping agentic workflows for customers.
+
+Why they pay:
+
+- Faster incident review when an agent behaves unexpectedly.
+- A verifiable trail for investors, customers, communities, and internal
+  reviewers.
+- Fewer custom dashboards and one-off scripts around agent logs and transaction
+  receipts.
+- Privacy-safe proof anchoring for important on-chain activity.
+
+## Go-To-Market Plan
+
+The initial go-to-market motion is ecosystem-led and developer-led.
+
+1. Ship the SDKs and proof verifier as the fastest path for a team to instrument
+   an agent run.
+2. Publish demo recipes for Mantle agent actions: run timeline, risk check,
+   transaction receipt, audit verdict, and proof link.
+3. Approach Web3 AI trading-agent ecosystems and communities, including the
+   Virtuals ecosystem, Bonkr-style agent/trading communities, Mantle builders,
+   and teams building Byreal/Bybit-adjacent trading agents.
+4. Convert technical users through the hosted dashboard, npm/PyPI packages,
+   examples, and proof links that can be shared in public.
+5. Expand into CI/CD, CLI, and deployment-gate workflows so teams can verify
+   agent behavior before and after production releases.
+
+These are outreach targets and market segments, not claimed partnerships.
+
 ## Use OpenStat Cloud
 
 OpenStat users start from the hosted dashboard, not by running this repository.
