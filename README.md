@@ -1,178 +1,29 @@
-# OpenStat: AI Agent Proofs on Mantle
+# OpenStat
 
-OpenStat is the team's dedicated **Mantle Turing Test Hackathon 2026**
-submission for two tracks:
+OpenStat is an API-first telemetry and verification layer for autonomous agents.
+It helps teams capture what an agent saw, decided, executed, and proved without
+shipping private prompts, secrets, or raw operational data on-chain.
 
-- **AI Trading & Strategy**
-- **AI DevTools**
-
-The project is **AI Agent Proofs on Mantle**: an autonomous-agent verification
-tool that records what an agent tried to do, reconciles the submitted Mantle
-transaction, generates a redacted AI audit verdict, and anchors privacy-safe
-audit commitments through `OpenStatAuditAnchor` on Mantle Sepolia.
-
-## DoraHacks AI Review Summary
-
-This repository is not a concept deck. It contains a working Mantle-focused
-product path:
-
-- **Tracks:** AI Trading & Strategy; AI DevTools.
-- **Network:** Mantle Sepolia.
-- **On-chain contract:** `OpenStatAuditAnchor`.
-- **Contract address:** `0x1f5a3354dc01beb89ba7de1a01d04295274a737a`.
-- **Public proof transaction:**
-  `0x22f6e966f1190404580228a2e71597f0beb17ddc269aab6e0b7325bfcdbaad4b`.
-- **Tencent Cloud integration:** `deploy/tencent-cloud/proof-verifier` contains
-  a Tencent Cloud Serverless Cloud Function verifier for the Mantle proof
-  transaction.
-- **Tencent Cloud verifier URL:**
-  `https://1442161061-1eo7ds24yh.eu-frankfurt.tencentscf.com?runId=mantle-demo-run`.
-- **Hosted product:** `https://openstat.online`.
-- **Mantle proof dashboard:** `https://openstat.online/dashboard/onchain/mantle`.
-- **Visible dashboard proof:** the on-chain transactions table shows
-  `0x22f6e966...cdbaad4b` as `confirmed` on Mantle Sepolia with action
-  `anchor_audit`, run `mantle-demo-run`, Audit Copilot verdict `pass`, and an
-  anchored MantleScan proof link.
-
-Core functionality runs end-to-end on Mantle:
-
-```text
-agent run telemetry
-  -> Mantle transaction submitted by the agent workflow
-  -> Mantle RPC receipt reconciliation
-  -> redacted AI audit insight
-  -> telemetryDigest + insightDigest
-  -> OpenStatAuditAnchor.anchorAudit(...) on Mantle Sepolia
-  -> MantleScan-verifiable proof transaction
-  -> Tencent Cloud SCF proof-verifier endpoint
-  -> OpenStat dashboard proof view
-```
-
-## Mantle Turing Scorecard Fit
-
-OpenStat fits the Mantle Turing scorecard as agent verification infrastructure:
-
-- **Technical, 30% / 15 pts general:** production-style PNPM/Turborepo
-  monorepo with Fastify API, worker projections, Drizzle/Postgres schema,
-  authenticated dashboard, SDKs, contract tests, route tests, lint, type checks,
-  and production web build.
-- **Ecosystem fit, 20% / 10 pts general:** this submission uses Mantle Sepolia
-  as the proof layer. Submitted Mantle transaction hashes are reconciled through
-  Mantle RPC and linked to MantleScan. Redacted audit commitments are anchored
-  on Mantle Sepolia.
-- **Business potential, 20% / 10 pts general:** agent teams need trust,
-  incident review, investor/customer proof, and compliance-friendly logs before
-  autonomous on-chain execution can be adopted in production.
-- **Innovation, 20% / 10 pts general:** instead of publishing raw prompts or
-  private telemetry on-chain, OpenStat hashes redacted telemetry and structured
-  audit output, then commits only privacy-safe proofs to Mantle.
-- **User experience, 10% / 5 pts general:** hosted dashboard, API-key onboarding,
-  JavaScript/Python SDKs, OpenAPI routes, and explorer links reduce Web3
-  onboarding friction for Web2 agent developers.
-- **AI DevTools track fit, 50 pts:** OpenStat is an audit and verification tool
-  for Mantle builders. Its output is actionable, reproducible, and independently
-  checkable through tests, dashboard state, RPC reconciliation, Tencent Cloud
-  SCF verifier output, and MantleScan proof links.
-
-## AI Trading & Strategy Track Fit
-
-OpenStat's AI Trading & Strategy angle is **transparent, risk-managed AI trading
-infrastructure for Mantle agents**. The project is not trying to win by showing
-the highest PnL. It matches the BGA scorecard's emphasis on better systems:
-market fairness, transparency, explainable strategy, risk controls, and
-verifiable outcomes.
-
-- **BGA ethos, 10 pts:** OpenStat reduces information asymmetry by making agent
-  decisions, risk checks, transaction status, and audit outcomes visible instead
-  of leaving automated trading as a black box.
-- **Innovation and technical depth, 10 pts:** OpenStat combines AI-agent
-  telemetry, trading decision capture, risk gates, Mantle transaction
-  reconciliation, redacted audit analysis, and smart contract proof anchoring in
-  one workflow.
-- **Strategy design and risk management, 7.5 pts:** the product records
-  strategy selection, rationale summaries, confidence, exposure checks, slippage
-  checks, rejection states, order/fill data, PnL snapshots, and terminal run
-  status so trading-agent behavior is explainable and defensible.
-- **Transparency and verifiability, 7.5 pts:** every important step can be
-  inspected: what the agent saw, what it decided, whether risk approved it, what
-  Mantle transaction was submitted, what receipt was reconciled, and what audit
-  proof was anchored.
-- **Real-world impact, 5 pts:** autonomous trading teams need trust,
-  post-incident review, compliance-friendly evidence, and investor/customer
-  reporting before agentic finance can scale responsibly.
-- **User accessibility and UX, 5 pts:** OpenStat gives builders a hosted
-  dashboard, API-key onboarding, JavaScript/Python SDKs, run timelines,
-  inspectors, and MantleScan links without requiring users to read raw logs or
-  decode transaction receipts manually.
-- **Execution and demo quality, 5 pts:** the repo contains working backend,
-  dashboard, SDK, worker, ingestion, and contract code; the Mantle Sepolia proof
-  contract and demo proof transaction are public.
-
-## AI DevTools Track Fit
-
-OpenStat's AI DevTools angle is **audit and verification infrastructure for
-Mantle agent builders**.
-
-- **Sponsor scorecard integration depth, 12 pts:** Mantle is the on-chain proof
-  layer, and Tencent Cloud is the serverless verification layer. The
-  `deploy/tencent-cloud/proof-verifier` SCF package verifies the public Mantle
-  Sepolia audit proof by reading the transaction receipt and decoding the
-  `AuditAnchored(...)` event from `OpenStatAuditAnchor`.
-- **Optimization or audit output quality, 13 pts:** audit output is structured
-  around redacted run context, receipt status, anomaly labels, verdicts,
-  telemetry digests, and insight digests. The goal is useful review evidence,
-  not generic LLM commentary.
-- **Developer productivity impact, 10 pts:** one SDK/API integration gives
-  Mantle builders run observability, risk review, transaction reconciliation,
-  audit insight generation, and proof anchoring.
-- **Verifiability and benchmarking, 10 pts:** the value is independently
-  checkable through route tests, SDK tests, ingestion tests, contract tests,
-  deterministic digest generation, Tencent Cloud proof-verifier output, and
-  public MantleScan links.
-- **Execution and demo quality, 5 pts:** the product is deployed, the repo has
-  reproducible commands, and the Mantle Sepolia proof transaction demonstrates
-  the end-to-end output.
-
-## Submission Links
-
-- Product: `https://openstat.online`.
-- Mantle proof dashboard: `https://openstat.online/dashboard/onchain/mantle`.
-- Mantle proof docs: `apps/docs/gitbook/guides/ai-agent-proofs-on-mantle.md`.
-- Tencent Cloud proof verifier:
-  `deploy/tencent-cloud/proof-verifier/README.md`.
-- Live Tencent Cloud verifier:
-  `https://1442161061-1eo7ds24yh.eu-frankfurt.tencentscf.com?runId=mantle-demo-run`.
-- Contract: `0x1f5a3354dc01beb89ba7de1a01d04295274a737a`.
-- Contract explorer:
-  `https://sepolia.mantlescan.xyz/address/0x1f5a3354dc01beb89ba7de1a01d04295274a737a`
-- Demo proof transaction:
-  `https://sepolia.mantlescan.xyz/tx/0x22f6e966f1190404580228a2e71597f0beb17ddc269aab6e0b7325bfcdbaad4b`
-
-## Completion Evidence
-
-The Mantle submission is implemented, deployed, and test-backed. Run these from
-the repository root:
-
-```sh
-pnpm --filter backend test
-pnpm --filter openstat test
-pnpm --filter @openstat/contracts test
-node deploy/tencent-cloud/proof-verifier/local-invoke.js mantle-demo-run
-pnpm --filter web build
-pnpm lint
-pnpm check-types
-```
-
-## Product Overview
-
-OpenStat started as a monitoring MVP for AI trading agents. It has grown into a
-monorepo product with native ingestion, OpenTelemetry-compatible endpoints,
-worker projections, an authenticated dashboard, public TypeScript and Python
-SDKs, and Mantle on-chain audit proof adapters for agent actions.
+The product is built for AI trading agents and other high-impact autonomous
+systems where a run needs more than logs: it needs scoped telemetry, risk
+checks, transaction receipts, audit evidence, and a durable proof trail.
 
 The current focus is decision-to-outcome observability: see what an agent saw,
 what it decided, which tools or models it used, what risk checks ran, which
 orders or chain transactions followed, and how the run settled.
+
+## Quick Links
+
+- Product: `https://openstat.online`
+- Mantle proof dashboard: `https://openstat.online/dashboard/onchain/mantle`
+- Mantle proof guide:
+  `apps/docs/gitbook/guides/ai-agent-proofs-on-mantle.md`
+- Live Tencent Cloud proof verifier:
+  `https://1442161061-1eo7ds24yh.eu-frankfurt.tencentscf.com?runId=mantle-demo-run`
+- Mantle Sepolia contract:
+  `0x1f5a3354dc01beb89ba7de1a01d04295274a737a`
+- Demo proof transaction:
+  `0x22f6e966f1190404580228a2e71597f0beb17ddc269aab6e0b7325bfcdbaad4b`
 
 ## What OpenStat Does
 
@@ -286,12 +137,12 @@ pip install openstat-sdk
 ### Chain Audit Adapters
 
 OpenStat can correlate off-chain agent telemetry with independently verified
-on-chain activity. For this hackathon submission, Mantle is the proof network:
-Mantle transaction hashes are reconciled through Mantle RPC, linked to
-MantleScan, and connected to `OpenStatAuditAnchor` proof records.
+on-chain activity. Mantle is the first proof network: Mantle transaction hashes
+are reconciled through Mantle RPC, linked to MantleScan, and connected to
+`OpenStatAuditAnchor` proof records.
 
 Chain behavior lives under `packages/ingestion/src/integrations/*`; core
-ingestion remains chain-agnostic, while the submission path uses
+ingestion remains chain-agnostic, while the current Mantle proof path uses
 `packages/ingestion/src/integrations/mantle`.
 
 ### Tencent Cloud Proof Verifier
@@ -301,7 +152,6 @@ Function that verifies the public Mantle Sepolia proof transaction directly from
 Mantle RPC. It accepts `runId` or `txHash`, checks the transaction receipt,
 decodes the `AuditAnchored(...)` event, and returns a JSON proof verdict.
 
-This gives the AI DevTools submission a concrete Tencent Cloud integration:
 Tencent Cloud hosts the verification endpoint, Mantle stores the proof, and
 OpenStat provides the agent telemetry, audit digest, and dashboard context.
 
@@ -382,8 +232,7 @@ Core projection tables include:
 The stable product/system architecture lives in
 `docs/architecture/openstat-system-design.md`. Production architecture and
 operational readiness direction lives in
-`docs/architecture/openstat-production-system-design.md`. This README is the
-Mantle Turing Hackathon submission summary for GitHub and automated review.
+`docs/architecture/openstat-production-system-design.md`.
 
 ## Repository Development
 
@@ -615,7 +464,7 @@ MVP path:
 - TypeScript and Python SDKs are published.
 - Hetzner deployment and Vercel dashboard deployment are documented.
 - Mantle receipt reconciliation, audit insight generation, and Mantle Sepolia
-  proof anchoring are implemented for the hackathon submission.
+  proof anchoring are implemented.
 
 Still active future work:
 
