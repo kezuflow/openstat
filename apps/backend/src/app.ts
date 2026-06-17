@@ -1,6 +1,5 @@
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
-import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import Fastify from "fastify";
@@ -9,6 +8,7 @@ import { env } from "./config/env.js";
 import { ingestionSignalClient } from "./context.js";
 import { registerErrorHandler } from "./plugins/errors.js";
 import { startProjectRefreshSubscription } from "./project-refresh-events.js";
+import { registerRateLimitedRoutes } from "./rate-limited-routes.js";
 import {
   createRedisRateLimitStore,
   getIngestionRateLimitKey,
@@ -63,17 +63,6 @@ export async function buildApp() {
       "X-OpenStat-Source",
     ],
     maxAge: 86_400,
-  });
-
-  await app.register(rateLimit, {
-    keyGenerator: (request) =>
-      getIngestionRateLimitKey(request.headers.authorization, request.ip),
-    max: env.ingestionRateLimitMax,
-    skipOnError: Boolean(ingestionSignalClient),
-    store: ingestionSignalClient
-      ? createRedisRateLimitStore(ingestionSignalClient)
-      : undefined,
-    timeWindow: env.ingestionRateLimitWindow,
   });
 
   const projectRefreshSubscription = await startProjectRefreshSubscription({
@@ -199,8 +188,23 @@ export async function buildApp() {
   await registerWorkspaceInfoRoutes(app);
   await registerApiKeyRoutes(app);
   await registerAuditRoutes(app);
-  await registerIngestionRoutes(app);
-  await registerOtlpRoutes(app);
+  await registerRateLimitedRoutes(
+    app,
+    {
+      keyGenerator: (request) =>
+        getIngestionRateLimitKey(request.headers.authorization, request.ip),
+      max: env.ingestionRateLimitMax,
+      skipOnError: Boolean(ingestionSignalClient),
+      store: ingestionSignalClient
+        ? createRedisRateLimitStore(ingestionSignalClient)
+        : undefined,
+      timeWindow: env.ingestionRateLimitWindow,
+    },
+    async (limitedApp) => {
+      await registerIngestionRoutes(limitedApp);
+      await registerOtlpRoutes(limitedApp);
+    },
+  );
   await registerReadRoutes(app);
 
   app.get(
