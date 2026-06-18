@@ -19,6 +19,18 @@ export type DashboardUser = {
   name?: string;
 };
 
+export type DashboardOnboardingState = {
+  key: "dashboard_v1";
+  isNewUser: boolean;
+  shouldShow: boolean;
+};
+
+type WorkspaceInitResponse = {
+  workspaceId: string;
+  projectId: string;
+  onboarding: DashboardOnboardingState;
+};
+
 export type DashboardInspectorKind =
   | "agent"
   | "event"
@@ -388,6 +400,16 @@ export async function getDashboardUser(): Promise<DashboardUser | undefined> {
   }
 }
 
+export async function getDashboardOnboardingState(): Promise<DashboardOnboardingState> {
+  return (
+    (await ensureWorkspaceInitialized()) ?? {
+      key: "dashboard_v1",
+      isNewUser: false,
+      shouldShow: false,
+    }
+  );
+}
+
 export async function getDashboardInspectorData(
   kind: DashboardInspectorKind,
   id: string,
@@ -657,23 +679,34 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
   return undefined;
 }
 
-async function ensureWorkspaceInitialized() {
+async function ensureWorkspaceInitialized(): Promise<
+  DashboardOnboardingState | undefined
+> {
   const cookieHeader = (await cookies()).toString();
 
   if (!hasBetterAuthCookie(cookieHeader)) {
-    return;
+    return undefined;
   }
 
   try {
-    await fetch(`${apiUrl}/v1/workspace/init`, {
+    const response = await fetch(`${apiUrl}/v1/workspace/init`, {
       cache: "no-store",
       headers: {
         cookie: cookieHeader,
       },
       method: "POST",
     });
+
+    if (!response.ok) {
+      return undefined;
+    }
+
+    const data = (await response.json()) as WorkspaceInitResponse;
+
+    return data.onboarding;
   } catch {
     // Dashboard reads below will surface the actual auth/API state.
+    return undefined;
   }
 }
 
