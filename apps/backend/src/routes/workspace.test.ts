@@ -61,10 +61,22 @@ describe("workspace routes", () => {
     const defaultProjectFrom = vi.fn().mockReturnValue({
       where: defaultProjectWhere,
     });
+    const onboardingInsert = mockOnboardingInsert();
+    const onboardingLimit = vi
+      .fn()
+      .mockResolvedValue([{ key: "dashboard_v1" }]);
+    const onboardingWhere = vi.fn().mockReturnValue({
+      limit: onboardingLimit,
+    });
+    const onboardingFrom = vi.fn().mockReturnValue({
+      where: onboardingWhere,
+    });
 
     state.db.select
       .mockReturnValueOnce({ from: membershipFrom })
-      .mockReturnValueOnce({ from: defaultProjectFrom });
+      .mockReturnValueOnce({ from: defaultProjectFrom })
+      .mockReturnValueOnce({ from: onboardingFrom });
+    state.db.insert.mockReturnValue(onboardingInsert);
 
     const app = await createApp();
     const response = await app.inject({
@@ -76,9 +88,22 @@ describe("workspace routes", () => {
     expect(response.json()).toEqual({
       workspaceId: "org_test",
       projectId: "project_default",
+      onboarding: {
+        key: "dashboard_v1",
+        isNewUser: false,
+        shouldShow: true,
+      },
     });
     expect(membershipOrderBy).toHaveBeenCalledOnce();
     expect(defaultProjectWhere).toHaveBeenCalledOnce();
+    expect(onboardingWhere).toHaveBeenCalledOnce();
+    expect(onboardingInsert.values).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user_test",
+        key: "dashboard_v1",
+        firstShownAt: expect.any(Date),
+      }),
+    );
     expect(
       sqlExpressionIncludesColumn(
         defaultProjectWhere.mock.calls[0]?.[0],
@@ -133,11 +158,23 @@ describe("workspace routes", () => {
     const updateSet = vi.fn().mockReturnValue({
       where: updateWhere,
     });
+    const onboardingInsert = mockOnboardingInsert();
+    const onboardingLimit = vi
+      .fn()
+      .mockResolvedValue([{ key: "dashboard_v1" }]);
+    const onboardingWhere = vi.fn().mockReturnValue({
+      limit: onboardingLimit,
+    });
+    const onboardingFrom = vi.fn().mockReturnValue({
+      where: onboardingWhere,
+    });
 
     state.db.select
       .mockReturnValueOnce({ from: membershipFrom })
       .mockReturnValueOnce({ from: defaultProjectFrom })
-      .mockReturnValueOnce({ from: existingProjectFrom });
+      .mockReturnValueOnce({ from: existingProjectFrom })
+      .mockReturnValueOnce({ from: onboardingFrom });
+    state.db.insert.mockReturnValue(onboardingInsert);
     state.db.update.mockReturnValue({ set: updateSet });
 
     const app = await createApp();
@@ -150,6 +187,11 @@ describe("workspace routes", () => {
     expect(response.json()).toEqual({
       workspaceId: "org_test",
       projectId: "project_existing",
+      onboarding: {
+        key: "dashboard_v1",
+        isNewUser: false,
+        shouldShow: true,
+      },
     });
     expect(existingProjectOrderBy).toHaveBeenCalledOnce();
     expect(updateSet).toHaveBeenCalledWith(
@@ -190,6 +232,17 @@ async function createApp() {
   await registerWorkspaceRoutes(app);
 
   return app;
+}
+
+function mockOnboardingInsert() {
+  const onConflictDoNothing = vi.fn().mockResolvedValue(undefined);
+  const values = vi.fn().mockReturnValue({
+    onConflictDoNothing,
+  });
+
+  return {
+    values,
+  };
 }
 
 function sqlExpressionIncludesColumn(

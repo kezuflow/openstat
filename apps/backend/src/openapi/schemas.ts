@@ -890,6 +890,43 @@ export const dashboardPreferencesResponseSchema = {
   },
 } as const;
 
+export const dashboardOnboardingSchema = {
+  type: "object",
+  required: ["key", "isNewUser", "shouldShow"],
+  properties: {
+    key: { type: "string", enum: ["dashboard_v1"] },
+    isNewUser: { type: "boolean" },
+    shouldShow: { type: "boolean" },
+  },
+} as const;
+
+export const workspaceInitResponseSchema = {
+  type: "object",
+  required: ["workspaceId", "projectId", "onboarding"],
+  properties: {
+    workspaceId: { type: "string", format: "uuid" },
+    projectId: { type: "string", format: "uuid" },
+    onboarding: dashboardOnboardingSchema,
+  },
+} as const;
+
+export const updateDashboardOnboardingBodySchema = {
+  type: "object",
+  required: ["status"],
+  additionalProperties: false,
+  properties: {
+    status: { type: "string", enum: ["completed", "dismissed"] },
+  },
+} as const;
+
+export const updateDashboardOnboardingResponseSchema = {
+  type: "object",
+  required: ["onboarding"],
+  properties: {
+    onboarding: dashboardOnboardingSchema,
+  },
+} as const;
+
 export const updateDashboardPreferencesBodySchema = {
   type: "object",
   additionalProperties: false,

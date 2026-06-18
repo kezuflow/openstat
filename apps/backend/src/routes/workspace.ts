@@ -1,84 +1,120 @@
 import { schema } from "@openstat/db";
 import { fromNodeHeaders } from "better-auth/node";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 
 import { auth, database } from "../context.js";
+import {
+  errorResponseSchema,
+  workspaceInitResponseSchema,
+} from "../openapi/schemas.js";
+
+const dashboardOnboardingKey = "dashboard_v1";
 
 export async function registerWorkspaceRoutes(app: FastifyInstance) {
-  app.post("/v1/workspace/init", async (request, reply) => {
-    const session = await auth.api.getSession({
-      headers: fromNodeHeaders(request.headers),
-    });
-
-    if (!session) {
-      return reply.status(401).send({
-        error: {
-          code: "UNAUTHORIZED",
-          message: "Authentication is required.",
-          requestId: request.id,
+  app.post(
+    "/v1/workspace/init",
+    {
+      schema: {
+        tags: ["Workspace"],
+        summary: "Initialize the current user's workspace",
+        response: {
+          200: workspaceInitResponseSchema,
+          401: errorResponseSchema,
         },
+      },
+    },
+    async (request, reply) => {
+      const session = await auth.api.getSession({
+        headers: fromNodeHeaders(request.headers),
       });
-    }
 
-    const existingMembership = await findFirstMembership(session.user.id);
-
-    if (existingMembership) {
-      const project = await ensureDefaultProject(
-        existingMembership.organizationId,
-      );
-
-      return {
-        workspaceId: existingMembership.organizationId,
-        projectId: project.id,
-      };
-    }
-
-    const result = await database.db.transaction(async (tx) => {
-      const workspaceSlug = await uniqueWorkspaceSlug(
-        slugify(session.user.name || session.user.email || "workspace"),
-      );
-
-      const [workspace] = await tx
-        .insert(schema.organizations)
-        .values({
-          name: session.user.name || "OpenStat Workspace",
-          slug: workspaceSlug,
-        })
-        .returning();
-
-      if (!workspace) {
-        throw new Error("Failed to create workspace.");
+      if (!session) {
+        return reply.status(401).send({
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Authentication is required.",
+            requestId: request.id,
+          },
+        });
       }
 
-      const [project] = await tx
-        .insert(schema.projects)
-        .values({
+      const existingMembership = await findFirstMembership(session.user.id);
+
+      if (existingMembership) {
+        const project = await ensureDefaultProject(
+          existingMembership.organizationId,
+        );
+        const onboarding = await ensureDashboardOnboardingState(
+          session.user.id,
+          false,
+        );
+
+        return {
+          workspaceId: existingMembership.organizationId,
+          projectId: project.id,
+          onboarding,
+        };
+      }
+
+      const result = await database.db.transaction(async (tx) => {
+        const workspaceSlug = await uniqueWorkspaceSlug(
+          slugify(session.user.name || session.user.email || "workspace"),
+        );
+
+        const [workspace] = await tx
+          .insert(schema.organizations)
+          .values({
+            name: session.user.name || "OpenStat Workspace",
+            slug: workspaceSlug,
+          })
+          .returning();
+
+        if (!workspace) {
+          throw new Error("Failed to create workspace.");
+        }
+
+        const [project] = await tx
+          .insert(schema.projects)
+          .values({
+            organizationId: workspace.id,
+            name: "Default",
+            slug: "default",
+            isDefault: true,
+          })
+          .returning();
+
+        if (!project) {
+          throw new Error("Failed to create default project.");
+        }
+
+        await tx.insert(schema.memberships).values({
           organizationId: workspace.id,
-          name: "Default",
-          slug: "default",
-          isDefault: true,
-        })
-        .returning();
+          userId: session.user.id,
+          role: "owner",
+        });
 
-      if (!project) {
-        throw new Error("Failed to create default project.");
-      }
+        await tx
+          .insert(schema.userOnboarding)
+          .values({
+            userId: session.user.id,
+            key: dashboardOnboardingKey,
+            firstShownAt: new Date(),
+          })
+          .onConflictDoNothing();
 
-      await tx.insert(schema.memberships).values({
-        organizationId: workspace.id,
-        userId: session.user.id,
-        role: "owner",
+        return {
+          workspaceId: workspace.id,
+          projectId: project.id,
+        };
       });
 
       return {
-        workspaceId: workspace.id,
-        projectId: project.id,
+        ...result,
+        onboarding: getInitialDashboardOnboardingState(),
       };
-    });
-
-    return result;
-  });
+    },
+  );
 }
 
 async function findFirstMembership(userId: string) {
@@ -145,6 +181,49 @@ async function ensureDefaultProject(organizationId: string) {
   }
 
   return project;
+}
+
+async function ensureDashboardOnboardingState(
+  userId: string,
+  isNewUser: boolean,
+) {
+  await database.db
+    .insert(schema.userOnboarding)
+    .values({
+      userId,
+      key: dashboardOnboardingKey,
+      firstShownAt: new Date(),
+    })
+    .onConflictDoNothing();
+
+  const [onboarding] = await database.db
+    .select({
+      key: schema.userOnboarding.key,
+    })
+    .from(schema.userOnboarding)
+    .where(
+      and(
+        eq(schema.userOnboarding.userId, userId),
+        eq(schema.userOnboarding.key, dashboardOnboardingKey),
+        isNull(schema.userOnboarding.completedAt),
+        isNull(schema.userOnboarding.dismissedAt),
+      ),
+    )
+    .limit(1);
+
+  return {
+    key: dashboardOnboardingKey,
+    isNewUser,
+    shouldShow: Boolean(onboarding),
+  };
+}
+
+function getInitialDashboardOnboardingState() {
+  return {
+    key: dashboardOnboardingKey,
+    isNewUser: true,
+    shouldShow: true,
+  };
 }
 
 async function uniqueWorkspaceSlug(baseSlug: string) {
