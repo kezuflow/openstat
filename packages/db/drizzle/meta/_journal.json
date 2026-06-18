@@ -43,6 +43,13 @@
       "when": 1780345620000,
       "tag": "0005_free_external_decision_ids",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781801354064,
+      "tag": "0006_dark_white_tiger",
+      "breakpoints": true
     }
   ]
 }
