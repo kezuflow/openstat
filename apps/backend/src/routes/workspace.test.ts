@@ -38,7 +38,7 @@ describe("workspace routes", () => {
     state.authGetSession.mockResolvedValue(session);
   });
 
-  it("initializes an existing member into the default project", async () => {
+  it("keeps pending onboarding visible for a previously enrolled new user", async () => {
     const membershipLimit = vi
       .fn()
       .mockResolvedValue([{ organizationId: "org_test" }]);
@@ -61,7 +61,6 @@ describe("workspace routes", () => {
     const defaultProjectFrom = vi.fn().mockReturnValue({
       where: defaultProjectWhere,
     });
-    const onboardingInsert = mockOnboardingInsert();
     const onboardingLimit = vi
       .fn()
       .mockResolvedValue([{ key: "dashboard_v1" }]);
@@ -76,7 +75,6 @@ describe("workspace routes", () => {
       .mockReturnValueOnce({ from: membershipFrom })
       .mockReturnValueOnce({ from: defaultProjectFrom })
       .mockReturnValueOnce({ from: onboardingFrom });
-    state.db.insert.mockReturnValue(onboardingInsert);
 
     const app = await createApp();
     const response = await app.inject({
@@ -97,13 +95,7 @@ describe("workspace routes", () => {
     expect(membershipOrderBy).toHaveBeenCalledOnce();
     expect(defaultProjectWhere).toHaveBeenCalledOnce();
     expect(onboardingWhere).toHaveBeenCalledOnce();
-    expect(onboardingInsert.values).toHaveBeenCalledWith(
-      expect.objectContaining({
-        userId: "user_test",
-        key: "dashboard_v1",
-        firstShownAt: expect.any(Date),
-      }),
-    );
+    expect(state.db.insert).not.toHaveBeenCalled();
     expect(
       sqlExpressionIncludesColumn(
         defaultProjectWhere.mock.calls[0]?.[0],
@@ -114,7 +106,7 @@ describe("workspace routes", () => {
     await app.close();
   });
 
-  it("promotes an existing project when an organization has no default", async () => {
+  it("does not enroll an existing member when promoting a default project", async () => {
     const membershipLimit = vi
       .fn()
       .mockResolvedValue([{ organizationId: "org_test" }]);
@@ -158,10 +150,7 @@ describe("workspace routes", () => {
     const updateSet = vi.fn().mockReturnValue({
       where: updateWhere,
     });
-    const onboardingInsert = mockOnboardingInsert();
-    const onboardingLimit = vi
-      .fn()
-      .mockResolvedValue([{ key: "dashboard_v1" }]);
+    const onboardingLimit = vi.fn().mockResolvedValue([]);
     const onboardingWhere = vi.fn().mockReturnValue({
       limit: onboardingLimit,
     });
@@ -174,7 +163,6 @@ describe("workspace routes", () => {
       .mockReturnValueOnce({ from: defaultProjectFrom })
       .mockReturnValueOnce({ from: existingProjectFrom })
       .mockReturnValueOnce({ from: onboardingFrom });
-    state.db.insert.mockReturnValue(onboardingInsert);
     state.db.update.mockReturnValue({ set: updateSet });
 
     const app = await createApp();
@@ -190,7 +178,7 @@ describe("workspace routes", () => {
       onboarding: {
         key: "dashboard_v1",
         isNewUser: false,
-        shouldShow: true,
+        shouldShow: false,
       },
     });
     expect(existingProjectOrderBy).toHaveBeenCalledOnce();
@@ -200,6 +188,7 @@ describe("workspace routes", () => {
         updatedAt: expect.any(Date),
       }),
     );
+    expect(state.db.insert).not.toHaveBeenCalled();
 
     await app.close();
   });
@@ -232,17 +221,6 @@ async function createApp() {
   await registerWorkspaceRoutes(app);
 
   return app;
-}
-
-function mockOnboardingInsert() {
-  const onConflictDoNothing = vi.fn().mockResolvedValue(undefined);
-  const values = vi.fn().mockReturnValue({
-    onConflictDoNothing,
-  });
-
-  return {
-    values,
-  };
 }
 
 function sqlExpressionIncludesColumn(

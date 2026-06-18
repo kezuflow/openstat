@@ -45,10 +45,7 @@ export async function registerWorkspaceRoutes(app: FastifyInstance) {
         const project = await ensureDefaultProject(
           existingMembership.organizationId,
         );
-        const onboarding = await ensureDashboardOnboardingState(
-          session.user.id,
-          false,
-        );
+        const onboarding = await getDashboardOnboardingState(session.user.id);
 
         return {
           workspaceId: existingMembership.organizationId,
@@ -183,19 +180,7 @@ async function ensureDefaultProject(organizationId: string) {
   return project;
 }
 
-async function ensureDashboardOnboardingState(
-  userId: string,
-  isNewUser: boolean,
-) {
-  await database.db
-    .insert(schema.userOnboarding)
-    .values({
-      userId,
-      key: dashboardOnboardingKey,
-      firstShownAt: new Date(),
-    })
-    .onConflictDoNothing();
-
+async function getDashboardOnboardingState(userId: string) {
   const [onboarding] = await database.db
     .select({
       key: schema.userOnboarding.key,
@@ -213,7 +198,7 @@ async function ensureDashboardOnboardingState(
 
   return {
     key: dashboardOnboardingKey,
-    isNewUser,
+    isNewUser: false,
     shouldShow: Boolean(onboarding),
   };
 }
