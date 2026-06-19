@@ -1,6 +1,6 @@
 import { schema } from "@openstat/db";
 import { fromNodeHeaders } from "better-auth/node";
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 
 import { auth, database } from "../context.js";
@@ -55,20 +55,48 @@ export async function registerWorkspaceRoutes(app: FastifyInstance) {
       }
 
       const result = await database.db.transaction(async (tx) => {
-        const workspaceSlug = await uniqueWorkspaceSlug(
-          slugify(session.user.name || session.user.email || "workspace"),
+        await tx.execute(
+          sql`select pg_advisory_xact_lock(hashtextextended(${`workspace-init:${session.user.id}`}, 0))`,
         );
 
-        const [workspace] = await tx
-          .insert(schema.organizations)
-          .values({
-            name: session.user.name || "OpenStat Workspace",
-            slug: workspaceSlug,
+        const [concurrentMembership] = await tx
+          .select({
+            organizationId: schema.memberships.organizationId,
           })
-          .returning();
+          .from(schema.memberships)
+          .where(eq(schema.memberships.userId, session.user.id))
+          .orderBy(asc(schema.memberships.createdAt))
+          .limit(1);
 
-        if (!workspace) {
-          throw new Error("Failed to create workspace.");
+        if (concurrentMembership) {
+          return {
+            existingOrganizationId: concurrentMembership.organizationId,
+          };
+        }
+
+        const workspaceName = session.user.name || "OpenStat Workspace";
+        const baseWorkspaceSlug = slugify(
+          session.user.name || session.user.email || "workspace",
+        );
+        let workspace: typeof schema.organizations.$inferSelect | undefined;
+        let slugAttempt = 1;
+
+        while (!workspace) {
+          const workspaceSlug =
+            slugAttempt === 1
+              ? baseWorkspaceSlug
+              : `${baseWorkspaceSlug}-${slugAttempt}`;
+
+          [workspace] = await tx
+            .insert(schema.organizations)
+            .values({
+              name: workspaceName,
+              slug: workspaceSlug,
+            })
+            .onConflictDoNothing({ target: schema.organizations.slug })
+            .returning();
+
+          slugAttempt += 1;
         }
 
         const [project] = await tx
@@ -105,6 +133,19 @@ export async function registerWorkspaceRoutes(app: FastifyInstance) {
           projectId: project.id,
         };
       });
+
+      if (result.existingOrganizationId) {
+        const project = await ensureDefaultProject(
+          result.existingOrganizationId,
+        );
+        const onboarding = await getDashboardOnboardingState(session.user.id);
+
+        return {
+          workspaceId: result.existingOrganizationId,
+          projectId: project.id,
+          onboarding,
+        };
+      }
 
       return {
         ...result,
@@ -209,28 +250,6 @@ function getInitialDashboardOnboardingState() {
     isNewUser: true,
     shouldShow: true,
   };
-}
-
-async function uniqueWorkspaceSlug(baseSlug: string) {
-  let candidate = baseSlug;
-  let attempt = 1;
-
-  while (await workspaceSlugExists(candidate)) {
-    attempt += 1;
-    candidate = `${baseSlug}-${attempt}`;
-  }
-
-  return candidate;
-}
-
-async function workspaceSlugExists(slug: string) {
-  const [workspace] = await database.db
-    .select({ id: schema.organizations.id })
-    .from(schema.organizations)
-    .where(eq(schema.organizations.slug, slug))
-    .limit(1);
-
-  return Boolean(workspace);
 }
 
 function slugify(value: string) {

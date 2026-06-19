@@ -213,7 +213,180 @@ describe("workspace routes", () => {
 
     await app.close();
   });
+
+  it("returns a workspace created by a concurrent initialization", async () => {
+    mockMembershipLookup([]);
+
+    const txExecute = vi.fn().mockResolvedValue(undefined);
+    const txMembershipLimit = vi
+      .fn()
+      .mockResolvedValue([{ organizationId: "org_concurrent" }]);
+    const txMembershipOrderBy = vi.fn().mockReturnValue({
+      limit: txMembershipLimit,
+    });
+    const txMembershipWhere = vi.fn().mockReturnValue({
+      orderBy: txMembershipOrderBy,
+    });
+    const txMembershipFrom = vi.fn().mockReturnValue({
+      where: txMembershipWhere,
+    });
+    const tx = {
+      execute: txExecute,
+      select: vi.fn().mockReturnValue({ from: txMembershipFrom }),
+    };
+
+    state.db.transaction.mockImplementation(async (callback) => callback(tx));
+    mockDefaultProjectAndOnboarding("project_concurrent");
+
+    const app = await createApp();
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/workspace/init",
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      workspaceId: "org_concurrent",
+      projectId: "project_concurrent",
+      onboarding: {
+        key: "dashboard_v1",
+        isNewUser: false,
+        shouldShow: false,
+      },
+    });
+    expect(txExecute).toHaveBeenCalledOnce();
+    expect(txMembershipLimit).toHaveBeenCalledOnce();
+
+    await app.close();
+  });
+
+  it("retries organization insertion when another user owns the slug", async () => {
+    mockMembershipLookup([]);
+
+    const organizationValues = vi.fn();
+    const organizationReturning = vi
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          id: "org_test",
+          name: "Test User",
+          slug: "test-user-2",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
+    organizationValues.mockReturnValue({
+      onConflictDoNothing: vi.fn().mockReturnValue({
+        returning: organizationReturning,
+      }),
+    });
+
+    const projectReturning = vi
+      .fn()
+      .mockResolvedValue([{ id: "project_test" }]);
+    const projectValues = vi.fn().mockReturnValue({
+      returning: projectReturning,
+    });
+    const membershipValues = vi.fn().mockResolvedValue(undefined);
+    const onboardingOnConflictDoNothing = vi.fn().mockResolvedValue(undefined);
+    const onboardingValues = vi.fn().mockReturnValue({
+      onConflictDoNothing: onboardingOnConflictDoNothing,
+    });
+
+    const txMembershipLimit = vi.fn().mockResolvedValue([]);
+    const txMembershipOrderBy = vi.fn().mockReturnValue({
+      limit: txMembershipLimit,
+    });
+    const txMembershipWhere = vi.fn().mockReturnValue({
+      orderBy: txMembershipOrderBy,
+    });
+    const txMembershipFrom = vi.fn().mockReturnValue({
+      where: txMembershipWhere,
+    });
+    const tx = {
+      execute: vi.fn().mockResolvedValue(undefined),
+      insert: vi
+        .fn()
+        .mockReturnValueOnce({ values: organizationValues })
+        .mockReturnValueOnce({ values: organizationValues })
+        .mockReturnValueOnce({ values: projectValues })
+        .mockReturnValueOnce({ values: membershipValues })
+        .mockReturnValueOnce({ values: onboardingValues }),
+      select: vi.fn().mockReturnValue({ from: txMembershipFrom }),
+    };
+
+    state.db.transaction.mockImplementation(async (callback) => callback(tx));
+
+    const app = await createApp();
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/workspace/init",
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      workspaceId: "org_test",
+      projectId: "project_test",
+      onboarding: {
+        key: "dashboard_v1",
+        isNewUser: true,
+        shouldShow: true,
+      },
+    });
+    expect(organizationValues).toHaveBeenNthCalledWith(1, {
+      name: "Test User",
+      slug: "test-user",
+    });
+    expect(organizationValues).toHaveBeenNthCalledWith(2, {
+      name: "Test User",
+      slug: "test-user-2",
+    });
+    expect(membershipValues).toHaveBeenCalledWith({
+      organizationId: "org_test",
+      userId: "user_test",
+      role: "owner",
+    });
+
+    await app.close();
+  });
 });
+
+function mockMembershipLookup(memberships: { organizationId: string }[]) {
+  const membershipLimit = vi.fn().mockResolvedValue(memberships);
+  const membershipOrderBy = vi.fn().mockReturnValue({
+    limit: membershipLimit,
+  });
+  const membershipWhere = vi.fn().mockReturnValue({
+    orderBy: membershipOrderBy,
+  });
+  const membershipFrom = vi.fn().mockReturnValue({
+    where: membershipWhere,
+  });
+
+  state.db.select.mockReturnValueOnce({ from: membershipFrom });
+}
+
+function mockDefaultProjectAndOnboarding(projectId: string) {
+  const defaultProjectLimit = vi.fn().mockResolvedValue([{ id: projectId }]);
+  const defaultProjectWhere = vi.fn().mockReturnValue({
+    limit: defaultProjectLimit,
+  });
+  const defaultProjectFrom = vi.fn().mockReturnValue({
+    where: defaultProjectWhere,
+  });
+  const onboardingLimit = vi.fn().mockResolvedValue([]);
+  const onboardingWhere = vi.fn().mockReturnValue({
+    limit: onboardingLimit,
+  });
+  const onboardingFrom = vi.fn().mockReturnValue({
+    where: onboardingWhere,
+  });
+
+  state.db.select
+    .mockReturnValueOnce({ from: defaultProjectFrom })
+    .mockReturnValueOnce({ from: onboardingFrom });
+}
 
 async function createApp() {
   const app = Fastify({ logger: false });

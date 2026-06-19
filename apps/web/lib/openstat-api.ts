@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { cache } from "react";
 
 const apiUrl =
   process.env.NEXT_PUBLIC_OPENSTAT_API_URL ?? "http://localhost:4000";
@@ -679,36 +680,36 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
   return undefined;
 }
 
-async function ensureWorkspaceInitialized(): Promise<
-  DashboardOnboardingState | undefined
-> {
-  const cookieHeader = (await cookies()).toString();
+const ensureWorkspaceInitialized = cache(
+  async (): Promise<DashboardOnboardingState | undefined> => {
+    const cookieHeader = (await cookies()).toString();
 
-  if (!hasBetterAuthCookie(cookieHeader)) {
-    return undefined;
-  }
-
-  try {
-    const response = await fetch(`${apiUrl}/v1/workspace/init`, {
-      cache: "no-store",
-      headers: {
-        cookie: cookieHeader,
-      },
-      method: "POST",
-    });
-
-    if (!response.ok) {
+    if (!hasBetterAuthCookie(cookieHeader)) {
       return undefined;
     }
 
-    const data = (await response.json()) as WorkspaceInitResponse;
+    try {
+      const response = await fetch(`${apiUrl}/v1/workspace/init`, {
+        cache: "no-store",
+        headers: {
+          cookie: cookieHeader,
+        },
+        method: "POST",
+      });
 
-    return data.onboarding;
-  } catch {
-    // Dashboard reads below will surface the actual auth/API state.
-    return undefined;
-  }
-}
+      if (!response.ok) {
+        return undefined;
+      }
+
+      const data = (await response.json()) as WorkspaceInitResponse;
+
+      return data.onboarding;
+    } catch {
+      // Dashboard reads below will surface the actual auth/API state.
+      return undefined;
+    }
+  },
+);
 
 async function getJson<T>(path: string): Promise<
   | {
