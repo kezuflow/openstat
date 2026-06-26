@@ -38,8 +38,8 @@ deployment, security, retention, billing, quota, scaling, or operations changes.
 
 ## Tooling
 
-- Use Node.js `>=18`.
-- Use PNPM, not npm or yarn. The root package manager is `pnpm@9.0.0`.
+- Use Node.js `>=22.13`.
+- Use PNPM, not npm or yarn. The root package manager is `pnpm@11.9.0`.
 - TypeScript is strict and uses `NodeNext` module resolution in shared config.
 - Formatting is Prettier via the root `format` script.
 - Linting is ESLint 9 via shared repo configs.

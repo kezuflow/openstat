@@ -1,4 +1,4 @@
-import { createClient } from "redis";
+import { createClient, type RedisClientType } from "redis";
 
 export const OPENSTAT_REDIS_PREFIX = "openstat";
 
@@ -80,7 +80,7 @@ export interface IngestionSignalClient extends IngestionSignalPublisher {
 
 export type IngestionSignalLogger = Pick<Console, "error" | "info" | "warn">;
 
-type RedisClient = ReturnType<typeof createClient>;
+type RedisClient = RedisClientType<{}, {}, {}, 3, {}>;
 
 const rateLimitLua = `
   local key = KEYS[1]

@@ -305,8 +305,8 @@ integrating agents should start with `Use OpenStat Cloud` above.
 
 Prerequisites:
 
-- Node.js 18 or newer
-- PNPM 9
+- Node.js 22.13 or newer
+- PNPM 11.9
 - Postgres for backend development
 - Redis for worker signaling and project cache invalidation
 
